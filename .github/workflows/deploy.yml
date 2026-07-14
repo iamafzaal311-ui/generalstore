@@ -33,7 +33,7 @@ jobs:
 
       # 5. Build Flutter Web App
       - name: Build Web App
-        run: flutter build web --release
+        run: flutter build web --release --no-wasm-dry-run
 
       # 6. Deploy to Netlify
       - name: Deploy to Netlify
