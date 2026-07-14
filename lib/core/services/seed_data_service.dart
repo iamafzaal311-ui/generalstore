@@ -1,0 +1,261 @@
+import 'package:uuid/uuid.dart';
+import '../../data/datasources/local_db_service.dart';
+import '../../data/models/brand_model.dart';
+import '../../data/models/category_model.dart';
+import '../../data/models/product_model.dart';
+import '../../data/models/supplier_model.dart';
+
+class SeedDataService {
+  static const _uuid = Uuid();
+
+  static Future<void> seedIfEmpty(LocalDbService db) async {
+    if (db.categoriesBox.isNotEmpty) return;
+    final now = DateTime.now();
+    final categories = _makeCategories(now);
+    for (final c in categories) {
+      await db.categoriesBox.put(c.categoryId, c);
+    }
+    final brands = _makeBrands(now);
+    for (final b in brands) {
+      await db.brandsBox.put(b.brandId, b);
+    }
+    final suppliers = _makeSuppliers(now);
+    for (final s in suppliers) {
+      await db.suppliersBox.put(s.supplierId, s);
+    }
+    final catMap = {for (final c in categories) c.name: c.categoryId};
+    final brandMap = {for (final b in brands) b.name: b.brandId};
+    final supMap = {for (final s in suppliers) s.name: s.supplierId};
+    final products = _makeProducts(now, catMap, brandMap, supMap);
+    for (final p in products) {
+      await db.productsBox.put(p.productId, p);
+    }
+  }
+
+  static List<CategoryModel> _makeCategories(DateTime now) {
+    final entries = [
+      ('Beverages', 'Tea, Coffee, Cold drinks, Juices'),
+      ('Biscuits & Snacks', 'Cookies, Chips, Crackers'),
+      ('Dairy & Eggs', 'Milk, Butter, Yogurt, Cheese, Eggs'),
+      ('Flour & Grains', 'Atta, Rice, Maida, Suji, Baisan'),
+      ('Cooking Oil & Ghee', 'Vegetable oil, Sunflower oil, Desi ghee'),
+      ('Sugar & Salt', 'Sugar, Salt'),
+      ('Pulses & Lentils', 'Daal Chana, Moong, Masoor, Mash'),
+      ('Spices & Masala', 'Whole spices, Ground spices, Ready masalas'),
+      ('Soap & Detergent', 'Laundry detergent, Dishwash, Bar soap'),
+      ('Shampoo & Hair Care', 'Shampoo, Conditioner, Hair oil, Hair color'),
+      ('Skin Care & Cosmetics', 'Face wash, Cream, Lotion, Lipstick'),
+      ('Toothpaste & Oral Care', 'Toothpaste, Toothbrush, Mouthwash'),
+      ('Feminine Hygiene', 'Sanitary pads, Intimate wash'),
+      ('Baby Products', 'Diapers, Baby powder, Baby oil, Baby soap'),
+      ('Medicines & Health', 'Panadol, Antacids, ORS, Vitamins'),
+      ('Cigarettes & Paan', 'Cigarettes, Gutka, Naswar'),
+      ('Stationery', 'Pens, Pencils, Notebooks, Copies'),
+      ('Household Items', 'Matchbox, Candles, Mosquito coil, Air freshener'),
+      ('Confectionery', 'Sweets, Chocolates, Lollipops, Chewing gum'),
+      ('Packaged Foods', 'Noodles, Ketchup, Pickles, Jam'),
+      ('Batteries & Electronics', 'Batteries, Phone accessories'),
+    ];
+    return entries.map((e) => CategoryModel()
+      ..categoryId = _uuid.v4()
+      ..name = e.$1
+      ..description = e.$2
+      ..isDirty = false
+      ..lastUpdated = now
+      ..isDeleted = false).toList();
+  }
+
+  static List<BrandModel> _makeBrands(DateTime now) {
+    const names = [
+      'Lipton','Tapal','Pepsi','Coca-Cola','Nestle','7UP','Sprite','Sting',
+      'Tang','Nescafe','LU','EBM','Bisconni','Peek Freans','Fauji','Olpers',
+      'Nurpur','Haleeb','Engro Foods','Sufi','Dalda','Habib','Seasons',
+      'Sunridge','Bake Parlor','Surf Excel','Ariel','Brite','Safeguard','Lux',
+      'Lifebuoy','Sunlight','Vim','Bonus','Express Power','Head and Shoulders',
+      'Pantene','Sunsilk','Dove','Garnier','Vatika','Loreal','Ponds',
+      'Glow and Lovely','Nivea','Olay','Vaseline','Himalaya','Clean and Clear',
+      'Emami','Rose Petal','Stillmans','Acne Clear','Colgate','Close Up',
+      'Sensodyne','Oral-B','Medicam','Pampers','Huggies','Johnson and Johnson',
+      'National','Shan','Mehran','Laziza','Knorr','Panadol','Disprin','ENO',
+      'Gold Leaf','Marlboro','Morven','Capstan','K2','Cadbury','Hilal','Polo',
+      'Mentos','Chillies','Heinz','Mitchells','Mortein','HIT','Air Wick',
+      'Duracell','Eveready','General',
+    ];
+    return names.map((name) => BrandModel()
+      ..brandId = _uuid.v4()
+      ..name = name
+      ..isDirty = false
+      ..lastUpdated = now
+      ..isDeleted = false).toList();
+  }
+
+  static List<SupplierModel> _makeSuppliers(DateTime now) {
+    final entries = [
+      ('Unilever Pakistan','0300-1234567','Lahore'),
+      ('P&G Pakistan','0311-2345678','Karachi'),
+      ('Nestle Pakistan','0321-3456789','Lahore'),
+      ('National Foods','0345-4567890','Karachi'),
+      ('Shan Foods','0333-5678901','Karachi'),
+      ('EBM','0300-6789012','Karachi'),
+      ('Dalda Foods','0322-7890123','Lahore'),
+      ('Local Wholesale','0300-0000000','Pakpattan'),
+    ];
+    return entries.map((e) => SupplierModel()
+      ..supplierId = _uuid.v4()
+      ..name = e.$1
+      ..phone = e.$2
+      ..address = e.$3
+      ..balance = 0.0
+      ..isDirty = false
+      ..lastUpdated = now
+      ..isDeleted = false).toList();
+  }
+
+  static List<ProductModel> _makeProducts(
+    DateTime now,
+    Map<String,String> catMap,
+    Map<String,String> brandMap,
+    Map<String,String> supMap,
+  ) {
+    String cid(String n) => catMap[n] ?? '';
+    String bid(String n) => brandMap[n] ?? '';
+    String sid(String n) => supMap[n] ?? supMap['Local Wholesale'] ?? '';
+
+    // [name, category, brand, supplier, buyPrice, sellPrice, unit, stock, sku]
+    final rows = <List<dynamic>>[
+      ['Lipton Yellow Label 200g','Beverages','Lipton','Unilever Pakistan',220,260,'pcs',30,'BEV001'],
+      ['Tapal Danedar 200g','Beverages','Tapal','Local Wholesale',210,250,'pcs',25,'BEV002'],
+      ['Pepsi 1.5 Liter','Beverages','Pepsi','Local Wholesale',90,120,'pcs',60,'BEV003'],
+      ['Coca-Cola 1.5 Liter','Beverages','Coca-Cola','Local Wholesale',90,120,'pcs',40,'BEV004'],
+      ['Pepsi 500ml','Beverages','Pepsi','Local Wholesale',45,60,'pcs',100,'BEV005'],
+      ['Sting Energy 250ml','Beverages','Sting','Local Wholesale',65,80,'pcs',50,'BEV006'],
+      ['Tang Orange 125g','Beverages','Tang','Nestle Pakistan',55,70,'pcs',40,'BEV007'],
+      ['Nescafe Classic 100g','Beverages','Nescafe','Nestle Pakistan',450,520,'pcs',15,'BEV008'],
+      ['7UP 1.5 Liter','Beverages','7UP','Local Wholesale',90,120,'pcs',40,'BEV009'],
+      ['Sprite 500ml','Beverages','Sprite','Local Wholesale',45,60,'pcs',80,'BEV010'],
+      ['Sooper Biscuit','Biscuits & Snacks','EBM','EBM',20,30,'pcs',120,'BSN001'],
+      ['Peek Freans Glucose','Biscuits & Snacks','Peek Freans','EBM',35,50,'pcs',100,'BSN002'],
+      ['LU Prince Biscuit','Biscuits & Snacks','LU','Local Wholesale',30,45,'pcs',80,'BSN003'],
+      ['Bisconni Cocomo','Biscuits & Snacks','Bisconni','Local Wholesale',15,20,'pcs',200,'BSN004'],
+      ['Kurkure Mirch Masti','Biscuits & Snacks','Fauji','Local Wholesale',20,30,'pcs',150,'BSN005'],
+      ['Olpers Full Cream Milk 1L','Dairy & Eggs','Olpers','Engro Foods',170,200,'pcs',50,'DAI001'],
+      ['Nurpur Butter 200g','Dairy & Eggs','Nurpur','Local Wholesale',190,220,'pcs',30,'DAI002'],
+      ['Haleeb Milk 1L','Dairy & Eggs','Haleeb','Local Wholesale',165,195,'pcs',40,'DAI003'],
+      ['Eggs 1 dozen','Dairy & Eggs','General','Local Wholesale',260,320,'dozen',20,'DAI004'],
+      ['Sunridge Atta 10kg','Flour & Grains','Sunridge','Local Wholesale',1050,1200,'bag',20,'FLR001'],
+      ['Fauji Atta 5kg','Flour & Grains','Fauji','Local Wholesale',530,600,'bag',15,'FLR002'],
+      ['Basmati Rice 1kg','Flour & Grains','General','Local Wholesale',250,320,'kg',50,'FLR003'],
+      ['Suji 1kg','Flour & Grains','General','Local Wholesale',90,120,'kg',30,'FLR004'],
+      ['Baisan 1kg','Flour & Grains','General','Local Wholesale',80,110,'kg',25,'FLR005'],
+      ['Sufi Cooking Oil 1 Liter','Cooking Oil & Ghee','Sufi','Local Wholesale',370,420,'pcs',30,'OIL001'],
+      ['Dalda Cooking Oil 1 Liter','Cooking Oil & Ghee','Dalda','Dalda Foods',380,430,'pcs',25,'OIL002'],
+      ['Habib Sunflower Oil 3L','Cooking Oil & Ghee','Habib','Local Wholesale',1050,1200,'pcs',15,'OIL003'],
+      ['Seasons Canola Oil 1L','Cooking Oil & Ghee','Seasons','Local Wholesale',360,420,'pcs',20,'OIL004'],
+      ['Dalda Ghee 1kg','Cooking Oil & Ghee','Dalda','Dalda Foods',620,700,'pcs',20,'OIL005'],
+      ['Sugar 1kg','Sugar & Salt','General','Local Wholesale',115,140,'kg',100,'SUG001'],
+      ['Salt Iodized 800g','Sugar & Salt','General','Local Wholesale',40,55,'pcs',80,'SUG002'],
+      ['Daal Chana 1kg','Pulses & Lentils','General','Local Wholesale',180,220,'kg',40,'PUL001'],
+      ['Daal Masoor 1kg','Pulses & Lentils','General','Local Wholesale',160,200,'kg',35,'PUL002'],
+      ['Daal Mash 1kg','Pulses & Lentils','General','Local Wholesale',210,250,'kg',30,'PUL003'],
+      ['Daal Moong 1kg','Pulses & Lentils','General','Local Wholesale',180,220,'kg',30,'PUL004'],
+      ['National Biryani Masala','Spices & Masala','National','National Foods',60,80,'pcs',50,'SPC001'],
+      ['Shan Chicken Masala','Spices & Masala','Shan','Shan Foods',65,85,'pcs',60,'SPC002'],
+      ['Mehran Tikka Masala','Spices & Masala','Mehran','Local Wholesale',55,75,'pcs',45,'SPC003'],
+      ['Red Chilli Powder 200g','Spices & Masala','National','National Foods',90,120,'pcs',40,'SPC004'],
+      ['Turmeric Powder 200g','Spices & Masala','Shan','Shan Foods',85,110,'pcs',40,'SPC005'],
+      ['Knorr Cubes 24pcs box','Spices & Masala','Knorr','Unilever Pakistan',140,180,'box',30,'SPC006'],
+      ['Surf Excel 500g','Soap & Detergent','Surf Excel','Unilever Pakistan',280,330,'pcs',60,'DET001'],
+      ['Ariel Detergent 500g','Soap & Detergent','Ariel','P&G Pakistan',300,360,'pcs',40,'DET002'],
+      ['Brite Detergent 1kg','Soap & Detergent','Brite','Unilever Pakistan',380,440,'pcs',50,'DET003'],
+      ['Safeguard Soap 175g','Soap & Detergent','Safeguard','P&G Pakistan',75,100,'pcs',80,'DET004'],
+      ['Lux Soap 150g','Soap & Detergent','Lux','Unilever Pakistan',65,90,'pcs',100,'DET005'],
+      ['Lifebuoy Soap 130g','Soap & Detergent','Lifebuoy','Unilever Pakistan',55,75,'pcs',100,'DET006'],
+      ['Vim Dishwash Bar 400g','Soap & Detergent','Vim','Unilever Pakistan',80,110,'pcs',70,'DET007'],
+      ['Bonus Detergent 1kg','Soap & Detergent','Bonus','Local Wholesale',350,420,'pcs',40,'DET008'],
+      ['Express Power 400g','Soap & Detergent','Express Power','Local Wholesale',85,115,'pcs',50,'DET009'],
+      ['Sunsilk Shampoo 200ml','Shampoo & Hair Care','Sunsilk','Unilever Pakistan',150,195,'pcs',40,'HAI001'],
+      ['Pantene Shampoo 200ml','Shampoo & Hair Care','Pantene','P&G Pakistan',160,210,'pcs',35,'HAI002'],
+      ['Head and Shoulders 200ml','Shampoo & Hair Care','Head and Shoulders','P&G Pakistan',175,230,'pcs',30,'HAI003'],
+      ['Dove Shampoo 200ml','Shampoo & Hair Care','Dove','Unilever Pakistan',180,240,'pcs',25,'HAI004'],
+      ['Vatika Hair Oil 200ml','Shampoo & Hair Care','Vatika','Local Wholesale',120,160,'pcs',30,'HAI005'],
+      ['Loreal Hair Color','Shampoo & Hair Care','Loreal','Local Wholesale',180,240,'pcs',20,'HAI006'],
+      ['Garnier Fructis Shampoo 200ml','Shampoo & Hair Care','Garnier','Local Wholesale',160,210,'pcs',25,'HAI007'],
+      ['Ponds Cold Cream 200ml','Skin Care & Cosmetics','Ponds','Unilever Pakistan',180,230,'pcs',30,'SKN001'],
+      ['Glow and Lovely Cream 50g','Skin Care & Cosmetics','Glow and Lovely','Unilever Pakistan',90,130,'pcs',50,'SKN002'],
+      ['Nivea Body Lotion 200ml','Skin Care & Cosmetics','Nivea','Local Wholesale',280,350,'pcs',25,'SKN003'],
+      ['Vaseline Petroleum Jelly 100g','Skin Care & Cosmetics','Vaseline','Unilever Pakistan',130,175,'pcs',40,'SKN004'],
+      ['Clean and Clear Face Wash 100ml','Skin Care & Cosmetics','Clean and Clear','Local Wholesale',180,230,'pcs',25,'SKN005'],
+      ['Himalaya Face Wash 150ml','Skin Care & Cosmetics','Himalaya','Local Wholesale',220,280,'pcs',20,'SKN006'],
+      ['Emami Fair Handsome Cream','Skin Care & Cosmetics','Emami','Local Wholesale',150,200,'pcs',20,'SKN007'],
+      ['Rose Petal Whitening Cream','Skin Care & Cosmetics','Rose Petal','Local Wholesale',95,130,'pcs',35,'SKN008'],
+      ['Stillmans Freckle Cream','Skin Care & Cosmetics','Stillmans','Local Wholesale',120,160,'pcs',25,'SKN009'],
+      ['Acne Clear Face Wash','Skin Care & Cosmetics','Acne Clear','Local Wholesale',100,140,'pcs',20,'SKN010'],
+      ['Colgate Total 75ml','Toothpaste & Oral Care','Colgate','Local Wholesale',95,130,'pcs',50,'ORL001'],
+      ['Close Up Red 80ml','Toothpaste & Oral Care','Close Up','Unilever Pakistan',85,115,'pcs',60,'ORL002'],
+      ['Sensodyne 70g','Toothpaste & Oral Care','Sensodyne','Local Wholesale',190,240,'pcs',20,'ORL003'],
+      ['Medicam Toothpaste 120g','Toothpaste & Oral Care','Medicam','Local Wholesale',80,110,'pcs',40,'ORL004'],
+      ['Oral-B Toothbrush','Toothpaste & Oral Care','Oral-B','P&G Pakistan',60,85,'pcs',50,'ORL005'],
+      ['Always Pads Regular','Feminine Hygiene','General','P&G Pakistan',85,120,'pcs',40,'FEM001'],
+      ['Always Pads Extra Long','Feminine Hygiene','General','P&G Pakistan',110,150,'pcs',35,'FEM002'],
+      ['Stayfree Pads','Feminine Hygiene','General','Local Wholesale',80,115,'pcs',30,'FEM003'],
+      ['Pampers Diapers NB 20pcs','Baby Products','Pampers','P&G Pakistan',600,750,'pcs',20,'BAB001'],
+      ['Huggies Diapers S 20pcs','Baby Products','Huggies','Local Wholesale',580,720,'pcs',20,'BAB002'],
+      ['Johnson Baby Shampoo 200ml','Baby Products','Johnson and Johnson','Local Wholesale',200,260,'pcs',20,'BAB003'],
+      ['Johnson Baby Oil 200ml','Baby Products','Johnson and Johnson','Local Wholesale',180,240,'pcs',15,'BAB004'],
+      ['Johnson Baby Powder 200g','Baby Products','Johnson and Johnson','Local Wholesale',220,280,'pcs',15,'BAB005'],
+      ['Panadol Strip 10 tabs','Medicines & Health','Panadol','Local Wholesale',20,30,'strip',100,'MED001'],
+      ['Disprin Strip 10 tabs','Medicines & Health','Disprin','Local Wholesale',15,25,'strip',80,'MED002'],
+      ['ENO 150g','Medicines & Health','ENO','Local Wholesale',95,130,'pcs',30,'MED003'],
+      ['ORS Sachet 10pcs','Medicines & Health','General','Local Wholesale',60,90,'pcs',40,'MED004'],
+      ['Gold Leaf Cigarettes 20s','Cigarettes & Paan','Gold Leaf','Local Wholesale',380,430,'pack',60,'CIG001'],
+      ['Marlboro Cigarettes 20s','Cigarettes & Paan','Marlboro','Local Wholesale',400,460,'pack',30,'CIG002'],
+      ['Morven Gold 20s','Cigarettes & Paan','Morven','Local Wholesale',200,240,'pack',50,'CIG003'],
+      ['Capstan Filter 20s','Cigarettes & Paan','Capstan','Local Wholesale',160,200,'pack',40,'CIG004'],
+      ['Cadbury Dairy Milk 40g','Confectionery','Cadbury','Local Wholesale',80,110,'pcs',60,'CON001'],
+      ['Hilal Poppins','Confectionery','Hilal','Local Wholesale',5,10,'pcs',200,'CON002'],
+      ['Chillies Candy','Confectionery','Chillies','Local Wholesale',5,10,'pcs',300,'CON003'],
+      ['Mentos Roll','Confectionery','Mentos','Local Wholesale',40,60,'pcs',80,'CON004'],
+      ['Polo Mint','Confectionery','Polo','Local Wholesale',30,45,'pcs',100,'CON005'],
+      ['Knorr Noodles 4 pack','Packaged Foods','Knorr','Unilever Pakistan',120,160,'pcs',60,'PKD001'],
+      ['Heinz Ketchup 800g','Packaged Foods','Heinz','Local Wholesale',320,390,'pcs',20,'PKD002'],
+      ['National Mango Pickle 400g','Packaged Foods','National','National Foods',150,200,'pcs',30,'PKD003'],
+      ['Mitchells Strawberry Jam 450g','Packaged Foods','Mitchells','Local Wholesale',180,240,'pcs',20,'PKD004'],
+      ['Bake Parlor Pasta 400g','Packaged Foods','Bake Parlor','Local Wholesale',80,110,'pcs',40,'PKD005'],
+      ['HIT Mosquito Spray 300ml','Household Items','HIT','Local Wholesale',200,260,'pcs',25,'HLD001'],
+      ['Mortein Mosquito Coil 10pcs','Household Items','Mortein','Local Wholesale',80,110,'pcs',40,'HLD002'],
+      ['Matchbox 12pcs','Household Items','General','Local Wholesale',20,30,'pack',100,'HLD003'],
+      ['Air Wick Freshener 300ml','Household Items','Air Wick','Local Wholesale',320,400,'pcs',15,'HLD004'],
+      ['Rose Petal Tissues 200pcs','Household Items','Rose Petal','Local Wholesale',80,110,'pcs',40,'HLD005'],
+      ['Duracell AA Battery 2pcs','Batteries & Electronics','Duracell','Local Wholesale',100,140,'pack',30,'BAT001'],
+      ['Eveready AA Battery 2pcs','Batteries & Electronics','Eveready','Local Wholesale',75,110,'pack',40,'BAT002'],
+    ];
+
+    return rows.map((row) {
+      final buyPrice = (row[4] as num).toDouble();
+      final sellPrice = (row[5] as num).toDouble();
+      final stock = (row[7] as num).toDouble();
+      final sku = row[8] as String;
+      final barcodeNum = sku.replaceAll(RegExp(r'[^0-9]'), '').padLeft(10, '0');
+      return ProductModel()
+        ..productId = _uuid.v4()
+        ..name = row[0] as String
+        ..categoryId = cid(row[1] as String)
+        ..brandId = bid(row[2] as String)
+        ..supplierId = sid(row[3] as String)
+        ..purchasePrice = buyPrice
+        ..wholesalePrice = (buyPrice * 1.08)
+        ..retailPrice = sellPrice
+        ..minimumPrice = buyPrice
+        ..stock = stock
+        ..unit = row[6] as String
+        ..openingStock = stock
+        ..minimumStock = 5.0
+        ..maximumStock = 500.0
+        ..sku = sku
+        ..barcode = barcodeNum
+        ..isDirty = false
+        ..lastUpdated = now
+        ..isDeleted = false;
+    }).toList();
+  }
+}
