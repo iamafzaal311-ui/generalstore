@@ -31,8 +31,97 @@
 
   <title>Hussnain Traders - POS</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .shop-icon {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 24px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(25, 118, 210, 0.1);
+      border-top-color: #1976d2;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .loading-text {
+      margin-top: 24px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: 0.5px;
+    }
+
+    .loading-subtext {
+      margin-top: 8px;
+      font-size: 0.95rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-12px); }
+      100% { transform: translateY(0px); }
+    }
+  </style>
 </head>
 <body>
+  <div class="loading-container" id="loading-indicator">
+    <svg class="shop-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 7V19C4 20.1046 4.89543 21 6 21H18C19.1046 21 20 20.1046 20 19V7M4 7L5 3H19L20 7M4 7H20M9 21V11M15 21V11" stroke="#1976d2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="spinner"></div>
+    <div class="loading-text">Hussnain Traders</div>
+    <div class="loading-subtext">Getting things ready...</div>
+  </div>
+
+  <script>
+    // Hide the loader once Flutter adds its view
+    const observer = new MutationObserver((mutationsList, obs) => {
+      for(let mutation of mutationsList) {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach(node => {
+            if (node.tagName && node.tagName.toLowerCase() === 'flutter-view') {
+              const loader = document.getElementById('loading-indicator');
+              if (loader) {
+                loader.style.display = 'none';
+              }
+              obs.disconnect();
+            }
+          });
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true });
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
