@@ -408,16 +408,22 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
     final stockCtrl = TextEditingController(text: product?.stock.toString() ?? '0');
     final unitCtrl = TextEditingController(text: product?.unit ?? 'pcs');
     
-    final cartonsCtrl = TextEditingController(text: product?.cartons?.toString() ?? '0');
+    final cartonsCtrl = TextEditingController(text: '0'); // Start at 0 so user adds new cartons
     final piecesPerCartonCtrl = TextEditingController(text: product?.piecesPerCarton?.toString() ?? '1');
-    final cartonPriceCtrl = TextEditingController(text: product?.cartonPrice?.toString() ?? '0');
+    final cartonPriceCtrl = TextEditingController(text: '0'); // Start at 0 for new stock addition
 
     void recalcPrices() {
       final cPrice = double.tryParse(cartonPriceCtrl.text) ?? 0;
       final pcs = double.tryParse(piecesPerCartonCtrl.text) ?? 1;
       final ctns = double.tryParse(cartonsCtrl.text) ?? 0;
       if (cPrice > 0 && pcs > 0) purchasePriceCtrl.text = (cPrice / pcs).toStringAsFixed(2);
-      if (ctns > 0 && pcs > 0) stockCtrl.text = (ctns * pcs).toStringAsFixed(0);
+      
+      final existingStock = product?.stock ?? 0;
+      if (ctns > 0 && pcs > 0) {
+        stockCtrl.text = (existingStock + (ctns * pcs)).toStringAsFixed(0);
+      } else {
+        stockCtrl.text = existingStock.toStringAsFixed(0);
+      }
     }
     cartonPriceCtrl.addListener(recalcPrices);
     piecesPerCartonCtrl.addListener(recalcPrices);
@@ -576,9 +582,15 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
                     p.stock = double.tryParse(stockCtrl.text) ?? 0;
                     p.unit = unitCtrl.text;
                     p.imagePath = uploadedImageUrl;
-                    p.cartons = double.tryParse(cartonsCtrl.text) ?? 0;
+                    
+                    final addedCartons = double.tryParse(cartonsCtrl.text) ?? 0;
+                    p.cartons = (product?.cartons ?? 0) + addedCartons;
                     p.piecesPerCarton = double.tryParse(piecesPerCartonCtrl.text) ?? 1;
-                    p.cartonPrice = double.tryParse(cartonPriceCtrl.text) ?? 0;
+                    
+                    final newCartonPrice = double.tryParse(cartonPriceCtrl.text) ?? 0;
+                    if (newCartonPrice > 0) {
+                      p.cartonPrice = newCartonPrice; // Update to the latest carton price
+                    }
 
                     ref.read(inventoryControllerProvider.notifier).saveProduct(p);
                     Navigator.pop(context);
