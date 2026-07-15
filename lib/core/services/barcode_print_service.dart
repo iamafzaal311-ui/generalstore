@@ -9,8 +9,8 @@ class BarcodePrintService {
   /// Generates a PDF document with barcode labels for the given product.
   /// This can be sent to a label printer.
   static Future<void> printProductBarcodeLabel(ProductModel product, {int count = 1}) async {
-    await PrintHelper.loadFonts();
-    final pdf = pw.Document(theme: PrintHelper.pdfTheme);
+    final theme = await PrintHelper.getUrduPdfTheme();
+    final pdf = pw.Document(theme: theme);
 
     final barcodeData = product.barcode ?? product.sku ?? product.productId;
 

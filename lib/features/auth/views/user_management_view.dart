@@ -23,6 +23,7 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
     final usernameCtrl = TextEditingController();
     final fullNameCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
+    String selectedRole = 'Staff';
 
     showDialog(
       context: context,
@@ -56,7 +57,18 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                         validator: (val) => val == null || val.length < 4 ? 'Min 4 characters' : null,
                       ),
                       const SizedBox(height: 16),
-                      // Role is forced to Staff for all newly created users.
+                      DropdownButtonFormField<String>(
+                        value: selectedRole,
+                        decoration: const InputDecoration(labelText: 'Role'),
+                        items: ['Staff', 'Cashier', 'Stock Manager', 'Admin']
+                            .map((role) => DropdownMenuItem(value: role, child: Text(role)))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setStateDialog(() => selectedRole = val);
+                          }
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -78,7 +90,7 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                               username: usernameCtrl.text.trim(),
                               fullName: fullNameCtrl.text.trim(),
                               password: passwordCtrl.text,
-                              role: 'Staff', // All new users are staff
+                              role: selectedRole,
                             );
                         if (context.mounted) {
                           Navigator.pop(context);
@@ -279,6 +291,29 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                                   icon: const Icon(Icons.key_rounded, size: 20),
                                   onPressed: () => _showResetPasswordDialog(user.userId, user.username),
                                   tooltip: 'Reset Password',
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_rounded, size: 20, color: Colors.red),
+                                  onPressed: () async {
+                                          final confirm = await showDialog<bool>(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: const Text('Delete User'),
+                                              content: Text('Are you sure you want to delete ${user.username}?'),
+                                              actions: [
+                                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(ctx, true), 
+                                                  child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true && context.mounted) {
+                                            ref.read(authControllerProvider.notifier).deleteUser(user.userId);
+                                          }
+                                        },
+                                  tooltip: 'Delete User',
                                 ),
                               ],
                             ),

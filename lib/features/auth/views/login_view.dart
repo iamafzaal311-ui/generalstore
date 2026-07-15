@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../viewmodels/auth_controller.dart';
+import '../../../data/models/user_model.dart';
+import '../../../core/providers/global_providers.dart';
 import '../../../core/widgets/custom_urdu_header.dart';
 
 class LoginView extends ConsumerStatefulWidget {
@@ -55,15 +57,68 @@ class _LoginViewState extends ConsumerState<LoginView> {
   }
 
 
+  void _showDeveloperPinDialog(BuildContext context) {
+    final pinCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Developer Access'),
+        content: TextField(
+          controller: pinCtrl,
+          obscureText: true,
+          decoration: const InputDecoration(hintText: 'Enter Secret PIN'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (pinCtrl.text.trim() == 'vivid123') {
+                Navigator.pop(ctx);
+                context.push('/developer-dashboard');
+              } else {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Invalid PIN. Access Denied.')),
+                );
+              }
+            },
+            child: const Text('Access'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final theme = Theme.of(context);
+    
+    // Auto-redirect if already logged in
+    ref.listen<UserModel?>(currentUserProvider, (previous, next) {
+      if (next != null) {
+        context.go('/');
+      }
+    });
+
+    // Handle initial state if already logged in
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.go('/');
+      });
+    }
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Center(
-        child: SingleChildScrollView(
+      body: Stack(
+        children: [
+          Center(
+            child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -225,13 +280,28 @@ class _LoginViewState extends ConsumerState<LoginView> {
 
                         const SizedBox(height: 16),
                       ], // ends Column children
-                    ), // ends Column
+                    ), // ends Form Column
                   ), // ends Form
                 ), // ends Container
             ], // ends SingleChildScrollView Column children
           ), // ends SingleChildScrollView Column
         ), // ends SingleChildScrollView
       ), // ends Center
+      Positioned(
+        top: 40,
+        right: 20,
+        child: GestureDetector(
+          onLongPress: () {
+            _showDeveloperPinDialog(context);
+          },
+          child: const Opacity(
+            opacity: 0.1,
+            child: Icon(Icons.security, size: 32),
+          ),
+        ),
+      ),
+      ], // ends Stack children
+      ), // ends Stack
     ); // ends Scaffold
   }
 }

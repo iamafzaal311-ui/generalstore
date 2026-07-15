@@ -14,8 +14,8 @@ class PdfHelper {
     List<ProductModel> products, {
     String title = 'Product Stock Report',
   }) async {
-    await PrintHelper.loadFonts();
-    final pdf = pw.Document(theme: PrintHelper.pdfTheme);
+    final theme = await PrintHelper.getUrduPdfTheme();
+    final pdf = pw.Document(theme: theme);
     final now = DateTime.now();
 
     pdf.addPage(
@@ -107,8 +107,8 @@ class PdfHelper {
     List<ExpenseModel> expenses, {
     String title = 'Expenses Report',
   }) async {
-    await PrintHelper.loadFonts();
-    final pdf = pw.Document(theme: PrintHelper.pdfTheme);
+    final theme = await PrintHelper.getUrduPdfTheme();
+    final pdf = pw.Document(theme: theme);
     final now = DateTime.now();
     final total = expenses.fold(0.0, (sum, e) => sum + e.amount);
 

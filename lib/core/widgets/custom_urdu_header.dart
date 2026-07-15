@@ -1,11 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/global_providers.dart';
+import '../utils/text_helper.dart';
 
-class CustomUrduHeader extends StatelessWidget {
+class CustomUrduHeader extends ConsumerWidget {
   const CustomUrduHeader({super.key});
 
+  TextStyle _getStyle(String text, {double? fontSize, FontWeight? fontWeight, Color? color, double? height}) {
+    final isUrdu = TextHelper.isUrdu(text);
+    return isUrdu
+        ? GoogleFonts.notoNastaliqUrdu(
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+            color: color,
+            height: height ?? 1.5,
+          )
+        : GoogleFonts.poppins(
+            fontSize: fontSize != null ? fontSize * 0.75 : null, // Poppins is naturally larger than Nastaliq
+            fontWeight: fontWeight,
+            color: color,
+            height: height ?? 1.2,
+          );
+  }
+
+  TextDirection _getDirection(String text) {
+    return TextHelper.isUrdu(text) ? TextDirection.rtl : TextDirection.ltr;
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(storeProfileProvider);
+
+    final storeName = (profile?.storeName ?? '').isNotEmpty ? profile!.storeName : 'حسنین ٹریڈرز';
+    final tagline = (profile?.tagline ?? '').isNotEmpty ? profile!.tagline : 'علی عباس';
+    final phone = (profile?.phone ?? '').isNotEmpty ? profile!.phone : '0307-4217267';
+    final address = (profile?.address ?? '').isNotEmpty ? profile!.address : 'ایڈریس: غوثیہ مارکیٹ سکندر چوک پاک پتن';
+
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(maxWidth: 800),
@@ -15,7 +46,7 @@ class CustomUrduHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -35,13 +66,9 @@ class CustomUrduHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'علی عباس',
-                      style: GoogleFonts.notoNastaliqUrdu(
-                        fontSize: 24,
-                        color: Colors.blue.shade800,
-                        height: 1.5,
-                      ),
-                      textDirection: TextDirection.rtl,
+                      tagline,
+                      style: _getStyle(tagline, fontSize: 24, color: Colors.blue.shade800, fontWeight: FontWeight.bold),
+                      textDirection: _getDirection(tagline),
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -49,9 +76,9 @@ class CustomUrduHeader extends StatelessWidget {
                         Icon(Icons.phone, size: 16, color: Colors.grey.shade700),
                         const SizedBox(width: 4),
                         Text(
-                          '0307-4217267',
-                          style: TextStyle(
-                            fontSize: 16,
+                          phone,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Colors.grey.shade800,
                             letterSpacing: 1,
@@ -62,15 +89,13 @@ class CustomUrduHeader extends StatelessWidget {
                   ],
                 ),
                 // Right Side: Store Name
-                Text(
-                  'حسنین ٹریڈرز',
-                  style: GoogleFonts.notoNastaliqUrdu(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red.shade700,
-                    height: 1.5,
+                Expanded(
+                  child: Text(
+                    storeName,
+                    textAlign: TextAlign.right,
+                    style: _getStyle(storeName, fontSize: 48, color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                    textDirection: _getDirection(storeName),
                   ),
-                  textDirection: TextDirection.rtl,
                 ),
               ],
             ),
@@ -87,14 +112,10 @@ class CustomUrduHeader extends StatelessWidget {
               ),
             ),
             child: Text(
-              'ایڈریس: غوثیہ مارکیٹ سکندر چوک پاک پتن',
+              address,
               textAlign: TextAlign.center,
-              style: GoogleFonts.notoNastaliqUrdu(
-                fontSize: 18,
-                color: Colors.white,
-                height: 1.5,
-              ),
-              textDirection: TextDirection.rtl,
+              style: _getStyle(address, fontSize: 18, color: Colors.white, fontWeight: FontWeight.w500),
+              textDirection: _getDirection(address),
             ),
           ),
         ],

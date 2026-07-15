@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/views/login_view.dart';
+import '../../features/auth/views/register_store_view.dart';
 import '../../features/auth/views/user_management_view.dart';
+import '../../features/auth/views/developer_dashboard_view.dart';
 import '../../features/dashboard/views/dashboard_view.dart';
 import '../../features/pos/views/pos_view.dart';
 import '../../features/products/views/products_view.dart';
@@ -22,6 +24,14 @@ final goRouter = GoRouter(
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginView(),
+    ),
+    GoRoute(
+      path: '/register-store',
+      builder: (context, state) => const RegisterStoreView(),
+    ),
+    GoRoute(
+      path: '/developer-dashboard',
+      builder: (context, state) => const DeveloperDashboardView(),
     ),
     ShellRoute(
       navigatorKey: _shellNavigatorKey,

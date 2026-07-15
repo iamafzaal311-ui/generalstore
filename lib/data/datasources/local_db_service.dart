@@ -23,6 +23,7 @@ class LocalDbService {
   late Box<SaleModel> salesBox;
   late Box<PurchaseModel> purchasesBox;
   late Box<ExpenseModel> expensesBox;
+  late Box<String> settingsBox;
 
   Future<void> init() async {
     if (_isInitialized) return;
@@ -50,6 +51,7 @@ class LocalDbService {
     salesBox = await Hive.openBox<SaleModel>('sales');
     purchasesBox = await Hive.openBox<PurchaseModel>('purchases');
     expensesBox = await Hive.openBox<ExpenseModel>('expenses');
+    settingsBox = await Hive.openBox<String>('settings');
 
     _isInitialized = true;
   }
@@ -64,5 +66,6 @@ class LocalDbService {
     await salesBox.clear();
     await purchasesBox.clear();
     await expensesBox.clear();
+    await settingsBox.clear();
   }
 }

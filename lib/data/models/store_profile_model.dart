@@ -5,12 +5,14 @@ class StoreProfileModel {
   final String phone;
   final String address;
   final String tagline;
+  final bool isActive;
 
   StoreProfileModel({
     required this.storeName,
     this.phone = '',
     this.address = '',
     this.tagline = '',
+    this.isActive = true,
   });
 
   factory StoreProfileModel.fromMap(Map<String, dynamic> map) {
@@ -19,7 +21,18 @@ class StoreProfileModel {
       phone: map['phone'] ?? '',
       address: map['address'] ?? '',
       tagline: map['tagline'] ?? '',
+      isActive: map['isActive'] ?? true,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'storeName': storeName,
+      'phone': phone,
+      'address': address,
+      'tagline': tagline,
+      'isActive': isActive,
+    };
   }
 
   factory StoreProfileModel.fromFirestore(DocumentSnapshot doc) {

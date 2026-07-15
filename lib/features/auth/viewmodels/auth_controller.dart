@@ -35,7 +35,20 @@ class AuthController extends StateNotifier<AuthState> {
   final Ref _ref;
 
   AuthController(this._repository, this._ref) : super(AuthState()) {
-    loadUsers();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final user = await _repository.getCurrentUser();
+    if (user != null) {
+      _ref.read(currentUserProvider.notifier).state = user;
+      try {
+        final adminUid = FirebaseAuth.instance.currentUser!.uid;
+        final doc = await FirebaseFirestore.instance.collection('stores').doc(adminUid).collection('profile').doc('info').get();
+        _ref.read(storeProfileProvider.notifier).state = StoreProfileModel.fromFirestore(doc);
+      } catch (_) {}
+    }
+    await loadUsers();
   }
 
   Future<bool> adminLogin(String email, String password) async {
@@ -48,7 +61,14 @@ class AuthController extends StateNotifier<AuthState> {
         try {
           final adminUid = FirebaseAuth.instance.currentUser!.uid;
           final doc = await FirebaseFirestore.instance.collection('stores').doc(adminUid).collection('profile').doc('info').get();
-          _ref.read(storeProfileProvider.notifier).state = StoreProfileModel.fromFirestore(doc);
+          final profile = StoreProfileModel.fromFirestore(doc);
+          if (!profile.isActive) {
+             await FirebaseAuth.instance.signOut();
+             _ref.read(currentUserProvider.notifier).state = null;
+             state = state.copyWith(isLoading: false, errorMessage: 'This store has been deactivated by the Developer.');
+             return false;
+          }
+          _ref.read(storeProfileProvider.notifier).state = profile;
         } catch (_) {}
       }
       await loadUsers(); // Load local employees after syncing
@@ -56,6 +76,54 @@ class AuthController extends StateNotifier<AuthState> {
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> registerStore(String email, String password, StoreProfileModel profile) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
+      if (cred.user != null) {
+        final uid = cred.user!.uid;
+        await FirebaseFirestore.instance.collection('stores').doc(uid).collection('profile').doc('info').set(profile.toMap());
+        await FirebaseFirestore.instance.collection('stores').doc(uid).set({
+          ...profile.toMap(),
+          'uid': uid,
+          'email': email,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        
+        // Log out immediately so developer can hand over credentials, or login as Admin manually.
+        await FirebaseAuth.instance.signOut();
+      }
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      return false;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchAllStores() async {
+    try {
+      final snap = await FirebaseFirestore.instance.collectionGroup('profile').get();
+      return snap.docs.map((d) {
+        final data = d.data();
+        data['uid'] = d.reference.parent.parent?.id ?? '';
+        return data;
+      }).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<bool> toggleStoreStatus(String uid, bool currentStatus) async {
+    try {
+      await FirebaseFirestore.instance.collection('stores').doc(uid).set({'isActive': !currentStatus}, SetOptions(merge: true));
+      await FirebaseFirestore.instance.collection('stores').doc(uid).collection('profile').doc('info').update({'isActive': !currentStatus});
+      return true;
+    } catch (e) {
       return false;
     }
   }
@@ -191,6 +259,15 @@ class AuthController extends StateNotifier<AuthState> {
   Future<void> toggleUserStatus(String userId, bool isActive) async {
     try {
       await _repository.toggleUserStatus(userId, isActive);
+      await loadUsers();
+    } catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+    }
+  }
+
+  Future<void> deleteUser(String userId) async {
+    try {
+      await _repository.deleteUser(userId);
       await loadUsers();
     } catch (e) {
       state = state.copyWith(errorMessage: e.toString());

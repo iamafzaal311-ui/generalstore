@@ -1,52 +1,82 @@
 import 'dart:typed_data';
-import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import '../../data/models/sale_model.dart';
 import '../../data/models/store_profile_model.dart';
 
 class PrintHelper {
-  static pw.Font? _customFont;
-
-  static Future<void> loadFonts() async {
-    if (_customFont == null) {
-      try {
-        final fontData = await rootBundle.load('assets/fonts/NotoNastaliqUrdu-Regular.ttf');
-        _customFont = pw.Font.ttf(fontData);
-      } catch (e) {
-        _customFont = pw.Font.helvetica();
-      }
-    }
+  static Future<pw.ThemeData> getUrduPdfTheme() async {
+    return pw.ThemeData.withFont(
+      base: pw.Font.helvetica(),
+      bold: pw.Font.helveticaBold(),
+      italic: pw.Font.helveticaOblique(),
+      boldItalic: pw.Font.helveticaBoldOblique(),
+    );
   }
 
-  static pw.ThemeData get pdfTheme {
-    return pw.ThemeData.withFont(base: _customFont ?? pw.Font.helvetica());
+  static pw.TextStyle _ts(pw.Font urduFont, {double? size, pw.FontWeight? weight, PdfColor? color}) {
+    return pw.TextStyle(
+      fontSize: size, 
+      fontWeight: weight, 
+      color: color, 
+      fontFallback: [urduFont]
+    );
   }
 
-  static pw.TextStyle _ts(pw.Font? f, {double? size, pw.FontWeight? weight, PdfColor? color}) {
-    final base = f ?? _customFont ?? pw.Font.helvetica();
-    return pw.TextStyle(font: base, fontSize: size, fontWeight: weight, color: color);
-  }
+  static pw.Widget _buildPdfHeader(pw.Font urduFont, {bool isThermal = false, StoreProfileModel? profile, SaleModel? sale}) {
+    final double qrSize = isThermal ? 16 * PdfPageFormat.mm : 22 * PdfPageFormat.mm;
 
-  static pw.Widget _buildPdfHeader(pw.Font? f, {bool isThermal = false, StoreProfileModel? profile}) {
     return pw.Container(
       width: double.infinity,
       child: pw.Column(
         mainAxisSize: pw.MainAxisSize.min,
         crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
-          pw.Text(
-            profile?.storeName.toUpperCase() ?? 'GENERAL STORE',
-            style: _ts(null, size: isThermal ? 16 : 24, weight: pw.FontWeight.bold, color: PdfColors.red700),
-            textAlign: pw.TextAlign.center,
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      profile?.storeName ?? 'General Store',
+                      style: _ts(urduFont, size: isThermal ? 16 : 22, weight: pw.FontWeight.bold, color: PdfColors.red700),
+                      textAlign: pw.TextAlign.left,
+                    ),
+                    pw.SizedBox(height: 2),
+                    if (profile?.tagline.isNotEmpty ?? false)
+                      pw.Text('Proprietor: ${profile!.tagline}', style: _ts(urduFont, size: isThermal ? 8 : 11, color: PdfColors.blue800, weight: pw.FontWeight.bold)),
+                    if (profile?.phone.isNotEmpty ?? false)
+                      pw.Text(profile!.phone, style: _ts(urduFont, size: isThermal ? 8 : 11, weight: pw.FontWeight.bold, color: PdfColors.grey800)),
+                  ],
+                ),
+              ),
+              if (sale != null) ...[
+                pw.SizedBox(width: 4),
+                pw.Container(
+                  width: qrSize,
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
+                    children: [
+                      pw.BarcodeWidget(
+                        barcode: pw.Barcode.qrCode(),
+                        data: 'Invoice: ${sale.invoiceNumber}\nTotal: Rs. ${sale.total}\nPSID: ${sale.saleId.hashCode.toString().replaceAll('-', '')}\nDate: ${DateFormat('dd-MM-yy HH:mm').format(sale.timestamp)}',
+                        width: qrSize,
+                        height: qrSize,
+                      ),
+                      pw.SizedBox(height: 2),
+                      pw.Text('PSID / Receipt', style: _ts(urduFont, size: isThermal ? 4.5 : 6)),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ),
-          pw.SizedBox(height: 4),
-          if (profile?.tagline.isNotEmpty ?? false)
-            pw.Text(profile!.tagline, style: _ts(f, size: isThermal ? 9 : 12, color: PdfColors.blue800)),
-          if (profile?.phone.isNotEmpty ?? false)
-            pw.Text(profile!.phone, style: _ts(f, size: isThermal ? 9 : 12, weight: pw.FontWeight.bold, color: PdfColors.grey800)),
           pw.SizedBox(height: 4),
           if (profile?.address.isNotEmpty ?? false)
             pw.Container(
@@ -58,7 +88,8 @@ class PrintHelper {
               ),
               child: pw.Text(profile!.address,
                   textAlign: pw.TextAlign.center,
-                  style: _ts(null, size: isThermal ? 7 : 10, color: PdfColors.white)),
+                  textDirection: pw.TextDirection.rtl,
+                  style: _ts(urduFont, size: isThermal ? 7 : 10, color: PdfColors.white)),
             ),
         ],
       ),
@@ -73,10 +104,11 @@ class PrintHelper {
     String? customerName,
     String? customerPhone,
   }) async {
-    await loadFonts();
-    pw.Font? f = _customFont;
-    final fb = _customFont ?? pw.Font.helvetica();
-    final pdf = pw.Document(theme: pdfTheme);
+    final theme = await getUrduPdfTheme();
+    final pdf = pw.Document(theme: theme);
+    
+    final urduFontData = await rootBundle.load('assets/fonts/NotoNastaliqUrdu-Regular.ttf');
+    final urduFont = pw.Font.ttf(urduFontData);
 
     pdf.addPage(
       pw.Page(
@@ -90,38 +122,39 @@ class PrintHelper {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-              _buildPdfHeader(f, isThermal: true, profile: storeProfile),
+              _buildPdfHeader(urduFont, isThermal: true, profile: storeProfile, sale: sale),
+              pw.SizedBox(height: 8),
               pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('Inv: ${sale.invoiceNumber}', style: pw.TextStyle(fontSize: 7, font: fb)),
-                  pw.Text(DateFormat('dd-MM-yy HH:mm').format(sale.timestamp), style: pw.TextStyle(fontSize: 7, font: fb)),
+                  pw.Text('Invoice: ${sale.invoiceNumber}', style: _ts(urduFont, size: 7, weight: pw.FontWeight.bold)),
+                  pw.Text(DateFormat('dd-MM-yy HH:mm').format(sale.timestamp), style: _ts(urduFont, size: 7)),
                 ],
               ),
               if (customerName != null) ...[
                 pw.Align(
                   alignment: pw.Alignment.centerLeft,
-                  child: pw.Text('Customer: $customerName', style: pw.TextStyle(fontSize: 8, font: fb)),
+                  child: pw.Text('Customer: $customerName', style: _ts(urduFont, size: 8), textDirection: pw.TextDirection.rtl),
                 ),
                 if (customerPhone != null && customerPhone.isNotEmpty)
                   pw.Align(
                     alignment: pw.Alignment.centerLeft,
-                    child: pw.Text('Phone: $customerPhone', style: pw.TextStyle(fontSize: 8, font: fb)),
+                    child: pw.Text('Phone: $customerPhone', style: _ts(urduFont, size: 8)),
                   ),
               ],
               pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
               pw.Row(
                 children: [
-                  pw.Expanded(flex: 3, child: pw.Text('Item', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, font: fb))),
-                  pw.Expanded(flex: 2, child: pw.Text('Qty x Price', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, font: fb), textAlign: pw.TextAlign.center)),
-                  pw.Expanded(flex: 2, child: pw.Text('Total', style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, font: fb), textAlign: pw.TextAlign.right)),
+                  pw.Expanded(flex: 3, child: pw.Text('Item', style: _ts(urduFont, size: 7, weight: pw.FontWeight.bold), textAlign: pw.TextAlign.left)),
+                  pw.Expanded(flex: 2, child: pw.Text('Qty x Price', style: _ts(urduFont, size: 7, weight: pw.FontWeight.bold), textAlign: pw.TextAlign.center)),
+                  pw.Expanded(flex: 2, child: pw.Text('Total', style: _ts(urduFont, size: 7, weight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
                 ],
               ),
               pw.SizedBox(height: 2),
               ...items.map((item) {
-                final name = (item['name'] as String).replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-                final brand = (item['brand'] as String? ?? '').replaceAll(RegExp(r'[^\x20-\x7E]'), '');
+                final name = (item['name'] as String);
+                final brand = (item['brand'] as String? ?? '');
                 final qty = (item['quantity'] as num).toDouble();
                 final price = (item['unitPrice'] as num).toDouble();
                 final total = (item['total'] as num).toDouble();
@@ -131,29 +164,30 @@ class PrintHelper {
                   child: pw.Row(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Expanded(flex: 3, child: pw.Text(displayName, style: pw.TextStyle(fontSize: 6, font: fb))),
-                      pw.Expanded(flex: 2, child: pw.Text('${qty.toStringAsFixed(0)}x${price.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 6, font: fb), textAlign: pw.TextAlign.center)),
-                      pw.Expanded(flex: 2, child: pw.Text(total.toStringAsFixed(0), style: pw.TextStyle(fontSize: 6, font: fb), textAlign: pw.TextAlign.right)),
+                      pw.Expanded(flex: 3, child: pw.Text(displayName, style: _ts(urduFont, size: 6), textAlign: pw.TextAlign.left, textDirection: pw.TextDirection.rtl)),
+                      pw.Expanded(flex: 2, child: pw.Text('${qty.toStringAsFixed(0)} x ${price.toStringAsFixed(0)}', style: _ts(urduFont, size: 6), textAlign: pw.TextAlign.center)),
+                      pw.Expanded(flex: 2, child: pw.Text(total.toStringAsFixed(0), style: _ts(urduFont, size: 6), textAlign: pw.TextAlign.right)),
                     ],
                   ),
                 );
               }),
               pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
-              pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Subtotal:', style: pw.TextStyle(fontSize: 7, font: fb)), pw.Text('Rs. ${sale.subtotal.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 7, font: fb))]),
-              pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Discount:', style: pw.TextStyle(fontSize: 7, font: fb)), pw.Text('Rs. ${sale.discount.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 7, font: fb))]),
+              pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Subtotal:', style: _ts(urduFont, size: 7, weight: pw.FontWeight.bold)), pw.Text('Rs. ${sale.subtotal.toStringAsFixed(0)}', style: _ts(urduFont, size: 7))]),
+              pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Discount:', style: _ts(urduFont, size: 7, weight: pw.FontWeight.bold)), pw.Text('- Rs. ${sale.discount.toStringAsFixed(0)}', style: _ts(urduFont, size: 7))]),
               pw.Divider(thickness: 1),
               pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-                pw.Text('TOTAL:', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, font: fb)),
-                pw.Text('Rs. ${sale.total.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, font: fb)),
+                pw.Text('GRAND TOTAL:', style: _ts(urduFont, size: 10, weight: pw.FontWeight.bold)),
+                pw.Text('Rs. ${sale.total.toStringAsFixed(0)}', style: _ts(urduFont, size: 10, weight: pw.FontWeight.bold)),
               ]),
               pw.Divider(thickness: 1),
-              pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Paid:', style: pw.TextStyle(fontSize: 7, font: fb)), pw.Text('Rs. ${sale.paidAmount.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 7, font: fb))]),
-              pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Change:', style: pw.TextStyle(fontSize: 7, font: fb)), pw.Text('Rs. ${sale.changeAmount.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 7, font: fb))]),
+              pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Paid Amount:', style: _ts(urduFont, size: 7, weight: pw.FontWeight.bold)), pw.Text('Rs. ${sale.paidAmount.toStringAsFixed(0)}', style: _ts(urduFont, size: 7))]),
+              pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text('Change:', style: _ts(urduFont, size: 7, weight: pw.FontWeight.bold)), pw.Text('Rs. ${sale.changeAmount.toStringAsFixed(0)}', style: _ts(urduFont, size: 7))]),
               pw.SizedBox(height: 8),
-              pw.Text('Thank you!', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, font: fb), textAlign: pw.TextAlign.center),
-              pw.Text('Cashier: $cashierName', style: pw.TextStyle(fontSize: 7, font: fb), textAlign: pw.TextAlign.center),
+              
+              pw.Text('Thank You!', style: _ts(urduFont, size: 9, weight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
+              pw.Text('Cashier: $cashierName', style: _ts(urduFont, size: 7), textAlign: pw.TextAlign.center),
               pw.SizedBox(height: 4),
-              pw.Text('Developed by Vivid Digital Nexus', style: pw.TextStyle(fontSize: 6, font: fb), textAlign: pw.TextAlign.center),
+              pw.Text('Developed by Vivid Digital Nexus', style: _ts(urduFont, size: 6), textAlign: pw.TextAlign.center),
             ],
           );
         },
@@ -170,10 +204,11 @@ class PrintHelper {
     String? customerName,
     String? customerPhone,
   }) async {
-    await loadFonts();
-    pw.Font? f = _customFont;
-    final fb = _customFont ?? pw.Font.helvetica();
-    final pdf = pw.Document(theme: pdfTheme);
+    final theme = await getUrduPdfTheme();
+    final pdf = pw.Document(theme: theme);
+    
+    final urduFontData = await rootBundle.load('assets/fonts/NotoNastaliqUrdu-Regular.ttf');
+    final urduFont = pw.Font.ttf(urduFontData);
 
     pdf.addPage(
       pw.Page(
@@ -183,7 +218,7 @@ class PrintHelper {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _buildPdfHeader(f, isThermal: false, profile: storeProfile),
+              _buildPdfHeader(urduFont, isThermal: false, profile: storeProfile, sale: sale),
               pw.SizedBox(height: 20),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -191,20 +226,20 @@ class PrintHelper {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('BILL TO:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: fb, fontSize: 10)),
-                      pw.Text(customerName ?? 'Walk-in Customer', style: pw.TextStyle(fontSize: 13, font: fb)),
+                      pw.Text('BILL TO:', style: _ts(urduFont, weight: pw.FontWeight.bold, size: 10)),
+                      pw.Text(customerName ?? 'Walk-in Customer', style: _ts(urduFont, size: 13)),
                       if (customerPhone != null && customerPhone.isNotEmpty)
-                        pw.Text('Phone: $customerPhone', style: pw.TextStyle(font: fb)),
-                      pw.Text('Payment: ${sale.paymentMethod}', style: pw.TextStyle(font: fb)),
+                        pw.Text('Phone: $customerPhone', style: _ts(urduFont)),
+                      pw.Text('Payment: ${sale.paymentMethod}', style: _ts(urduFont)),
                     ],
                   ),
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text('INVOICE', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold, color: PdfColors.teal, font: fb)),
-                      pw.Text('No: ${sale.invoiceNumber}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: fb)),
-                      pw.Text('Date: ${DateFormat('dd MMM yyyy HH:mm').format(sale.timestamp)}', style: pw.TextStyle(font: fb)),
-                      pw.Text('Cashier: $cashierName', style: pw.TextStyle(font: fb)),
+                      pw.Text('INVOICE', style: _ts(urduFont, size: 22, weight: pw.FontWeight.bold, color: PdfColors.teal)),
+                      pw.Text('No: ${sale.invoiceNumber}', style: _ts(urduFont, weight: pw.FontWeight.bold)),
+                      pw.Text('Date: ${DateFormat('dd MMM yyyy HH:mm').format(sale.timestamp)}', style: _ts(urduFont)),
+                      pw.Text('Cashier: $cashierName', style: _ts(urduFont)),
                     ],
                   ),
                 ],
@@ -228,17 +263,17 @@ class PrintHelper {
                   pw.TableRow(
                     decoration: const pw.BoxDecoration(color: PdfColors.teal50),
                     children: [
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Product', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: fb))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Unit Price', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: fb))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Qty', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: fb))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Disc.', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: fb))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Total', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, font: fb))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Product', style: _ts(urduFont, weight: pw.FontWeight.bold))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Unit Price', style: _ts(urduFont, weight: pw.FontWeight.bold))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Qty', style: _ts(urduFont, weight: pw.FontWeight.bold))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Disc.', style: _ts(urduFont, weight: pw.FontWeight.bold))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Total', style: _ts(urduFont, weight: pw.FontWeight.bold))),
                     ],
                   ),
                   ...items.map((item) {
-                    final name = (item['name'] as String).replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-                    final brand = (item['brand'] as String? ?? '').replaceAll(RegExp(r'[^\x20-\x7E]'), '');
-                    final category = (item['category'] as String? ?? '').replaceAll(RegExp(r'[^\x20-\x7E]'), '');
+                    final name = (item['name'] as String);
+                    final brand = (item['brand'] as String? ?? '');
+                    final category = (item['category'] as String? ?? '');
                     String displayName = name;
                     if (brand.isNotEmpty || category.isNotEmpty) {
                       final parts = [if (brand.isNotEmpty) brand, if (category.isNotEmpty) category].join(' - ');
@@ -250,11 +285,11 @@ class PrintHelper {
                     final total = (item['total'] as num).toDouble();
                     return pw.TableRow(
                       children: [
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(displayName, style: pw.TextStyle(font: fb))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Rs.${price.toStringAsFixed(0)}', style: pw.TextStyle(font: fb))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(qty.toStringAsFixed(0), style: pw.TextStyle(font: fb))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Rs.${disc.toStringAsFixed(0)}', style: pw.TextStyle(font: fb))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Rs.${total.toStringAsFixed(0)}', style: pw.TextStyle(font: fb))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(displayName, style: _ts(urduFont), textDirection: pw.TextDirection.rtl)),
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Rs.${price.toStringAsFixed(0)}', style: _ts(urduFont))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(qty.toStringAsFixed(0), style: _ts(urduFont))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Rs.${disc.toStringAsFixed(0)}', style: _ts(urduFont))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Rs.${total.toStringAsFixed(0)}', style: _ts(urduFont))),
                       ],
                     );
                   }),
@@ -268,17 +303,17 @@ class PrintHelper {
                     width: 220,
                     child: pw.Column(
                       children: [
-                        _summaryRow('Subtotal:', 'Rs. ${sale.subtotal.toStringAsFixed(2)}', fb),
+                        _summaryRow(urduFont, 'Subtotal:', 'Rs. ${sale.subtotal.toStringAsFixed(2)}'),
                         pw.SizedBox(height: 4),
-                        _summaryRow('Discount:', 'Rs. ${sale.discount.toStringAsFixed(2)}', fb),
+                        _summaryRow(urduFont, 'Discount:', 'Rs. ${sale.discount.toStringAsFixed(2)}'),
                         pw.SizedBox(height: 6),
                         pw.Divider(thickness: 1.5),
-                        _summaryRow('TOTAL:', 'Rs. ${sale.total.toStringAsFixed(2)}', fb, bold: true, fontSize: 14),
+                        _summaryRow(urduFont, 'TOTAL:', 'Rs. ${sale.total.toStringAsFixed(2)}', bold: true, fontSize: 14),
                         pw.Divider(thickness: 1),
                         pw.SizedBox(height: 4),
-                        _summaryRow('Paid Amount:', 'Rs. ${sale.paidAmount.toStringAsFixed(2)}', fb),
+                        _summaryRow(urduFont, 'Paid Amount:', 'Rs. ${sale.paidAmount.toStringAsFixed(2)}'),
                         pw.SizedBox(height: 4),
-                        _summaryRow('Balance/Change:', 'Rs. ${sale.changeAmount.toStringAsFixed(2)}', fb),
+                        _summaryRow(urduFont, 'Balance/Change:', 'Rs. ${sale.changeAmount.toStringAsFixed(2)}'),
                       ],
                     ),
                   ),
@@ -287,8 +322,8 @@ class PrintHelper {
               pw.Spacer(),
               pw.Divider(color: PdfColors.grey300),
               pw.SizedBox(height: 6),
-              pw.Center(child: pw.Text('Thank you for shopping with ${storeProfile?.storeName.toUpperCase() ?? 'US'}!', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontStyle: pw.FontStyle.italic, font: fb))),
-              pw.Center(child: pw.Text('Developed by Vivid Digital Nexus | WhatsApp: +923285753463', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600, font: fb))),
+              pw.Center(child: pw.Text('Thank you for shopping with ${storeProfile?.storeName.toUpperCase() ?? 'US'}!', style: _ts(urduFont, weight: pw.FontWeight.bold))),
+              pw.Center(child: pw.Text('Developed by Vivid Digital Nexus | WhatsApp: +923285753463', style: _ts(urduFont, size: 9, color: PdfColors.grey600))),
             ],
           );
         },
@@ -297,12 +332,12 @@ class PrintHelper {
     return pdf.save();
   }
 
-  static pw.Widget _summaryRow(String label, String value, pw.Font fb, {bool bold = false, double fontSize = 11}) {
+  static pw.Widget _summaryRow(pw.Font urduFont, String label, String value, {bool bold = false, double fontSize = 11}) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        pw.Text(label, style: pw.TextStyle(font: fb, fontSize: fontSize, fontWeight: bold ? pw.FontWeight.bold : null)),
-        pw.Text(value, style: pw.TextStyle(font: fb, fontSize: fontSize, fontWeight: bold ? pw.FontWeight.bold : null)),
+        pw.Text(label, style: _ts(urduFont, size: fontSize, weight: bold ? pw.FontWeight.bold : null)),
+        pw.Text(value, style: _ts(urduFont, size: fontSize, weight: bold ? pw.FontWeight.bold : null)),
       ],
     );
   }

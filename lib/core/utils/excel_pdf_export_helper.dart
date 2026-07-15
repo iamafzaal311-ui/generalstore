@@ -38,8 +38,8 @@ class ExcelPdfExportHelper {
   }
 
   static Future<Uint8List> exportSalesToPdf(List<SaleModel> sales, {String reportTitle = 'SALES REPORT'}) async {
-    await PrintHelper.loadFonts();
-    final pdf = pw.Document(theme: PrintHelper.pdfTheme);
+    final theme = await PrintHelper.getUrduPdfTheme();
+    final pdf = pw.Document(theme: theme);
 
     pdf.addPage(
       pw.MultiPage(
@@ -93,7 +93,8 @@ class ExcelPdfExportHelper {
   }
 
   static Future<Uint8List> exportInventoryToPdf(List<ProductModel> products) async {
-    final pdf = pw.Document();
+    final theme = await PrintHelper.getUrduPdfTheme();
+    final pdf = pw.Document(theme: theme);
 
     pdf.addPage(
       pw.MultiPage(
@@ -126,7 +127,7 @@ class ExcelPdfExportHelper {
                 ...products.map((p) {
                   return pw.TableRow(
                     children: [
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(p.name)),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(p.name, textDirection: pw.TextDirection.rtl)),
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(p.sku ?? '-')),
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Rs. ${p.purchasePrice.toStringAsFixed(0)}')),
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Rs. ${p.retailPrice.toStringAsFixed(0)}')),
@@ -149,7 +150,8 @@ class ExcelPdfExportHelper {
     required List<ProductModel> currentProducts,
     required String monthYearTitle,
   }) async {
-    final pdf = pw.Document();
+    final theme = await PrintHelper.getUrduPdfTheme();
+    final pdf = pw.Document(theme: theme);
 
     double totalRevenue = 0.0;
     double totalCost = 0.0;
@@ -275,7 +277,7 @@ class ExcelPdfExportHelper {
                   final rev = productSalesRevenue[name]!;
                   return pw.TableRow(
                     children: [
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(name)),
+                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(name, textDirection: pw.TextDirection.rtl)),
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(qty.toString(), textAlign: pw.TextAlign.center)),
                       pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Rs. ${rev.toStringAsFixed(0)}', textAlign: pw.TextAlign.right)),
                     ],

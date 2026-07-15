@@ -35,6 +35,13 @@ class MainLayout extends ConsumerWidget {
         Future.microtask(() => router.go('/products'));
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
       }
+    } else if (role == 'Staff') {
+      final allowed = ['/', '/pos', '/sales', '/products', '/purchases'];
+      if (!allowed.contains(currentRoute)) {
+        final router = GoRouter.of(context);
+        Future.microtask(() => router.go('/pos'));
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      }
     }
 
     return Scaffold(
@@ -201,6 +208,37 @@ class _SidebarContent extends ConsumerWidget {
                   isSelected: currentRoute == '/settings',
                 ),
               ] else if (role == 'Stock Manager') ...[
+                _SidebarMenuItem(
+                  icon: Icons.inventory_2_rounded,
+                  label: 'Products & Stock',
+                  route: '/products',
+                  isSelected: currentRoute == '/products',
+                ),
+                _SidebarMenuItem(
+                  icon: Icons.shopping_cart_rounded,
+                  label: 'Purchases',
+                  route: '/purchases',
+                  isSelected: currentRoute == '/purchases',
+                ),
+              ] else if (role == 'Staff') ...[
+                _SidebarMenuItem(
+                  icon: Icons.dashboard_rounded,
+                  label: 'Dashboard',
+                  route: '/',
+                  isSelected: currentRoute == '/',
+                ),
+                _SidebarMenuItem(
+                  icon: Icons.point_of_sale_rounded,
+                  label: 'POS Cashier',
+                  route: '/pos',
+                  isSelected: currentRoute == '/pos',
+                ),
+                _SidebarMenuItem(
+                  icon: Icons.receipt_long_rounded,
+                  label: 'Sales History',
+                  route: '/sales',
+                  isSelected: currentRoute == '/sales',
+                ),
                 _SidebarMenuItem(
                   icon: Icons.inventory_2_rounded,
                   label: 'Products & Stock',
