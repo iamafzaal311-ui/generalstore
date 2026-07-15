@@ -6,6 +6,7 @@ class StoreProfileModel {
   final String address;
   final String tagline;
   final bool isActive;
+  final String? logoUrl;
 
   StoreProfileModel({
     required this.storeName,
@@ -13,6 +14,7 @@ class StoreProfileModel {
     this.address = '',
     this.tagline = '',
     this.isActive = true,
+    this.logoUrl,
   });
 
   factory StoreProfileModel.fromMap(Map<String, dynamic> map) {
@@ -22,6 +24,7 @@ class StoreProfileModel {
       address: map['address'] ?? '',
       tagline: map['tagline'] ?? '',
       isActive: map['isActive'] ?? true,
+      logoUrl: map['logoUrl'],
     );
   }
 
@@ -32,6 +35,7 @@ class StoreProfileModel {
       'address': address,
       'tagline': tagline,
       'isActive': isActive,
+      'logoUrl': logoUrl,
     };
   }
 

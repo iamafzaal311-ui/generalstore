@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../viewmodels/auth_controller.dart';
 import '../../../data/models/store_profile_model.dart';
+import '../../../core/services/imgbb_service.dart';
 
 class RegisterStoreView extends ConsumerStatefulWidget {
   const RegisterStoreView({super.key});
@@ -19,6 +20,39 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
   final _proprietorCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
+  
+  String? _logoUrl;
+  bool _isUploadingLogo = false;
+
+  void _pickAndUploadLogo() async {
+    setState(() {
+      _isUploadingLogo = true;
+    });
+    
+    final imgService = ImgBBService();
+    String? url = await imgService.pickAndUploadImage();
+    
+    if (url != null) {
+      setState(() {
+        _logoUrl = url;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Logo uploaded successfully!')),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to upload logo or canceled.')),
+        );
+      }
+    }
+    
+    setState(() {
+      _isUploadingLogo = false;
+    });
+  }
 
   @override
   void dispose() {
@@ -38,6 +72,7 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
         tagline: _proprietorCtrl.text.trim(), // We use tagline for Proprietor
         phone: _phoneCtrl.text.trim(),
         address: _addressCtrl.text.trim(),
+        logoUrl: _logoUrl,
       );
 
       final success = await ref.read(authControllerProvider.notifier).registerStore(
@@ -82,6 +117,24 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
                       const Icon(Icons.storefront_rounded, size: 64, color: Colors.blue),
                       const SizedBox(height: 16),
                       Text('Create Store Profile', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 24),
+
+                      // Logo Picker
+                      GestureDetector(
+                        onTap: _isUploadingLogo ? null : _pickAndUploadLogo,
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.grey.shade200,
+                          backgroundImage: _logoUrl != null ? NetworkImage(_logoUrl!) : null,
+                          child: _isUploadingLogo
+                              ? const CircularProgressIndicator()
+                              : (_logoUrl == null
+                                  ? const Icon(Icons.add_a_photo, size: 30, color: Colors.grey)
+                                  : null),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_logoUrl != null ? 'Logo Added' : 'Tap to add Store Logo (Optional)', style: const TextStyle(color: Colors.grey)),
                       const SizedBox(height: 24),
 
                       if (state.errorMessage != null)

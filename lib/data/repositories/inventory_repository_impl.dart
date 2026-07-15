@@ -23,8 +23,12 @@ class InventoryRepositoryImpl implements InventoryRepository {
   Future<void> saveCategory(CategoryModel category) async {
     category.isDirty = true;
     category.lastUpdated = DateTime.now();
-    await _db.categoriesBox.put(category.categoryId, category);
-    await _sync.syncDirtyRecords();
+    if (category.isInBox) {
+      await category.save();
+    } else {
+      await _db.categoriesBox.put(category.categoryId, category);
+    }
+    try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
   }
 
 
@@ -36,7 +40,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       category.isDirty = true;
       category.lastUpdated = DateTime.now();
       await category.save();
-      await _sync.syncDirtyRecords();
+      try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
     }
   }
 
@@ -50,8 +54,12 @@ class InventoryRepositoryImpl implements InventoryRepository {
   Future<void> saveBrand(BrandModel brand) async {
     brand.isDirty = true;
     brand.lastUpdated = DateTime.now();
-    await _db.brandsBox.put(brand.brandId, brand);
-    await _sync.syncDirtyRecords();
+    if (brand.isInBox) {
+      await brand.save();
+    } else {
+      await _db.brandsBox.put(brand.brandId, brand);
+    }
+    try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
   }
 
 
@@ -63,7 +71,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       brand.isDirty = true;
       brand.lastUpdated = DateTime.now();
       await brand.save();
-      await _sync.syncDirtyRecords();
+      try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
     }
   }
 
@@ -77,8 +85,12 @@ class InventoryRepositoryImpl implements InventoryRepository {
   Future<void> saveSupplier(SupplierModel supplier) async {
     supplier.isDirty = true;
     supplier.lastUpdated = DateTime.now();
-    await _db.suppliersBox.put(supplier.supplierId, supplier);
-    await _sync.syncDirtyRecords();
+    if (supplier.isInBox) {
+      await supplier.save();
+    } else {
+      await _db.suppliersBox.put(supplier.supplierId, supplier);
+    }
+    try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
   }
 
 
@@ -90,7 +102,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       supplier.isDirty = true;
       supplier.lastUpdated = DateTime.now();
       await supplier.save();
-      await _sync.syncDirtyRecords();
+      try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
     }
   }
 
@@ -104,8 +116,12 @@ class InventoryRepositoryImpl implements InventoryRepository {
   Future<void> saveProduct(ProductModel product) async {
     product.isDirty = true;
     product.lastUpdated = DateTime.now();
-    await _db.productsBox.put(product.productId, product);
-    await _sync.syncDirtyRecords();
+    if (product.isInBox) {
+      await product.save();
+    } else {
+      await _db.productsBox.put(product.productId, product);
+    }
+    try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
   }
 
 
@@ -117,7 +133,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       product.isDirty = true;
       product.lastUpdated = DateTime.now();
       await product.save();
-      await _sync.syncDirtyRecords();
+      try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
     }
   }
 

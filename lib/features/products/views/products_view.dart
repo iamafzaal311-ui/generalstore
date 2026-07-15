@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import '../../../core/services/imgbb_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:math';
@@ -471,14 +471,19 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
                                     if (xfile != null) {
                                       setState(() => isUploadingImage = true);
                                       try {
-                                        final ref = FirebaseStorage.instance.ref().child('product_images/${DateTime.now().millisecondsSinceEpoch}.jpg');
-                                        final bytes = await xfile.readAsBytes();
-                                        await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-                                        final url = await ref.getDownloadURL();
-                                        setState(() {
-                                          uploadedImageUrl = url;
-                                          isUploadingImage = false;
-                                        });
+                                        final imgbb = ImgBBService();
+                                        final url = await imgbb.uploadImage(xfile);
+                                        if (url != null) {
+                                          setState(() {
+                                            uploadedImageUrl = url;
+                                            isUploadingImage = false;
+                                          });
+                                        } else {
+                                          setState(() => isUploadingImage = false);
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to upload image')));
+                                          }
+                                        }
                                       } catch (e) {
                                         setState(() => isUploadingImage = false);
                                       }
