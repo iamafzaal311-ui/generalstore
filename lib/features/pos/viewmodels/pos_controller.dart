@@ -232,11 +232,13 @@ class POSController extends StateNotifier<POSState> {
       if (printReceipt) {
         final finalCustomerName = customerName ?? state.selectedCustomer?.name;
         final finalCustomerPhone = customerPhone ?? state.selectedCustomer?.phone;
+        final storeProfile = _ref.read(storeProfileProvider);
 
         final pdfBytes = await PrintHelper.generateThermalReceipt(
           sale: sale,
           items: itemsListJson,
           cashierName: currentUser?.fullName ?? 'Cashier',
+          storeProfile: storeProfile,
           customerName: finalCustomerName,
           customerPhone: finalCustomerPhone,
         );

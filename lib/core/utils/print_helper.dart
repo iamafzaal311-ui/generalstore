@@ -1,22 +1,36 @@
 import 'dart:typed_data';
+import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import '../../data/models/sale_model.dart';
-import '../constants/app_constants.dart';
+import '../../data/models/store_profile_model.dart';
 
 class PrintHelper {
-  static Future<void> _loadFonts() async {
-    // Fonts are not needed if using standard courier
+  static pw.Font? _customFont;
+
+  static Future<void> loadFonts() async {
+    if (_customFont == null) {
+      try {
+        final fontData = await rootBundle.load('assets/fonts/NotoNastaliqUrdu-Regular.ttf');
+        _customFont = pw.Font.ttf(fontData);
+      } catch (e) {
+        _customFont = pw.Font.helvetica();
+      }
+    }
+  }
+
+  static pw.ThemeData get pdfTheme {
+    return pw.ThemeData.withFont(base: _customFont ?? pw.Font.helvetica());
   }
 
   static pw.TextStyle _ts(pw.Font? f, {double? size, pw.FontWeight? weight, PdfColor? color}) {
-    final base = pw.Font.helvetica();
+    final base = f ?? _customFont ?? pw.Font.helvetica();
     return pw.TextStyle(font: base, fontSize: size, fontWeight: weight, color: color);
   }
 
-  static pw.Widget _buildPdfHeader(pw.Font? f, {bool isThermal = false}) {
+  static pw.Widget _buildPdfHeader(pw.Font? f, {bool isThermal = false, StoreProfileModel? profile}) {
     return pw.Container(
       width: double.infinity,
       child: pw.Column(
@@ -24,27 +38,28 @@ class PrintHelper {
         crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
           pw.Text(
-            'HUSSNAIN TRADERS',
+            profile?.storeName.toUpperCase() ?? 'GENERAL STORE',
             style: _ts(null, size: isThermal ? 16 : 24, weight: pw.FontWeight.bold, color: PdfColors.red700),
             textAlign: pw.TextAlign.center,
           ),
           pw.SizedBox(height: 4),
-          pw.Text('Proprietor: ${StoreDetails.proprietorEnglish}',
-              style: _ts(f, size: isThermal ? 9 : 12, color: PdfColors.blue800)),
-          pw.Text(StoreDetails.contact,
-              style: _ts(f, size: isThermal ? 9 : 12, weight: pw.FontWeight.bold, color: PdfColors.grey800)),
+          if (profile?.tagline.isNotEmpty ?? false)
+            pw.Text(profile!.tagline, style: _ts(f, size: isThermal ? 9 : 12, color: PdfColors.blue800)),
+          if (profile?.phone.isNotEmpty ?? false)
+            pw.Text(profile!.phone, style: _ts(f, size: isThermal ? 9 : 12, weight: pw.FontWeight.bold, color: PdfColors.grey800)),
           pw.SizedBox(height: 4),
-          pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.blue800,
-              borderRadius: pw.BorderRadius.circular(4),
+          if (profile?.address.isNotEmpty ?? false)
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.blue800,
+                borderRadius: pw.BorderRadius.circular(4),
+              ),
+              child: pw.Text(profile!.address,
+                  textAlign: pw.TextAlign.center,
+                  style: _ts(null, size: isThermal ? 7 : 10, color: PdfColors.white)),
             ),
-            child: pw.Text('Ghosia Market Sikandar Chowk Pakpattan',
-                textAlign: pw.TextAlign.center,
-                style: _ts(null, size: isThermal ? 7 : 10, color: PdfColors.white)),
-          ),
         ],
       ),
     );
@@ -54,13 +69,14 @@ class PrintHelper {
     required SaleModel sale,
     required List<dynamic> items,
     required String cashierName,
+    StoreProfileModel? storeProfile,
     String? customerName,
     String? customerPhone,
   }) async {
-    await _loadFonts();
-    pw.Font? f;
-    final fb = pw.Font.helvetica();
-    final pdf = pw.Document();
+    await loadFonts();
+    pw.Font? f = _customFont;
+    final fb = _customFont ?? pw.Font.helvetica();
+    final pdf = pw.Document(theme: pdfTheme);
 
     pdf.addPage(
       pw.Page(
@@ -74,7 +90,7 @@ class PrintHelper {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-              _buildPdfHeader(f, isThermal: true),
+              _buildPdfHeader(f, isThermal: true, profile: storeProfile),
               pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -150,13 +166,14 @@ class PrintHelper {
     required SaleModel sale,
     required List<dynamic> items,
     required String cashierName,
+    StoreProfileModel? storeProfile,
     String? customerName,
     String? customerPhone,
   }) async {
-    await _loadFonts();
-    pw.Font? f;
-    final fb = pw.Font.helvetica();
-    final pdf = pw.Document();
+    await loadFonts();
+    pw.Font? f = _customFont;
+    final fb = _customFont ?? pw.Font.helvetica();
+    final pdf = pw.Document(theme: pdfTheme);
 
     pdf.addPage(
       pw.Page(
@@ -166,7 +183,7 @@ class PrintHelper {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _buildPdfHeader(f, isThermal: false),
+              _buildPdfHeader(f, isThermal: false, profile: storeProfile),
               pw.SizedBox(height: 20),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -270,7 +287,7 @@ class PrintHelper {
               pw.Spacer(),
               pw.Divider(color: PdfColors.grey300),
               pw.SizedBox(height: 6),
-              pw.Center(child: pw.Text('Thank you for shopping with HUSSNAIN TRADERS!', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontStyle: pw.FontStyle.italic, font: fb))),
+              pw.Center(child: pw.Text('Thank you for shopping with ${storeProfile?.storeName.toUpperCase() ?? 'US'}!', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontStyle: pw.FontStyle.italic, font: fb))),
               pw.Center(child: pw.Text('Developed by Vivid Digital Nexus | WhatsApp: +923285753463', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600, font: fb))),
             ],
           );

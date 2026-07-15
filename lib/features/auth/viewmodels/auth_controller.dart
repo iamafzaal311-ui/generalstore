@@ -1,4 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../data/models/store_profile_model.dart';
 import '../../../core/providers/global_providers.dart';
 import '../../../data/models/user_model.dart';
 import '../../../domain/repositories/auth_repository.dart';
@@ -41,6 +44,12 @@ class AuthController extends StateNotifier<AuthState> {
       final user = await _repository.adminLogin(email, password);
       if (user != null) {
         _ref.read(currentUserProvider.notifier).state = user;
+        
+        try {
+          final adminUid = FirebaseAuth.instance.currentUser!.uid;
+          final doc = await FirebaseFirestore.instance.collection('stores').doc(adminUid).collection('profile').doc('info').get();
+          _ref.read(storeProfileProvider.notifier).state = StoreProfileModel.fromFirestore(doc);
+        } catch (_) {}
       }
       await loadUsers(); // Load local employees after syncing
       state = state.copyWith(isLoading: false);

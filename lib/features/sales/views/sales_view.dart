@@ -71,11 +71,14 @@ class _SalesViewState extends ConsumerState<SalesView> {
       final currentUser = ref.read(currentUserProvider);
       final cashierName = currentUser?.fullName ?? 'Admin';
 
+      final storeProfile = ref.read(storeProfileProvider);
+
       if (isThermal) {
         final pdfBytes = await PrintHelper.generateThermalReceipt(
           sale: sale,
           items: items,
           cashierName: cashierName,
+          storeProfile: storeProfile,
           customerName: sale.customerId != null ? 'Customer' : null,
         );
         await Printing.layoutPdf(onLayout: (format) => pdfBytes);
@@ -84,6 +87,7 @@ class _SalesViewState extends ConsumerState<SalesView> {
           sale: sale,
           items: items,
           cashierName: cashierName,
+          storeProfile: storeProfile,
           customerName: sale.customerId != null ? 'Customer' : null,
         );
         await Printing.layoutPdf(onLayout: (format) => pdfBytes);

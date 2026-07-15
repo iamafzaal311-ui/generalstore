@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import '../../data/models/product_model.dart';
+import 'print_helper.dart';
 import '../../data/models/expense_model.dart';
 
 /// Helper for generating simple summary PDF documents (for products/expenses).
@@ -13,7 +14,8 @@ class PdfHelper {
     List<ProductModel> products, {
     String title = 'Product Stock Report',
   }) async {
-    final pdf = pw.Document();
+    await PrintHelper.loadFonts();
+    final pdf = pw.Document(theme: PrintHelper.pdfTheme);
     final now = DateTime.now();
 
     pdf.addPage(
@@ -105,7 +107,8 @@ class PdfHelper {
     List<ExpenseModel> expenses, {
     String title = 'Expenses Report',
   }) async {
-    final pdf = pw.Document();
+    await PrintHelper.loadFonts();
+    final pdf = pw.Document(theme: PrintHelper.pdfTheme);
     final now = DateTime.now();
     final total = expenses.fold(0.0, (sum, e) => sum + e.amount);
 

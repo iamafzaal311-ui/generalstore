@@ -40,9 +40,9 @@ class MainLayout extends ConsumerWidget {
     return Scaffold(
       appBar: !isDesktop
           ? AppBar(
-              title: const Text(
-                'Hussnain Traders ERP',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              title: Text(
+                ref.watch(storeProfileProvider)?.storeName ?? 'General Store',
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               elevation: 0,
             )
@@ -89,6 +89,7 @@ class _SidebarContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final currentUser = ref.watch(currentUserProvider);
+    final storeProfile = ref.watch(storeProfileProvider);
     final role = currentUser?.role ?? 'Cashier';
     final name = currentUser?.fullName ?? 'ALI ABBAS';
     final initials = name.isNotEmpty ? name.substring(0, name.length > 1 ? 2 : 1).toUpperCase() : 'US';
@@ -119,7 +120,7 @@ class _SidebarContent extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Hussnain Traders',
+                      storeProfile?.storeName ?? 'General Store',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,

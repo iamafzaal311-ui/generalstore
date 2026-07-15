@@ -3,11 +3,14 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../../data/models/product_model.dart';
 
+import '../utils/print_helper.dart';
+
 class BarcodePrintService {
   /// Generates a PDF document with barcode labels for the given product.
   /// This can be sent to a label printer.
   static Future<void> printProductBarcodeLabel(ProductModel product, {int count = 1}) async {
-    final pdf = pw.Document();
+    await PrintHelper.loadFonts();
+    final pdf = pw.Document(theme: PrintHelper.pdfTheme);
 
     final barcodeData = product.barcode ?? product.sku ?? product.productId;
 

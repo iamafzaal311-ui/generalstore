@@ -67,7 +67,7 @@ class SyncService {
           'isDeleted': cat.isDeleted,
         });
         cat.isDirty = false;
-        await cat.save();
+        if (cat.isInBox) await cat.save();
       }
 
       // 2. Sync Brands
@@ -81,7 +81,7 @@ class SyncService {
           'isDeleted': brand.isDeleted,
         });
         brand.isDirty = false;
-        await brand.save();
+        if (brand.isInBox) await brand.save();
       }
 
       // 3. Sync Suppliers
@@ -99,7 +99,7 @@ class SyncService {
           'isDeleted': sup.isDeleted,
         });
         sup.isDirty = false;
-        await sup.save();
+        if (sup.isInBox) await sup.save();
       }
 
       // 4. Sync Customers
@@ -116,7 +116,7 @@ class SyncService {
           'isDeleted': cust.isDeleted,
         });
         cust.isDirty = false;
-        await cust.save();
+        if (cust.isInBox) await cust.save();
       }
 
       // 5. Sync Products
@@ -145,7 +145,7 @@ class SyncService {
           'isDeleted': prod.isDeleted,
         });
         prod.isDirty = false;
-        await prod.save();
+        if (prod.isInBox) await prod.save();
       }
 
       // 6. Sync Sales
@@ -168,7 +168,7 @@ class SyncService {
           'isDeleted': sale.isDeleted,
         });
         sale.isDirty = false;
-        await sale.save();
+        if (sale.isInBox) await sale.save();
       }
 
       // 7. Sync Purchases
@@ -186,7 +186,7 @@ class SyncService {
           'isDeleted': purchase.isDeleted,
         });
         purchase.isDirty = false;
-        await purchase.save();
+        if (purchase.isInBox) await purchase.save();
       }
 
       // 8. Sync Expenses
@@ -203,7 +203,7 @@ class SyncService {
           'isDeleted': expense.isDeleted,
         });
         expense.isDirty = false;
-        await expense.save();
+        if (expense.isInBox) await expense.save();
       }
 
       // 9. Sync Users
@@ -220,7 +220,7 @@ class SyncService {
           'lastUpdated': user.lastUpdated.toUtc().toIso8601String(),
         });
         user.isDirty = false;
-        await user.save();
+        if (user.isInBox) await user.save();
       }
     } catch (e) {
       print('SyncService syncDirtyRecords error: $e');

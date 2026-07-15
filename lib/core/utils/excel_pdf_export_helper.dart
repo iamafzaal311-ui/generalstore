@@ -4,6 +4,7 @@ import 'package:excel/excel.dart' as ex;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
+import 'print_helper.dart';
 import '../../data/models/sale_model.dart';
 import '../../data/models/product_model.dart';
 
@@ -37,7 +38,8 @@ class ExcelPdfExportHelper {
   }
 
   static Future<Uint8List> exportSalesToPdf(List<SaleModel> sales, {String reportTitle = 'SALES REPORT'}) async {
-    final pdf = pw.Document();
+    await PrintHelper.loadFonts();
+    final pdf = pw.Document(theme: PrintHelper.pdfTheme);
 
     pdf.addPage(
       pw.MultiPage(

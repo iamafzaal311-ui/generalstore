@@ -8,7 +8,8 @@ import '../../../data/models/brand_model.dart';
 import '../../../data/models/category_model.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/supplier_model.dart';
-import '../../../core/services/barcode_print_service.dart';
+
+import '../../../core/providers/global_providers.dart';
 import '../viewmodels/inventory_controller.dart';
 
 class ProductsView extends ConsumerStatefulWidget {
@@ -433,8 +434,9 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
       builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           final theme = Theme.of(context);
+          final storeProfile = ref.read(storeProfileProvider);
           return AlertDialog(
-            title: Text(product == null ? 'Add Stock (Hussnain Traders)' : 'Edit Product'),
+            title: Text(product == null ? 'Add Stock (${storeProfile?.storeName ?? 'General Store'})' : 'Edit Product'),
             content: Form(
               key: formKey,
               child: SingleChildScrollView(

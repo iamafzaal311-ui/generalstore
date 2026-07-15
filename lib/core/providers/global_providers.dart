@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../data/models/store_profile_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/auth_remote_data_source.dart';
 import '../../data/datasources/local_db_service.dart';
@@ -30,3 +31,5 @@ final currentRoleProvider = Provider<String?>((ref) {
   final user = ref.watch(currentUserProvider);
   return user?.role;
 });
+
+final storeProfileProvider = StateProvider<StoreProfileModel?>((ref) => null);
