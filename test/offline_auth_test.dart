@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:generalstore/data/datasources/auth_remote_data_source.dart';
 import 'package:generalstore/data/datasources/local_db_service.dart';
 import 'package:generalstore/data/models/user_model.dart';
+import 'package:generalstore/core/services/sync_service.dart';
 import 'package:generalstore/data/repositories/auth_repository_impl.dart';
 
 void main() {
@@ -16,7 +17,7 @@ void main() {
     final _ = Directory.systemTemp.createTempSync('generalstore_test').path;
     db = LocalDbService();
     await db.init();
-    repository = AuthRepositoryImpl(db, _StubRemoteDataSource());
+    repository = AuthRepositoryImpl(db, _StubRemoteDataSource(), SyncService(db));
     await repository.initialize();
   });
 
@@ -34,6 +35,12 @@ void main() {
 }
 
 class _StubRemoteDataSource implements AuthRemoteDataSource {
+  @override
+  Future<void> adminLogin(String email, String password) async {}
+
+  @override
+  Future<void> adminRegister(String email, String password) async {}
+
   @override
   Future<UserModel?> login(String username, String password) async => null;
 

@@ -1,6 +1,7 @@
 import '../../data/models/user_model.dart';
 
 abstract class AuthRepository {
+  Future<UserModel?> adminLogin(String email, String password);
   Future<UserModel?> login(String username, String password);
   Future<UserModel?> signInWithGoogle();
   Future<String> sendPhoneVerificationCode(String phoneNumber);

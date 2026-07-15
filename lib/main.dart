@@ -8,6 +8,7 @@ import 'core/constants/app_constants.dart';
 import 'core/providers/global_providers.dart';
 import 'data/datasources/local_db_service.dart';
 import 'core/services/seed_data_service.dart';
+import 'core/services/sync_service.dart';
 
 void main() async {
   try {
@@ -21,6 +22,9 @@ void main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      final syncService = SyncService(dbService);
+      await syncService.restoreAllFromCloud();
+      await syncService.syncDirtyRecords();
     } catch (e) {
       debugPrint('Firebase init error: $e');
     }
@@ -29,6 +33,7 @@ void main() async {
       ProviderScope(
         overrides: [
           localDbServiceProvider.overrideWithValue(dbService),
+          syncServiceProvider.overrideWithValue(SyncService(dbService)),
         ],
         child: const MyApp(),
       ),

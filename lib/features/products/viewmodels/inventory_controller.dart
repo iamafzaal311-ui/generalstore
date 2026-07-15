@@ -45,7 +45,8 @@ class InventoryState {
 
 final inventoryRepositoryProvider = Provider<InventoryRepository>((ref) {
   final db = ref.watch(localDbServiceProvider);
-  return InventoryRepositoryImpl(db);
+  final sync = ref.watch(syncServiceProvider);
+  return InventoryRepositoryImpl(db, sync);
 });
 
 class InventoryController extends StateNotifier<InventoryState> {

@@ -35,6 +35,22 @@ class AuthController extends StateNotifier<AuthState> {
     loadUsers();
   }
 
+  Future<bool> adminLogin(String email, String password) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      final user = await _repository.adminLogin(email, password);
+      if (user != null) {
+        _ref.read(currentUserProvider.notifier).state = user;
+      }
+      await loadUsers(); // Load local employees after syncing
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      return false;
+    }
+  }
+
   Future<bool> login(String username, String password) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {

@@ -12,10 +12,11 @@ import '../models/user_model.dart';
 class AuthRepositoryImpl implements AuthRepository {
   final LocalDbService _db;
   final AuthRemoteDataSource _remote;
+  final SyncService _sync;
   UserModel? _currentUser;
   bool _initialized = false;
 
-  AuthRepositoryImpl(this._db, this._remote) {
+  AuthRepositoryImpl(this._db, this._remote, this._sync) {
     unawaited(initialize());
   }
 
@@ -44,6 +45,25 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<UserModel?> adminLogin(String email, String password) async {
+    await initialize();
+    await _remote.adminLogin(email, password);
+    await _sync.restoreAllFromCloud();
+
+    final adminUser = UserModel()
+      ..userId = 'admin_firebase_id'
+      ..username = email
+      ..fullName = 'Store Admin'
+      ..role = 'Admin'
+      ..isActive = true
+      ..isDirty = false
+      ..lastUpdated = DateTime.now();
+
+    _currentUser = adminUser;
+    return adminUser;
+  }
+
+  @override
   Future<UserModel?> login(String username, String password) async {
     await initialize();
 
@@ -56,23 +76,6 @@ class AuthRepositoryImpl implements AuthRepository {
         return user;
       }
     }
-
-    try {
-      final remoteUser = await _remote.login(username, password);
-      if (remoteUser != null && remoteUser.isActive) {
-        final hashed = HashHelper.hashPassword(password, remoteUser.salt);
-        if (hashed == remoteUser.passwordHash) {
-          await _db.usersBox.put(remoteUser.userId, remoteUser);
-          _currentUser = remoteUser;
-
-          final syncService = SyncService(_db);
-          await syncService.restoreAllFromCloud();
-          syncService.dispose();
-
-          return remoteUser;
-        }
-      }
-    } catch (_) {}
 
     return null;
   }
@@ -152,6 +155,7 @@ class AuthRepositoryImpl implements AuthRepository {
       ..lastUpdated = DateTime.now();
 
     await _db.usersBox.put(user.userId, user);
+    await _sync.syncDirtyRecords();
   }
 
   @override
@@ -171,6 +175,7 @@ class AuthRepositoryImpl implements AuthRepository {
     user.lastUpdated = DateTime.now();
 
     await user.save();
+    await _sync.syncDirtyRecords();
   }
 
   @override
@@ -186,6 +191,7 @@ class AuthRepositoryImpl implements AuthRepository {
     user.lastUpdated = DateTime.now();
 
     await user.save();
+    await _sync.syncDirtyRecords();
   }
 
   @override

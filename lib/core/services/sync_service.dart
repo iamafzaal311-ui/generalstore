@@ -11,6 +11,8 @@ import '../../data/models/purchase_model.dart';
 import '../../data/models/sale_model.dart';
 import '../../data/models/supplier_model.dart';
 import '../../data/models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 class SyncService {
   final LocalDbService _db;
@@ -28,6 +30,13 @@ class SyncService {
         syncDirtyRecords();
       }
     });
+    
+    // Also monitor auth state to trigger sync on login
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        restoreAllFromCloud();
+      }
+    });
   }
 
   void dispose() {
@@ -39,12 +48,18 @@ class SyncService {
     _isSyncing = true;
 
     try {
-      final firestore = FirebaseFirestore.instance;
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        _isSyncing = false;
+        return; // Don't sync if no admin is logged in
+      }
+      final adminUid = user.uid;
+      final storeRef = FirebaseFirestore.instance.collection('stores').doc(adminUid);
 
       // 1. Sync Categories
       final dirtyCats = _db.categoriesBox.values.where((e) => e.isDirty).toList();
       for (final cat in dirtyCats) {
-        await firestore.collection('categories').doc(cat.categoryId).set({
+        await storeRef.collection('categories').doc(cat.categoryId).set({
           'categoryId': cat.categoryId,
           'name': cat.name,
           'description': cat.description,
@@ -58,7 +73,7 @@ class SyncService {
       // 2. Sync Brands
       final dirtyBrands = _db.brandsBox.values.where((e) => e.isDirty).toList();
       for (final brand in dirtyBrands) {
-        await firestore.collection('brands').doc(brand.brandId).set({
+        await storeRef.collection('brands').doc(brand.brandId).set({
           'brandId': brand.brandId,
           'name': brand.name,
           'description': brand.description,
@@ -72,7 +87,7 @@ class SyncService {
       // 3. Sync Suppliers
       final dirtySuppliers = _db.suppliersBox.values.where((e) => e.isDirty).toList();
       for (final sup in dirtySuppliers) {
-        await firestore.collection('suppliers').doc(sup.supplierId).set({
+        await storeRef.collection('suppliers').doc(sup.supplierId).set({
           'supplierId': sup.supplierId,
           'name': sup.name,
           'contactName': sup.contactName,
@@ -90,7 +105,7 @@ class SyncService {
       // 4. Sync Customers
       final dirtyCustomers = _db.customersBox.values.where((e) => e.isDirty).toList();
       for (final cust in dirtyCustomers) {
-        await firestore.collection('customers').doc(cust.customerId).set({
+        await storeRef.collection('customers').doc(cust.customerId).set({
           'customerId': cust.customerId,
           'name': cust.name,
           'phone': cust.phone,
@@ -107,7 +122,7 @@ class SyncService {
       // 5. Sync Products
       final dirtyProducts = _db.productsBox.values.where((e) => e.isDirty).toList();
       for (final prod in dirtyProducts) {
-        await firestore.collection('products').doc(prod.productId).set({
+        await storeRef.collection('products').doc(prod.productId).set({
           'productId': prod.productId,
           'name': prod.name,
           'sku': prod.sku,
@@ -136,7 +151,7 @@ class SyncService {
       // 6. Sync Sales
       final dirtySales = _db.salesBox.values.where((e) => e.isDirty).toList();
       for (final sale in dirtySales) {
-        await firestore.collection('sales').doc(sale.saleId).set({
+        await storeRef.collection('sales').doc(sale.saleId).set({
           'saleId': sale.saleId,
           'invoiceNumber': sale.invoiceNumber,
           'cashierId': sale.cashierId,
@@ -159,7 +174,7 @@ class SyncService {
       // 7. Sync Purchases
       final dirtyPurchases = _db.purchasesBox.values.where((e) => e.isDirty).toList();
       for (final purchase in dirtyPurchases) {
-        await firestore.collection('purchases').doc(purchase.purchaseId).set({
+        await storeRef.collection('purchases').doc(purchase.purchaseId).set({
           'purchaseId': purchase.purchaseId,
           'invoiceNumber': purchase.invoiceNumber,
           'supplierId': purchase.supplierId,
@@ -177,7 +192,7 @@ class SyncService {
       // 8. Sync Expenses
       final dirtyExpenses = _db.expensesBox.values.where((e) => e.isDirty).toList();
       for (final expense in dirtyExpenses) {
-        await firestore.collection('expenses').doc(expense.expenseId).set({
+        await storeRef.collection('expenses').doc(expense.expenseId).set({
           'expenseId': expense.expenseId,
           'title': expense.title,
           'category': expense.category,
@@ -194,7 +209,7 @@ class SyncService {
       // 9. Sync Users
       final dirtyUsers = _db.usersBox.values.where((e) => e.isDirty).toList();
       for (final user in dirtyUsers) {
-        await firestore.collection('users').doc(user.userId).set({
+        await storeRef.collection('users').doc(user.userId).set({
           'userId': user.userId,
           'username': user.username,
           'fullName': user.fullName,
@@ -207,18 +222,23 @@ class SyncService {
         user.isDirty = false;
         await user.save();
       }
-    } catch (_) {
+    } catch (e) {
+      print('SyncService syncDirtyRecords error: $e');
     } finally {
       _isSyncing = false;
     }
   }
 
   Future<void> restoreAllFromCloud() async {
+    await syncDirtyRecords();
     try {
-      final firestore = FirebaseFirestore.instance;
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final adminUid = user.uid;
+      final storeRef = FirebaseFirestore.instance.collection('stores').doc(adminUid);
 
       // 1. Restore Users
-      final usersSnapshot = await firestore.collection('users').get();
+      final usersSnapshot = await storeRef.collection('users').get();
       for (final doc in usersSnapshot.docs) {
         final data = doc.data();
         final user = UserModel()
@@ -235,7 +255,7 @@ class SyncService {
       }
 
       // 2. Restore Categories
-      final catsSnapshot = await firestore.collection('categories').get();
+      final catsSnapshot = await storeRef.collection('categories').get();
       for (final doc in catsSnapshot.docs) {
         final data = doc.data();
         final cat = CategoryModel()
@@ -249,7 +269,7 @@ class SyncService {
       }
 
       // 3. Restore Brands
-      final brandsSnapshot = await firestore.collection('brands').get();
+      final brandsSnapshot = await storeRef.collection('brands').get();
       for (final doc in brandsSnapshot.docs) {
         final data = doc.data();
         final brand = BrandModel()
@@ -263,7 +283,7 @@ class SyncService {
       }
 
       // 4. Restore Suppliers
-      final supsSnapshot = await firestore.collection('suppliers').get();
+      final supsSnapshot = await storeRef.collection('suppliers').get();
       for (final doc in supsSnapshot.docs) {
         final data = doc.data();
         final sup = SupplierModel()
@@ -281,7 +301,7 @@ class SyncService {
       }
 
       // 5. Restore Customers
-      final custsSnapshot = await firestore.collection('customers').get();
+      final custsSnapshot = await storeRef.collection('customers').get();
       for (final doc in custsSnapshot.docs) {
         final data = doc.data();
         final cust = CustomerModel()
@@ -298,7 +318,7 @@ class SyncService {
       }
 
       // 6. Restore Products
-      final prodsSnapshot = await firestore.collection('products').get();
+      final prodsSnapshot = await storeRef.collection('products').get();
       for (final doc in prodsSnapshot.docs) {
         final data = doc.data();
         final prod = ProductModel()
@@ -327,7 +347,7 @@ class SyncService {
       }
 
       // 7. Restore Sales
-      final salesSnapshot = await firestore.collection('sales').get();
+      final salesSnapshot = await storeRef.collection('sales').get();
       for (final doc in salesSnapshot.docs) {
         final data = doc.data();
         final sale = SaleModel()
@@ -350,7 +370,7 @@ class SyncService {
       }
 
       // 8. Restore Purchases
-      final purchasesSnapshot = await firestore.collection('purchases').get();
+      final purchasesSnapshot = await storeRef.collection('purchases').get();
       for (final doc in purchasesSnapshot.docs) {
         final data = doc.data();
         final purchase = PurchaseModel()
@@ -368,7 +388,7 @@ class SyncService {
       }
 
       // 9. Restore Expenses
-      final expensesSnapshot = await firestore.collection('expenses').get();
+      final expensesSnapshot = await storeRef.collection('expenses').get();
       for (final doc in expensesSnapshot.docs) {
         final data = doc.data();
         final expense = ExpenseModel()

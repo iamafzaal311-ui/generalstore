@@ -1,3 +1,4 @@
+import '../../core/services/sync_service.dart';
 import '../../domain/repositories/inventory_repository.dart';
 import '../datasources/local_db_service.dart';
 import '../models/product_model.dart';
@@ -8,8 +9,9 @@ import '../models/supplier_model.dart';
 
 class InventoryRepositoryImpl implements InventoryRepository {
   final LocalDbService _db;
+  final SyncService _sync;
 
-  InventoryRepositoryImpl(this._db);
+  InventoryRepositoryImpl(this._db, this._sync);
 
   // CATEGORIES
   @override
@@ -22,7 +24,9 @@ class InventoryRepositoryImpl implements InventoryRepository {
     category.isDirty = true;
     category.lastUpdated = DateTime.now();
     await _db.categoriesBox.put(category.categoryId, category);
+    await _sync.syncDirtyRecords();
   }
+
 
   @override
   Future<void> deleteCategory(String categoryId) async {
@@ -32,6 +36,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       category.isDirty = true;
       category.lastUpdated = DateTime.now();
       await category.save();
+      await _sync.syncDirtyRecords();
     }
   }
 
@@ -46,7 +51,9 @@ class InventoryRepositoryImpl implements InventoryRepository {
     brand.isDirty = true;
     brand.lastUpdated = DateTime.now();
     await _db.brandsBox.put(brand.brandId, brand);
+    await _sync.syncDirtyRecords();
   }
+
 
   @override
   Future<void> deleteBrand(String brandId) async {
@@ -56,6 +63,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       brand.isDirty = true;
       brand.lastUpdated = DateTime.now();
       await brand.save();
+      await _sync.syncDirtyRecords();
     }
   }
 
@@ -70,7 +78,9 @@ class InventoryRepositoryImpl implements InventoryRepository {
     supplier.isDirty = true;
     supplier.lastUpdated = DateTime.now();
     await _db.suppliersBox.put(supplier.supplierId, supplier);
+    await _sync.syncDirtyRecords();
   }
+
 
   @override
   Future<void> deleteSupplier(String supplierId) async {
@@ -80,6 +90,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       supplier.isDirty = true;
       supplier.lastUpdated = DateTime.now();
       await supplier.save();
+      await _sync.syncDirtyRecords();
     }
   }
 
@@ -94,7 +105,9 @@ class InventoryRepositoryImpl implements InventoryRepository {
     product.isDirty = true;
     product.lastUpdated = DateTime.now();
     await _db.productsBox.put(product.productId, product);
+    await _sync.syncDirtyRecords();
   }
+
 
   @override
   Future<void> deleteProduct(String productId) async {
@@ -104,6 +117,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       product.isDirty = true;
       product.lastUpdated = DateTime.now();
       await product.save();
+      await _sync.syncDirtyRecords();
     }
   }
 

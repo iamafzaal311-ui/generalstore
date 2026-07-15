@@ -8,6 +8,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 
 abstract class AuthRemoteDataSource {
+  Future<void> adminLogin(String email, String password);
+  Future<void> adminRegister(String email, String password);
   Future<UserModel?> login(String username, String password);
   Future<UserModel?> loginWithGoogle();
   Future<String> sendPhoneVerificationCode(String phoneNumber);
@@ -25,9 +27,24 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   AuthRemoteDataSourceImpl(this._firestore, this._auth);
 
   @override
+  Future<void> adminLogin(String email, String password) async {
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  @override
+  Future<void> adminRegister(String email, String password) async {
+    await _auth.createUserWithEmailAndPassword(email: email, password: password);
+  }
+
+  @override
   Future<UserModel?> login(String username, String password) async {
     try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) return null;
+      
       final query = await _firestore
+          .collection('stores')
+          .doc(currentUser.uid)
           .collection('users')
           .where('username', isEqualTo: username)
           .limit(1)
@@ -36,7 +53,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (query.docs.isEmpty) return null;
 
       final doc = query.docs.first.data();
-      final user = UserModel()
+      final userModel = UserModel()
         ..userId = doc['userId']
         ..username = doc['username']
         ..fullName = doc['fullName']
@@ -47,7 +64,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         ..isDirty = false
         ..lastUpdated = DateTime.parse(doc['lastUpdated']);
 
-      return user;
+      return userModel;
     } catch (_) {
       return null;
     }
@@ -121,9 +138,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> syncUsers(List<UserModel> localUsers) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+    
     final batch = _firestore.batch();
     for (final user in localUsers) {
-      final docRef = _firestore.collection('users').doc(user.userId);
+      final docRef = _firestore.collection('stores').doc(currentUser.uid).collection('users').doc(user.userId);
       batch.set(docRef, {
         'userId': user.userId,
         'username': user.username,

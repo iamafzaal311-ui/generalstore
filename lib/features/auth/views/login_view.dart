@@ -23,9 +23,6 @@ class _LoginViewState extends ConsumerState<LoginView> {
   @override
   void initState() {
     super.initState();
-    if (_selectedTabIndex == 0) {
-      _usernameController.text = 'ALI ABBAS';
-    }
   }
 
   @override
@@ -38,10 +35,19 @@ class _LoginViewState extends ConsumerState<LoginView> {
 
   void _submit() async {
     if (_formKey.currentState!.validate()) {
-      final success = await ref.read(authControllerProvider.notifier).login(
-            _usernameController.text.trim(),
-            _passwordController.text,
-          );
+      bool success = false;
+      if (_selectedTabIndex == 0) {
+        success = await ref.read(authControllerProvider.notifier).adminLogin(
+              _usernameController.text.trim(),
+              _passwordController.text,
+            );
+      } else {
+        success = await ref.read(authControllerProvider.notifier).login(
+              _usernameController.text.trim(),
+              _passwordController.text,
+            );
+      }
+      
       if (success && mounted) {
         context.go('/');
       }
@@ -138,21 +144,17 @@ class _LoginViewState extends ConsumerState<LoginView> {
                           onSelectionChanged: (Set<int> newSelection) {
                             setState(() {
                               _selectedTabIndex = newSelection.first;
-                              if (_selectedTabIndex == 0) {
-                                _usernameController.text = 'ALI ABBAS';
-                              } else {
-                                _usernameController.clear();
-                              }
+                              _usernameController.clear();
+                              _passwordController.clear();
                             });
                           },
                         ),
                         const SizedBox(height: 24),
                         TextFormField(
                           controller: _usernameController,
-                          readOnly: _selectedTabIndex == 0,
-                          decoration: const InputDecoration(
-                            labelText: 'Username',
-                            prefixIcon: Icon(Icons.person_outline_rounded),
+                          decoration: InputDecoration(
+                            labelText: _selectedTabIndex == 0 ? 'Admin Email' : 'Username',
+                            prefixIcon: const Icon(Icons.person_outline_rounded),
                           ),
                           textInputAction: TextInputAction.next,
                           validator: (val) {

@@ -3,12 +3,15 @@ import '../../domain/repositories/sales_repository.dart';
 import '../datasources/local_db_service.dart';
 import '../models/sale_model.dart';
 
+import '../../core/services/sync_service.dart';
+
 import '../models/customer_model.dart';
 
 class SalesRepositoryImpl implements SalesRepository {
   final LocalDbService _db;
+  final SyncService _sync;
 
-  SalesRepositoryImpl(this._db);
+  SalesRepositoryImpl(this._db, this._sync);
 
   @override
   Future<List<SaleModel>> getSales() async {
@@ -51,6 +54,8 @@ class SalesRepositoryImpl implements SalesRepository {
         await customer.save();
       }
     }
+    
+    await _sync.syncDirtyRecords();
   }
 
   @override

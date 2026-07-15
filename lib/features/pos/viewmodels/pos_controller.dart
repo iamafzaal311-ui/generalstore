@@ -81,7 +81,8 @@ class POSState {
 
 final salesRepositoryProvider = Provider<SalesRepository>((ref) {
   final db = ref.watch(localDbServiceProvider);
-  return SalesRepositoryImpl(db);
+  final sync = ref.watch(syncServiceProvider);
+  return SalesRepositoryImpl(db, sync);
 });
 
 class POSController extends StateNotifier<POSState> {

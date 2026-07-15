@@ -5,10 +5,13 @@ import '../models/purchase_model.dart';
 import '../models/sale_model.dart';
 
 
+import '../../core/services/sync_service.dart';
+
 class TransactionsRepositoryImpl implements TransactionsRepository {
   final LocalDbService _db;
+  final SyncService _sync;
 
-  TransactionsRepositoryImpl(this._db);
+  TransactionsRepositoryImpl(this._db, this._sync);
 
   @override
   Future<List<PurchaseModel>> getPurchases() async {
@@ -55,6 +58,7 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
         await supplier.save();
       }
     }
+    await _sync.syncDirtyRecords();
   }
 
   @override
@@ -98,6 +102,7 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
         }
       }
     }
+    await _sync.syncDirtyRecords();
   }
 
   @override

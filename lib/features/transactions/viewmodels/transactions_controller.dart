@@ -63,7 +63,8 @@ class TransactionsState {
 
 final transactionsRepositoryProvider = Provider<TransactionsRepository>((ref) {
   final db = ref.watch(localDbServiceProvider);
-  return TransactionsRepositoryImpl(db);
+  final sync = ref.watch(syncServiceProvider);
+  return TransactionsRepositoryImpl(db, sync);
 });
 
 class TransactionsController extends StateNotifier<TransactionsState> {
