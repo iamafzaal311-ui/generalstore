@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/models/store_profile_model.dart';
@@ -19,8 +20,15 @@ final syncServiceProvider = Provider<SyncService>((ref) {
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final db = ref.watch(localDbServiceProvider);
-  final firestore = FirebaseFirestore.instance;
-  final auth = FirebaseAuth.instance;
+  FirebaseFirestore? firestore;
+  FirebaseAuth? auth;
+  try {
+    if (Firebase.apps.isNotEmpty) {
+      firestore = FirebaseFirestore.instance;
+      auth = FirebaseAuth.instance;
+    }
+  } catch (_) {}
+
   final remoteDataSource = AuthRemoteDataSourceImpl(firestore, auth);
   final sync = ref.watch(syncServiceProvider);
   return AuthRepositoryImpl(db, remoteDataSource, sync);

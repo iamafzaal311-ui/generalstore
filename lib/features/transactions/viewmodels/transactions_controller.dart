@@ -80,20 +80,7 @@ class TransactionsController extends StateNotifier<TransactionsState> {
     try {
       List<PurchaseModel> list = await _repo.getPurchases();
       if (list.isEmpty) {
-        final dummyPurchase = PurchaseModel()
-          ..purchaseId = const Uuid().v4()
-          ..invoiceNumber = 'PUR-DUMMY-1'
-          ..supplierId = 'Dummy Supplier'
-          ..totalAmount = 5000.0
-          ..paidAmount = 5000.0
-          ..timestamp = DateTime.now()
-          ..itemsJson =
-              '[{"productName": "Dummy Item", "quantity": 10, "purchasePrice": 500}]'
-          ..isDirty = false
-          ..lastUpdated = DateTime.now()
-          ..isDeleted = false;
-        await _repo.savePurchase(dummyPurchase);
-        list = await _repo.getPurchases();
+        // No dummy data injected.
       }
       state = state.copyWith(purchases: list, isLoading: false);
     } catch (e) {

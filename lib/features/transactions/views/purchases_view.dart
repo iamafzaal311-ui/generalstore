@@ -42,17 +42,16 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
     final invState = ref.read(inventoryControllerProvider);
 
     ProductModel? selectedProduct;
-    final cartonsCtrl = TextEditingController(text: '0');
-    final piecesPerCartonCtrl = TextEditingController(text: '1');
-    final loosePiecesCtrl = TextEditingController(text: '0');
-    final cartonPriceCtrl = TextEditingController(text: '0');
-    final loosePriceCtrl = TextEditingController(text: '0');
+    final quantityCtrl = TextEditingController(text: '1');
+    final purchasePriceCtrl = TextEditingController(text: '0');
     final minStockCtrl = TextEditingController(text: '0');
     final expiryCtrl = TextEditingController();
 
     final paidCtrl = TextEditingController(text: '0');
     final invoiceCtrl = TextEditingController();
+    final productSearchCtrl = TextEditingController();
     final addFormKey = GlobalKey<FormState>();
+    String productSearchQuery = '';
 
     showDialog(
       context: context,
@@ -62,9 +61,11 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
             final txState = ref.watch(transactionsControllerProvider);
             return AlertDialog(
               title: const Text('New Stock Purchase Entry'),
-              content: SizedBox(
-                width: 700,
-                child: SingleChildScrollView(
+              content: SingleChildScrollView(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width > 800
+                      ? 700
+                      : double.maxFinite,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -120,106 +121,113 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                         key: addFormKey,
                         child: Column(
                           children: [
-                            DropdownButtonFormField<ProductModel>(
-                              initialValue: selectedProduct,
-                              decoration: const InputDecoration(
-                                labelText: 'Product',
+                            // ── Product Search + Dropdown ──────────────────
+                            TextField(
+                              controller: productSearchCtrl,
+                              decoration: InputDecoration(
+                                hintText: 'Search product by name or SKU...',
+                                prefixIcon: const Icon(
+                                  Icons.search_rounded,
+                                  size: 20,
+                                ),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                suffixIcon: productSearchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear, size: 18),
+                                        onPressed: () {
+                                          productSearchCtrl.clear();
+                                          setStateDialog(() {
+                                            productSearchQuery = '';
+                                          });
+                                        },
+                                      )
+                                    : null,
                               ),
-                              items: invState.products.map((p) {
-                                return DropdownMenuItem(
-                                  value: p,
-                                  child: Text(p.name),
-                                );
-                              }).toList(),
+                              onChanged: (val) => setStateDialog(() {
+                                productSearchQuery = val.toLowerCase();
+                              }),
+                            ),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<ProductModel>(
+                              isExpanded: true,
+                              value: selectedProduct,
+                              decoration: const InputDecoration(
+                                labelText: 'Select Product',
+                                isDense: true,
+                              ),
+                              items: invState.products
+                                  .where(
+                                    (p) =>
+                                        productSearchQuery.isEmpty ||
+                                        p.name.toLowerCase().contains(
+                                          productSearchQuery,
+                                        ) ||
+                                        (p.sku ?? '').toLowerCase().contains(
+                                          productSearchQuery,
+                                        ) ||
+                                        (p.barcode ?? '')
+                                            .toLowerCase()
+                                            .contains(productSearchQuery),
+                                  )
+                                  .map((p) {
+                                    return DropdownMenuItem(
+                                      value: p,
+                                      child: Text(
+                                        p.name,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    );
+                                  })
+                                  .toList(),
                               onChanged: (val) {
                                 if (val != null) {
                                   setStateDialog(() {
                                     selectedProduct = val;
-                                    loosePriceCtrl.text = val.purchasePrice
+                                    purchasePriceCtrl.text = val.purchasePrice
                                         .toString();
+                                    // Clear search after selection
+                                    productSearchCtrl.clear();
+                                    productSearchQuery = '';
                                   });
                                 }
                               },
                             ),
                             const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: cartonsCtrl,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Cartons',
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    validator: (val) =>
-                                        val == null ||
-                                            double.tryParse(val) == null
-                                        ? 'Invalid'
-                                        : null,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: piecesPerCartonCtrl,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Pieces in 1 Carton',
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    validator: (val) =>
-                                        val == null ||
-                                            double.tryParse(val) == null
-                                        ? 'Invalid'
-                                        : null,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: TextFormField(
-                                    controller: cartonPriceCtrl,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Carton Price',
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    validator: (val) =>
-                                        val == null ||
-                                            double.tryParse(val) == null
-                                        ? 'Invalid'
-                                        : null,
-                                  ),
-                                ),
-                              ],
-                            ),
                             const SizedBox(height: 12),
                             Row(
                               children: [
                                 Expanded(
                                   child: TextFormField(
-                                    controller: loosePiecesCtrl,
+                                    controller: quantityCtrl,
                                     decoration: const InputDecoration(
-                                      labelText: 'Loose Pieces',
+                                      labelText: 'Total Quantity',
                                     ),
                                     keyboardType: TextInputType.number,
                                     validator: (val) =>
-                                        val == null ||
-                                            double.tryParse(val) == null
-                                        ? 'Invalid'
-                                        : null,
+                                        val == null || double.tryParse(val) == null
+                                            ? 'Invalid'
+                                            : null,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: TextFormField(
-                                    controller: loosePriceCtrl,
+                                    controller: purchasePriceCtrl,
                                     decoration: const InputDecoration(
-                                      labelText: 'Loose Piece Price',
+                                      labelText: 'Unit Purchase Price (Rs.)',
                                     ),
                                     keyboardType: TextInputType.number,
                                     validator: (val) =>
-                                        val == null ||
-                                            double.tryParse(val) == null
-                                        ? 'Invalid'
-                                        : null,
+                                        val == null || double.tryParse(val) == null
+                                            ? 'Invalid'
+                                            : null,
                                   ),
                                 ),
                               ],
@@ -257,29 +265,10 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                   onPressed: () {
                                     if (addFormKey.currentState!.validate() &&
                                         selectedProduct != null) {
-                                      final cartons = double.parse(
-                                        cartonsCtrl.text,
-                                      );
-                                      final ppc = double.parse(
-                                        piecesPerCartonCtrl.text,
-                                      );
-                                      final cPrice = double.parse(
-                                        cartonPriceCtrl.text,
-                                      );
-
-                                      final loose = double.parse(
-                                        loosePiecesCtrl.text,
-                                      );
-                                      final lPrice = double.parse(
-                                        loosePriceCtrl.text,
-                                      );
-
-                                      final totalQty = (cartons * ppc) + loose;
-                                      final totalCost =
-                                          (cartons * cPrice) + (loose * lPrice);
+                                      final totalQty = double.parse(quantityCtrl.text);
+                                      final unitPrice = double.parse(purchasePriceCtrl.text);
 
                                       if (totalQty > 0) {
-                                        final unitPrice = totalCost / totalQty;
 
                                         ref
                                             .read(
@@ -324,10 +313,8 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
 
                                         setStateDialog(() {
                                           selectedProduct = null;
-                                          cartonsCtrl.text = '0';
-                                          loosePiecesCtrl.text = '0';
-                                          cartonPriceCtrl.text = '0';
-                                          loosePriceCtrl.text = '0';
+                                          quantityCtrl.text = '1';
+                                          purchasePriceCtrl.text = '0';
                                         });
                                       }
                                     }

@@ -48,7 +48,7 @@ class MainLayout extends ConsumerWidget {
       appBar: !isDesktop
           ? AppBar(
               title: Text(
-                ref.watch(storeProfileProvider)?.storeName ?? 'General Store',
+                ref.watch(storeProfileProvider)?.storeName ?? 'HASNAIN TRADERS',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               elevation: 0,
@@ -98,7 +98,8 @@ class _SidebarContent extends ConsumerWidget {
     final currentUser = ref.watch(currentUserProvider);
     final storeProfile = ref.watch(storeProfileProvider);
     final role = currentUser?.role ?? 'Cashier';
-    final name = currentUser?.fullName ?? 'ALI ABBAS';
+    var name = currentUser?.fullName ?? 'ALI ABBAS';
+    if (name.toLowerCase() == 'store admin') name = 'Ali Abbas';
     final initials = name.isNotEmpty
         ? name.substring(0, name.length > 1 ? 2 : 1).toUpperCase()
         : 'US';
@@ -129,16 +130,22 @@ class _SidebarContent extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      (storeProfile?.storeName ?? 'General Store').toUpperCase().contains('HUSSNAIN') 
-                        ? (storeProfile?.storeName ?? 'General Store').replaceAll(RegExp('HUSSNAIN', caseSensitive: false), 'HASNAIN')
-                        : (storeProfile?.storeName ?? 'General Store'),
+                      (storeProfile?.storeName ?? 'HASNAIN TRADERS')
+                              .toUpperCase()
+                              .contains('HUSSNAIN')
+                          ? (storeProfile?.storeName ?? 'HASNAIN TRADERS')
+                                .replaceAll(
+                                  RegExp('HUSSNAIN', caseSensitive: false),
+                                  'HASNAIN',
+                                )
+                          : (storeProfile?.storeName ?? 'HASNAIN TRADERS'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                       ),
                     ),
                     Text(
-                      'General Store ERP',
+                      'HASNAIN TRADERS ERP',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.textTheme.bodySmall?.color?.withValues(
                           alpha: 0.6,

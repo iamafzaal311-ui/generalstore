@@ -19,6 +19,11 @@ class _AccountsViewState extends ConsumerState<AccountsView>
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(accountsControllerProvider.notifier).refreshAccounts();
+      }
+    });
     _tabController = TabController(length: 4, vsync: this);
     _searchCtrl.addListener(() {
       setState(() {
@@ -447,6 +452,7 @@ class _AccountsViewState extends ConsumerState<AccountsView>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Column(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -512,6 +518,7 @@ class _AccountsViewState extends ConsumerState<AccountsView>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Column(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [

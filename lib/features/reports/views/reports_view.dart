@@ -8,6 +8,7 @@ import '../../../core/utils/excel_pdf_export_helper.dart';
 import '../../../core/utils/excel_helper.dart';
 import '../../pos/viewmodels/pos_controller.dart';
 import '../../products/viewmodels/inventory_controller.dart';
+import '../../../core/providers/global_providers.dart';
 
 class ReportsView extends ConsumerWidget {
   const ReportsView({super.key});
@@ -98,6 +99,7 @@ class ReportsView extends ConsumerWidget {
                           await ExcelPdfExportHelper.exportSalesToPdf(
                             monthlySales,
                             reportTitle: 'MONTHLY SALES REPORT',
+                            storeProfile: ref.read(storeProfileProvider),
                           );
                       await Printing.layoutPdf(onLayout: (format) => pdfBytes);
                     },
@@ -144,6 +146,7 @@ class ReportsView extends ConsumerWidget {
                           await ExcelPdfExportHelper.exportSalesToPdf(
                             sales,
                             reportTitle: 'ALL SALES REPORT',
+                            storeProfile: ref.read(storeProfileProvider),
                           );
                       await Printing.layoutPdf(onLayout: (format) => pdfBytes);
                     },
@@ -179,6 +182,7 @@ class ReportsView extends ConsumerWidget {
                       final pdfBytes =
                           await ExcelPdfExportHelper.exportInventoryToPdf(
                             products,
+                            storeProfile: ref.read(storeProfileProvider),
                           );
                       await Printing.layoutPdf(onLayout: (format) => pdfBytes);
                     },
@@ -244,6 +248,7 @@ class ReportsView extends ConsumerWidget {
                               sales: monthlySales,
                               currentProducts: currentProducts,
                               monthYearTitle: title,
+                              storeProfile: ref.read(storeProfileProvider),
                             );
                         await Printing.layoutPdf(
                           onLayout: (format) => pdfBytes,

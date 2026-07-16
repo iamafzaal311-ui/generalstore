@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import '../../core/services/sync_service.dart';
 import '../../domain/repositories/inventory_repository.dart';
 import '../datasources/local_db_service.dart';
@@ -151,17 +154,30 @@ class InventoryRepositoryImpl implements InventoryRepository {
 
   @override
   Future<void> deleteProduct(String productId) async {
-    final product = _db.productsBox.get(productId);
-    if (product != null) {
-      product.isDeleted = true;
-      product.isDirty = true;
-      product.lastUpdated = DateTime.now();
-      await product.save();
-      try {
-        unawaited(_sync.syncDirtyRecords());
-      } catch (e) {
-        print('Sync error: $e');
+    // Hard delete from local Hive box
+    await _db.productsBox.delete(productId);
+    
+    // Hard delete from Firestore immediately if online
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final docRef = FirebaseFirestore.instance
+              .collection('stores')
+              .doc(user.uid)
+              .collection('products')
+              .doc(productId);
+          await docRef.delete();
+        }
       }
+    } catch (e) {
+      print('Firebase hard delete error: $e');
+    }
+    
+    try {
+      unawaited(_sync.syncDirtyRecords());
+    } catch (e) {
+      print('Sync error: $e');
     }
   }
 

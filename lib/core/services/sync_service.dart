@@ -11,6 +11,7 @@ import '../../data/models/purchase_model.dart';
 import '../../data/models/sale_model.dart';
 import '../../data/models/supplier_model.dart';
 import '../../data/models/user_model.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class SyncService {
@@ -33,19 +34,66 @@ class SyncService {
     });
 
     // Also monitor auth state to trigger sync on login
-    FirebaseAuth.instance.authStateChanges().listen((user) {
-      if (user != null) {
-        restoreAllFromCloud();
-      }
-    });
+    if (Firebase.apps.isNotEmpty) {
+      FirebaseAuth.instance.authStateChanges().listen((user) {
+        if (user != null) {
+          restoreAllFromCloud();
+        }
+      });
+    }
   }
 
   void dispose() {
     _connectivitySubscription?.cancel();
   }
 
+  /// Wipes ALL business data (products, brands, categories, suppliers,
+  /// customers, sales, purchases, expenses, payments) from both local Hive
+  /// storage AND Firebase Firestore for the current logged-in store.
+  Future<void> clearAllBusinessData() async {
+    // 1. Clear every local Hive box
+    await _db.categoriesBox.clear();
+    await _db.brandsBox.clear();
+    await _db.suppliersBox.clear();
+    await _db.customersBox.clear();
+    await _db.productsBox.clear();
+    await _db.salesBox.clear();
+    await _db.purchasesBox.clear();
+    await _db.expensesBox.clear();
+    await _db.paymentsBox.clear();
+
+    // 2. Clear Firestore collections for the current store
+    if (Firebase.apps.isEmpty) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final storeRef = FirebaseFirestore.instance
+        .collection('stores')
+        .doc(user.uid);
+
+    const collections = [
+      'categories',
+      'brands',
+      'suppliers',
+      'customers',
+      'products',
+      'sales',
+      'purchases',
+      'expenses',
+      'payments',
+    ];
+
+    for (final col in collections) {
+      final snapshot = await storeRef.collection(col).get();
+      for (final doc in snapshot.docs) {
+        await doc.reference.delete();
+      }
+    }
+  }
+
   Future<void> syncDirtyRecords() async {
     if (_isSyncing) return;
+    if (Firebase.apps.isEmpty) return;
     _isSyncing = true;
 
     try {
@@ -72,7 +120,7 @@ class SyncService {
           'isDeleted': cat.isDeleted,
         });
         cat.isDirty = false;
-        await cat.save();
+        await _db.categoriesBox.put(cat.categoryId, cat);
       }
 
       // 2. Sync Brands
@@ -86,7 +134,7 @@ class SyncService {
           'isDeleted': brand.isDeleted,
         });
         brand.isDirty = false;
-        await brand.save();
+        await _db.brandsBox.put(brand.brandId, brand);
       }
 
       // 3. Sync Suppliers
@@ -106,7 +154,7 @@ class SyncService {
           'isDeleted': sup.isDeleted,
         });
         sup.isDirty = false;
-        await sup.save();
+        await _db.suppliersBox.put(sup.supplierId, sup);
       }
 
       // 4. Sync Customers
@@ -125,7 +173,7 @@ class SyncService {
           'isDeleted': cust.isDeleted,
         });
         cust.isDirty = false;
-        await cust.save();
+        await _db.customersBox.put(cust.customerId, cust);
       }
 
       // 5. Sync Products
@@ -156,7 +204,7 @@ class SyncService {
           'isDeleted': prod.isDeleted,
         });
         prod.isDirty = false;
-        await prod.save();
+        await _db.productsBox.put(prod.productId, prod);
       }
 
       // 6. Sync Sales
@@ -179,7 +227,7 @@ class SyncService {
           'isDeleted': sale.isDeleted,
         });
         sale.isDirty = false;
-        await sale.save();
+        await _db.salesBox.put(sale.saleId, sale);
       }
 
       // 7. Sync Purchases
@@ -199,7 +247,7 @@ class SyncService {
           'isDeleted': purchase.isDeleted,
         });
         purchase.isDirty = false;
-        await purchase.save();
+        await _db.purchasesBox.put(purchase.purchaseId, purchase);
       }
 
       // 8. Sync Expenses
@@ -245,6 +293,7 @@ class SyncService {
   }
 
   Future<void> restoreAllFromCloud() async {
+    if (Firebase.apps.isEmpty) return;
     await syncDirtyRecords();
     try {
       final user = FirebaseAuth.instance.currentUser;

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:uuid/uuid.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -25,34 +26,33 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> initialize() async {
     if (_initialized) return;
 
-    // Add default products if DB is empty
-    if (_db.productsBox.isEmpty) {
-      final defaultProducts = DefaultDataHelper.getDefaultPakistaniProducts();
-      for (var p in defaultProducts) {
-        await _db.productsBox.put(p.productId, p);
-      }
-    }
+    // Default products seeding removed as requested by user.
 
     _initialized = true;
 
     // Restore last logged in session
     final lastUserId = _db.settingsBox.get('last_logged_in_user_id');
     if (lastUserId != null) {
-      final fbUser = FirebaseAuth.instance.currentUser;
-      if (fbUser != null && lastUserId == fbUser.uid) {
-        _currentUser = UserModel()
-          ..userId = fbUser.uid
-          ..username = fbUser.email ?? 'Admin'
-          ..fullName = 'Store Admin'
-          ..role = 'Admin'
-          ..isActive = true
-          ..isDirty = false
-          ..lastUpdated = DateTime.now();
-      } else {
-        final localUser = _db.usersBox.get(lastUserId);
-        if (localUser != null && localUser.isActive) {
-          _currentUser = localUser;
-        }
+      if (Firebase.apps.isNotEmpty) {
+        try {
+          final fbUser = FirebaseAuth.instance.currentUser;
+          if (fbUser != null && lastUserId == fbUser.uid) {
+            _currentUser = UserModel()
+              ..userId = fbUser.uid
+              ..username = fbUser.email ?? 'Admin'
+              ..fullName = 'Ali Abbas'
+              ..role = 'Admin'
+              ..isActive = true
+              ..isDirty = false
+              ..lastUpdated = DateTime.now();
+            return;
+          }
+        } catch (_) {}
+      }
+
+      final localUser = _db.usersBox.get(lastUserId);
+      if (localUser != null && localUser.isActive) {
+        _currentUser = localUser;
       }
     }
   }
@@ -61,13 +61,21 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<UserModel?> adminLogin(String email, String password) async {
     await initialize();
 
-    final oldUser = FirebaseAuth.instance.currentUser;
-    final oldUid = oldUser?.uid;
+    String? oldUid;
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        oldUid = FirebaseAuth.instance.currentUser?.uid;
+      } catch (_) {}
+    }
 
     await _remote.adminLogin(email, password);
 
-    final newUser = FirebaseAuth.instance.currentUser;
-    final newUid = newUser?.uid;
+    String? newUid;
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        newUid = FirebaseAuth.instance.currentUser?.uid;
+      } catch (_) {}
+    }
 
     if (oldUid != null && newUid != null && oldUid != newUid) {
       await _db.cleanDb(); // Wipe local DB if a DIFFERENT store admin logs in
@@ -78,7 +86,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final adminUser = UserModel()
       ..userId = newUid ?? 'admin_firebase_id'
       ..username = email
-      ..fullName = 'Store Admin'
+      ..fullName = 'Ali Abbas'
       ..role = 'Admin'
       ..isActive = true
       ..isDirty = false
@@ -245,16 +253,32 @@ class AuthRepositoryImpl implements AuthRepository {
 
     await _db.usersBox.delete(userId);
     try {
-      final oldUser = FirebaseAuth.instance.currentUser;
-      if (oldUser != null) {
-        await FirebaseFirestore.instance
-            .collection('stores')
-            .doc(oldUser.uid)
-            .collection('users')
-            .doc(userId)
-            .delete();
+      if (Firebase.apps.isNotEmpty) {
+        final oldUser = FirebaseAuth.instance.currentUser;
+        if (oldUser != null) {
+          await FirebaseFirestore.instance
+              .collection('stores')
+              .doc(oldUser.uid)
+              .collection('users')
+              .doc(userId)
+              .delete();
+        }
       }
     } catch (_) {}
+  }
+
+  Future<void> adminLogout() async {
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        final oldUser = FirebaseAuth.instance.currentUser;
+        if (oldUser != null) {
+          await FirebaseFirestore.instance
+              .collection('stores')
+              .doc(oldUser.uid)
+              .update({'lastActive': FieldValue.serverTimestamp()});
+        }
+      } catch (_) {}
+    }
   }
 
   @override

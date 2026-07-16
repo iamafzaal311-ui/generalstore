@@ -458,190 +458,164 @@ class _POSViewState extends ConsumerState<POSView> {
     );
 
     final cartPanel = Container(
-      width: isDesktop ? 400 : 320,
+      width: isWide ? (isDesktop ? 400 : 320) : double.infinity,
       decoration: BoxDecoration(
         border: Border(
           left: BorderSide(color: theme.dividerColor.withValues(alpha: 0.1)),
         ),
         color: theme.colorScheme.surface,
       ),
-      child: Column(
-        children: [
+      child: CustomScrollView(
+        slivers: [
           // Cart Header & Customer Inputs
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Cart Items (${posState.cart.length})',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.add_circle_outline, size: 16),
-                          label: const Text('Manual Item'),
-                          onPressed: _showManualItemDialog,
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_sweep_rounded,
-                            color: Colors.redAccent,
-                          ),
-                          tooltip: 'Clear Cart',
-                          onPressed: () {
-                            ref
-                                .read(posControllerProvider.notifier)
-                                .clearCart();
-                            _cartCustomerNameCtrl.clear();
-                            _cartCustomerPhoneCtrl.clear();
-                            _barcodeFocusNode.requestFocus();
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _cartCustomerNameCtrl,
-                        decoration: const InputDecoration(
-                          hintText: 'Customer Name',
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 12,
-                          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Cart Items (${posState.cart.length})',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _cartCustomerPhoneCtrl,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(
-                          hintText: 'Phone',
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 12,
+                      Row(
+                        children: [
+                          ElevatedButton.icon(
+                            icon: const Icon(
+                              Icons.add_circle_outline,
+                              size: 16,
+                            ),
+                            label: const Text('Manual Item'),
+                            onPressed: _showManualItemDialog,
                           ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.delete_sweep_rounded,
+                              color: Colors.redAccent,
+                            ),
+                            tooltip: 'Clear Cart',
+                            onPressed: () {
+                              ref
+                                  .read(posControllerProvider.notifier)
+                                  .clearCart();
+                              _cartCustomerNameCtrl.clear();
+                              _cartCustomerPhoneCtrl.clear();
+                              _barcodeFocusNode.requestFocus();
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _cartCustomerNameCtrl,
+                          decoration: const InputDecoration(
+                            hintText: 'Customer Name',
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 8,
+                            ),
+                          ),
+                          style: const TextStyle(fontSize: 12),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _cartCustomerPhoneCtrl,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            hintText: 'Phone',
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 8,
+                            ),
+                          ),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          const Divider(height: 1),
+          const SliverToBoxAdapter(child: Divider(height: 1)),
           // Cart Items List
-          Expanded(
-            child: posState.cart.isEmpty
-                ? const Center(child: Text('Cart is empty. Add products.'))
-                : ListView.builder(
-                    itemCount: posState.cart.length,
-                    itemBuilder: (context, index) {
-                      final item = posState.cart[index];
-                      return ListTile(
-                        title: Column(
+          if (posState.cart.isEmpty)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Center(child: Text('Cart is empty. Add products.')),
+              ),
+            )
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final item = posState.cart[index];
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  elevation: 0,
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.3,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                      color: theme.colorScheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              item.product.name,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${invState.categories.where((c) => c.categoryId == item.product.categoryId).firstOrNull?.name ?? '-'} | ${invState.brands.where((b) => b.brandId == item.product.brandId).firstOrNull?.name ?? '-'}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        subtitle: Text(
-                          'Rs. ${item.product.retailPrice.toStringAsFixed(0)} each',
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.remove_circle_outline,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                ref
-                                    .read(posControllerProvider.notifier)
-                                    .updateQuantity(
-                                      item.product.productId,
-                                      item.quantity - 1,
-                                    );
-                                _barcodeFocusNode.requestFocus();
-                              },
-                            ),
-                            InkWell(
-                              onTap: () => _showUpdateQuantityDialog(
-                                item.product.productId,
-                                item.quantity,
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: theme.colorScheme.outlineVariant,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.product.name,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  borderRadius: BorderRadius.circular(4),
-                                  color: theme
-                                      .colorScheme
-                                      .surfaceContainerHighest
-                                      .withValues(alpha: 0.3),
-                                ),
-                                child: Text(
-                                  item.quantity.truncateToDouble() ==
-                                          item.quantity
-                                      ? item.quantity.toStringAsFixed(0)
-                                      : item.quantity.toStringAsFixed(2),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${invState.categories.where((c) => c.categoryId == item.product.categoryId).firstOrNull?.name ?? '-'} | ${invState.brands.where((b) => b.brandId == item.product.brandId).firstOrNull?.name ?? '-'}',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey.shade600,
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Rs. ${item.product.retailPrice.toStringAsFixed(0)} each',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ],
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.add_circle_outline,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                ref
-                                    .read(posControllerProvider.notifier)
-                                    .updateQuantity(
-                                      item.product.productId,
-                                      item.quantity + 1,
-                                    );
-                                _barcodeFocusNode.requestFocus();
-                              },
                             ),
                             IconButton(
                               icon: const Icon(
@@ -649,6 +623,8 @@ class _POSViewState extends ConsumerState<POSView> {
                                 size: 18,
                                 color: Colors.redAccent,
                               ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
                               onPressed: () {
                                 ref
                                     .read(posControllerProvider.notifier)
@@ -658,278 +634,400 @@ class _POSViewState extends ConsumerState<POSView> {
                             ),
                           ],
                         ),
-                      );
-                    },
-                  ),
-          ),
-          const Divider(height: 1),
-          // Customer & Discount section
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<CustomerModel?>(
-                        initialValue: posState.selectedCustomer,
-                        decoration: const InputDecoration(
-                          labelText: 'Select Customer (Khata)',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                        ),
-                        items: [
-                          const DropdownMenuItem<CustomerModel?>(
-                            value: null,
-                            child: Text('Walk-in Customer'),
-                          ),
-                          ...posState.customers.map(
-                            (c) => DropdownMenuItem(
-                              value: c,
-                              child: Text('${c.name} (${c.phone ?? "-"})'),
-                            ),
-                          ),
-                        ],
-                        onChanged: (val) {
-                          ref
-                              .read(posControllerProvider.notifier)
-                              .selectCustomer(val);
-                          _barcodeFocusNode.requestFocus();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.person_add_alt_1_rounded),
-                      onPressed: _showAddCustomerDialog,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: posState.paymentMethod,
-                        decoration: const InputDecoration(
-                          labelText: 'Payment Method',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                        ),
-                        items:
-                            ['Cash', 'Card', 'Mobile Payment', 'Credit (Khata)']
-                                .map(
-                                  (m) => DropdownMenuItem(
-                                    value: m,
-                                    child: Text(m),
-                                  ),
-                                )
-                                .toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            ref
-                                .read(posControllerProvider.notifier)
-                                .setPaymentMethod(val);
-                          }
-                          _barcodeFocusNode.requestFocus();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: 'Flat Discount (Rs.)',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (val) {
-                          ref
-                              .read(posControllerProvider.notifier)
-                              .setFlatDiscount(double.tryParse(val) ?? 0.0);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: '% Discount',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (val) {
-                          ref
-                              .read(posControllerProvider.notifier)
-                              .setPercentageDiscount(double.tryParse(val) ?? 0.0);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        decoration: const InputDecoration(
-                          labelText: 'Amount Paid (Rs.)',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                        ),
-                        keyboardType: TextInputType.number,
-                        onChanged: (val) {
-                          final p = double.tryParse(val) ?? 0.0;
-                          ref
-                              .read(posControllerProvider.notifier)
-                              .setPaidAmount(p);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Change:',
-                              style: TextStyle(fontSize: 10),
-                            ),
                             Text(
-                              'Rs. ${posState.changeAmount.toStringAsFixed(0)}',
-                              style: const TextStyle(
+                              'Rs. ${(item.quantity * item.product.retailPrice).toStringAsFixed(0)}',
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                                color: theme.colorScheme.primary,
                               ),
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.remove_circle_outline,
+                                    size: 22,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () {
+                                    ref
+                                        .read(posControllerProvider.notifier)
+                                        .updateQuantity(
+                                          item.product.productId,
+                                          item.quantity - 1,
+                                        );
+                                    _barcodeFocusNode.requestFocus();
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () => _showUpdateQuantityDialog(
+                                    item.product.productId,
+                                    item.quantity,
+                                  ),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: theme.colorScheme.outlineVariant,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                      color: theme
+                                          .colorScheme
+                                          .surfaceContainerHighest
+                                          .withValues(alpha: 0.3),
+                                    ),
+                                    child: Text(
+                                      item.quantity.truncateToDouble() ==
+                                              item.quantity
+                                          ? item.quantity.toStringAsFixed(0)
+                                          : item.quantity.toStringAsFixed(2),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.add_circle_outline,
+                                    size: 22,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () {
+                                    ref
+                                        .read(posControllerProvider.notifier)
+                                        .updateQuantity(
+                                          item.product.productId,
+                                          item.quantity + 1,
+                                        );
+                                    _barcodeFocusNode.requestFocus();
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                );
+              }, childCount: posState.cart.length),
+            ),
+          const SliverToBoxAdapter(child: Divider(height: 1)),
+          // Customer & Discount section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<CustomerModel?>(
+                          initialValue: posState.selectedCustomer,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Select Customer (Khata)',
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
+                            ),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                          ),
+                          items: [
+                            const DropdownMenuItem<CustomerModel?>(
+                              value: null,
+                              child: Text('Walk-in Customer'),
+                            ),
+                            ...posState.customers.map(
+                              (c) => DropdownMenuItem(
+                                value: c,
+                                child: Text('${c.name} (${c.phone ?? "-"})'),
+                              ),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            ref
+                                .read(posControllerProvider.notifier)
+                                .selectCustomer(val);
+                            _barcodeFocusNode.requestFocus();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.person_add_alt_1_rounded),
+                        onPressed: _showAddCustomerDialog,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: posState.paymentMethod,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Payment Method',
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
+                            ),
+                          ),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                          ),
+                          items:
+                              [
+                                    'Cash',
+                                    'Card',
+                                    'Mobile Payment',
+                                    'Credit (Khata)',
+                                  ]
+                                  .map(
+                                    (m) => DropdownMenuItem(
+                                      value: m,
+                                      child: Text(m),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              ref
+                                  .read(posControllerProvider.notifier)
+                                  .setPaymentMethod(val);
+                            }
+                            _barcodeFocusNode.requestFocus();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          decoration: const InputDecoration(
+                            labelText: 'Flat Discount (Rs.)',
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
+                            ),
+                          ),
+                          style: const TextStyle(fontSize: 12),
+                          keyboardType: TextInputType.number,
+                          onChanged: (val) {
+                            ref
+                                .read(posControllerProvider.notifier)
+                                .setFlatDiscount(double.tryParse(val) ?? 0.0);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextFormField(
+                          decoration: const InputDecoration(
+                            labelText: '% Discount',
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
+                            ),
+                          ),
+                          style: const TextStyle(fontSize: 12),
+                          keyboardType: TextInputType.number,
+                          onChanged: (val) {
+                            ref
+                                .read(posControllerProvider.notifier)
+                                .setPercentageDiscount(
+                                  double.tryParse(val) ?? 0.0,
+                                );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          decoration: const InputDecoration(
+                            labelText: 'Received Amount (Rs.)',
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 8,
+                            ),
+                          ),
+                          style: const TextStyle(fontSize: 12),
+                          keyboardType: TextInputType.number,
+                          onChanged: (val) {
+                            final p = double.tryParse(val) ?? 0.0;
+                            ref
+                                .read(posControllerProvider.notifier)
+                                .setPaidAmount(p);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Pending:',
+                                style: TextStyle(fontSize: 10),
+                              ),
+                              Text(
+                                'Rs. ${posState.changeAmount.toStringAsFixed(0)}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           // Cart Totals and Save Button
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: theme.colorScheme.surfaceContainerHighest.withValues(
-              alpha: 0.5,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Subtotal:',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    Text('Rs. ${posState.subtotal.toStringAsFixed(0)}'),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Total Discount:',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    Text(
-                      '- Rs. ${posState.totalDiscount.toStringAsFixed(0)}',
-                      style: const TextStyle(color: Colors.green),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Grand Total:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+          SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.5,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Grand Total:',
+                        style: TextStyle(color: Colors.grey),
                       ),
-                    ),
-                    Text(
-                      'Rs. ${posState.grandTotal.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: theme.colorScheme.primary,
+                      Text('Rs. ${posState.subtotal.toStringAsFixed(0)}'),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total Discount:',
+                        style: TextStyle(color: Colors.grey),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.save_rounded),
-                        label: const Text(
-                          'Save Bill',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                      Text(
+                        '- Rs. ${posState.totalDiscount.toStringAsFixed(0)}',
+                        style: const TextStyle(color: Colors.green),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Current Bill Total:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue.shade700,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      ),
+                      Text(
+                        'Rs. ${posState.grandTotal.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.save_rounded),
+                          label: const Text(
+                            'Save Bill',
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                        ),
-                        onPressed: posState.cart.isEmpty
-                            ? null
-                            : () => _handleCheckout(false),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.print_rounded),
-                        label: const Text(
-                          'Print Bill',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
+                          onPressed: posState.cart.isEmpty
+                              ? null
+                              : () => _handleCheckout(false),
                         ),
-                        onPressed: posState.cart.isEmpty
-                            ? null
-                            : () => _handleCheckout(true),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.print_rounded),
+                          label: const Text(
+                            'Print Bill',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: posState.cart.isEmpty
+                              ? null
+                              : () => _handleCheckout(true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -942,7 +1040,7 @@ class _POSViewState extends ConsumerState<POSView> {
         actions: [
           // Barcode Scan field in App Bar for easy access
           Container(
-            width: isWide ? 250 : 180,
+            width: isWide ? 250 : 130,
             margin: const EdgeInsets.symmetric(vertical: 8),
             child: TextField(
               controller: _barcodeCtrl,
@@ -981,15 +1079,30 @@ class _POSViewState extends ConsumerState<POSView> {
                 ),
               ],
             )
-          : Column(
-              children: [
-                Expanded(flex: 5, child: catalogPanel),
-                Container(
-                  height: 4,
-                  color: theme.dividerColor.withValues(alpha: 0.1),
-                ),
-                Expanded(flex: 5, child: cartPanel),
-              ],
+          : DefaultTabController(
+              length: 2,
+              child: Column(
+                children: [
+                  TabBar(
+                    labelColor: theme.colorScheme.primary,
+                    unselectedLabelColor: Colors.grey,
+                    indicatorColor: theme.colorScheme.primary,
+                    tabs: [
+                      const Tab(
+                        text: 'Catalog',
+                        icon: Icon(Icons.inventory_2_outlined),
+                      ),
+                      Tab(
+                        text: 'Cart (${posState.cart.length})',
+                        icon: const Icon(Icons.shopping_cart_outlined),
+                      ),
+                    ],
+                  ),
+                  Expanded(
+                    child: TabBarView(children: [catalogPanel, cartPanel]),
+                  ),
+                ],
+              ),
             ),
     );
   }

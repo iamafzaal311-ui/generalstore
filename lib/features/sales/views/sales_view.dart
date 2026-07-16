@@ -144,7 +144,9 @@ class _SalesViewState extends ConsumerState<SalesView> {
     }
   }
 
-  void _showQuickAddCustomerDialog(void Function(void Function()) setStateDialog) {
+  void _showQuickAddCustomerDialog(
+    void Function(void Function()) setStateDialog,
+  ) {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
     final addressCtrl = TextEditingController();
@@ -162,7 +164,9 @@ class _SalesViewState extends ConsumerState<SalesView> {
               children: [
                 TextFormField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Customer Name*'),
+                  decoration: const InputDecoration(
+                    labelText: 'Customer Name*',
+                  ),
                   validator: (val) =>
                       val == null || val.trim().isEmpty ? 'Required' : null,
                 ),
@@ -194,9 +198,11 @@ class _SalesViewState extends ConsumerState<SalesView> {
                     ..address = addressCtrl.text.trim()
                     ..balance = 0.0
                     ..isDeleted = false;
-                  
-                  await ref.read(salesRepositoryProvider).saveCustomer(customer);
-                  
+
+                  await ref
+                      .read(salesRepositoryProvider)
+                      .saveCustomer(customer);
+
                   if (context.mounted) {
                     Navigator.pop(context);
                     await _loadSales();
@@ -233,9 +239,11 @@ class _SalesViewState extends ConsumerState<SalesView> {
 
             return AlertDialog(
               title: const Text('New Manual Sale Entry'),
-              content: SizedBox(
-                width: 700,
-                child: SingleChildScrollView(
+              content: SingleChildScrollView(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width > 800
+                      ? 700
+                      : double.maxFinite,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -245,7 +253,8 @@ class _SalesViewState extends ConsumerState<SalesView> {
                             child: DropdownButtonFormField<CustomerModel>(
                               value: selectedCustomer,
                               decoration: const InputDecoration(
-                                labelText: 'Select Customer (Optional for Walk-in)',
+                                labelText:
+                                    'Select Customer (Optional for Walk-in)',
                               ),
                               items: _customers.map((c) {
                                 return DropdownMenuItem(
@@ -292,7 +301,9 @@ class _SalesViewState extends ConsumerState<SalesView> {
                               items: invState.products.map((p) {
                                 return DropdownMenuItem(
                                   value: p,
-                                  child: Text('${p.name} (Stock: ${p.stock.toStringAsFixed(1)})'),
+                                  child: Text(
+                                    '${p.name} (Stock: ${p.stock.toStringAsFixed(1)})',
+                                  ),
                                 );
                               }).toList(),
                               onChanged: (val) {
@@ -316,9 +327,10 @@ class _SalesViewState extends ConsumerState<SalesView> {
                                     ),
                                     keyboardType: TextInputType.number,
                                     validator: (val) =>
-                                        val == null || double.tryParse(val) == null
-                                            ? 'Invalid'
-                                            : null,
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -330,9 +342,10 @@ class _SalesViewState extends ConsumerState<SalesView> {
                                     ),
                                     keyboardType: TextInputType.number,
                                     validator: (val) =>
-                                        val == null || double.tryParse(val) == null
-                                            ? 'Invalid'
-                                            : null,
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -340,28 +353,42 @@ class _SalesViewState extends ConsumerState<SalesView> {
                                   icon: const Icon(Icons.add_box_rounded),
                                   label: const Text("Add Item"),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Theme.of(context).colorScheme.primary,
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     foregroundColor: Colors.white,
                                   ),
                                   onPressed: () {
                                     if (addFormKey.currentState!.validate() &&
                                         selectedProduct != null) {
                                       final qty = double.parse(qtyCtrl.text);
-                                      final price = double.parse(priceCtrl.text);
+                                      final price = double.parse(
+                                        priceCtrl.text,
+                                      );
 
                                       if (qty > 0) {
-                                        final existingIndex = cart.indexWhere((i) => i['productId'] == selectedProduct!.productId);
+                                        final existingIndex = cart.indexWhere(
+                                          (i) =>
+                                              i['productId'] ==
+                                              selectedProduct!.productId,
+                                        );
                                         if (existingIndex >= 0) {
-                                           cart[existingIndex]['quantity'] += qty;
-                                           cart[existingIndex]['unitPrice'] = price;
-                                           cart[existingIndex]['total'] = cart[existingIndex]['quantity'] * price;
+                                          cart[existingIndex]['quantity'] +=
+                                              qty;
+                                          cart[existingIndex]['unitPrice'] =
+                                              price;
+                                          cart[existingIndex]['total'] =
+                                              cart[existingIndex]['quantity'] *
+                                              price;
                                         } else {
                                           cart.add({
-                                            'productId': selectedProduct!.productId,
+                                            'productId':
+                                                selectedProduct!.productId,
                                             'name': selectedProduct!.name,
                                             'quantity': qty,
                                             'unitPrice': price,
-                                            'purchasePrice': selectedProduct!.purchasePrice,
+                                            'purchasePrice':
+                                                selectedProduct!.purchasePrice,
                                             'discount': 0.0,
                                             'total': qty * price,
                                           });
@@ -399,7 +426,8 @@ class _SalesViewState extends ConsumerState<SalesView> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: cart.length,
-                            separatorBuilder: (c, i) => const Divider(height: 1),
+                            separatorBuilder: (c, i) =>
+                                const Divider(height: 1),
                             itemBuilder: (context, i) {
                               final item = cart[i];
                               return ListTile(
@@ -414,11 +442,15 @@ class _SalesViewState extends ConsumerState<SalesView> {
                                     Text(
                                       'Rs. ${item['total'].toStringAsFixed(2)}',
                                       style: const TextStyle(
-                                          fontWeight: FontWeight.bold),
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.delete,
-                                          color: Colors.red, size: 20),
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                        size: 20,
+                                      ),
                                       onPressed: () {
                                         setStateDialog(() {
                                           cart.removeAt(i);
@@ -437,7 +469,9 @@ class _SalesViewState extends ConsumerState<SalesView> {
                             const Text(
                               'Grand Total:',
                               style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold),
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const Spacer(),
                             Text(
@@ -491,20 +525,25 @@ class _SalesViewState extends ConsumerState<SalesView> {
                         final sale = SaleModel()
                           ..saleId = const Uuid().v4()
                           ..invoiceNumber = invoice
-                          ..cashierId = ref.read(currentUserProvider)?.userId ?? 'admin'
+                          ..cashierId =
+                              ref.read(currentUserProvider)?.userId ?? 'admin'
                           ..customerId = selectedCustomer?.customerId
                           ..subtotal = cartTotal
                           ..discount = 0.0
                           ..total = cartTotal
                           ..paidAmount = paidAmt
                           ..changeAmount = 0.0
-                          ..paymentMethod = paidAmt > 0 ? 'Cash' : 'Credit (Khata)'
+                          ..paymentMethod = paidAmt > 0
+                              ? 'Cash'
+                              : 'Credit (Khata)'
                           ..timestamp = timestamp
                           ..itemsJson = jsonEncode(cart)
                           ..isDeleted = false;
 
                         await ref.read(salesRepositoryProvider).saveSale(sale);
-                        await ref.read(inventoryControllerProvider.notifier).refreshAll();
+                        await ref
+                            .read(inventoryControllerProvider.notifier)
+                            .refreshAll();
                         await _loadSales();
 
                         if (context.mounted) {
@@ -517,9 +556,9 @@ class _SalesViewState extends ConsumerState<SalesView> {
                         }
                       } catch (e) {
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error: $e')),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('Error: $e')));
                         }
                       }
                     },
@@ -572,7 +611,8 @@ class _SalesViewState extends ConsumerState<SalesView> {
               itemBuilder: (context, index) {
                 final sale = _sales[index];
                 final unpaid = sale.total - sale.paidAmount;
-                final cName = sale.customerId != null && sale.customerId!.isNotEmpty
+                final cName =
+                    sale.customerId != null && sale.customerId!.isNotEmpty
                     ? (_customerNames[sale.customerId] ?? 'Walk-in Customer')
                     : 'Walk-in Customer';
                 List<dynamic> items = [];

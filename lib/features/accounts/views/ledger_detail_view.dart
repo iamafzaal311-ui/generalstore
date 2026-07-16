@@ -28,7 +28,7 @@ class LedgerDetailView extends ConsumerWidget {
   final SupplierModel? supplier;
 
   const LedgerDetailView({super.key, this.customer, this.supplier})
-      : assert(customer != null || supplier != null);
+    : assert(customer != null || supplier != null);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,39 +45,47 @@ class LedgerDetailView extends ConsumerWidget {
       // 1. Sales (Invoices that increase debt)
       final relevantSales = state.sales.where((s) => s.customerId == personId);
       for (var sale in relevantSales) {
-        entries.add(LedgerEntry(
-          date: sale.timestamp,
-          description: 'Invoice #${sale.invoiceNumber}',
-          debit: sale.total,
-          credit: sale.paidAmount,
-          itemsJson: sale.itemsJson,
-        ));
+        entries.add(
+          LedgerEntry(
+            date: sale.timestamp,
+            description: 'Invoice #${sale.invoiceNumber}',
+            debit: sale.total,
+            credit: sale.paidAmount,
+            itemsJson: sale.itemsJson,
+          ),
+        );
       }
     } else {
       // 1. Purchases (Invoices that increase debt)
-      final relevantPurchases =
-          state.purchases.where((p) => p.supplierId == personId);
+      final relevantPurchases = state.purchases.where(
+        (p) => p.supplierId == personId,
+      );
       for (var purchase in relevantPurchases) {
-        entries.add(LedgerEntry(
-          date: purchase.timestamp,
-          description: 'Purchase #${purchase.invoiceNumber}',
-          debit: purchase.totalAmount,
-          credit: purchase.paidAmount,
-          itemsJson: purchase.itemsJson,
-        ));
+        entries.add(
+          LedgerEntry(
+            date: purchase.timestamp,
+            description: 'Purchase #${purchase.invoiceNumber}',
+            debit: purchase.totalAmount,
+            credit: purchase.paidAmount,
+            itemsJson: purchase.itemsJson,
+          ),
+        );
       }
     }
 
     // 2. Payments (Records that pay off debt)
-    final relevantPayments = state.payments
-        .where((p) => p.personId == personId && p.isCustomer == isCustomer);
+    final relevantPayments = state.payments.where(
+      (p) => p.personId == personId && p.isCustomer == isCustomer,
+    );
 
     for (var payment in relevantPayments) {
-      entries.add(LedgerEntry(
-        date: payment.timestamp,
-        description: 'Payment Received/Paid',
-        credit: payment.amount,
-      ));
+      entries.add(
+        LedgerEntry(
+          date: payment.timestamp,
+          description: 'Payment Received/Paid',
+          credit: payment.amount,
+        ),
+      );
     }
 
     // Sort entries chronologically
@@ -129,95 +137,131 @@ class LedgerDetailView extends ConsumerWidget {
                       final credit = row['credit'] as double;
                       final balance = row['balance'] as double;
 
-                      final trailingWidget = Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      final titleWidget = Text(
+                        row['desc'],
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      );
+
+                      final subtitleWidget = Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (debit > 0)
-                            Text(
-                              'Total: Rs. ${debit.toStringAsFixed(0)}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          if (credit > 0)
-                            Text(
-                              'Paid: Rs. ${credit.toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                  color: Colors.green, fontSize: 12),
-                            ),
-                          if (isBill && debit - credit > 0)
-                            Text(
-                              'Due: Rs. ${(debit - credit).toStringAsFixed(0)}',
-                              style: const TextStyle(
-                                  color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                          const SizedBox(height: 4),
                           Text(
-                            'Bal: Rs. ${balance.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: balance > 0
-                                  ? Colors.red.shade700
-                                  : Colors.green.shade700,
-                            ),
+                            DateFormat('dd MMM yyyy HH:mm').format(row['date']),
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 8,
+                            children: [
+                              if (debit > 0)
+                                Text(
+                                  'Total: Rs. ${debit.toStringAsFixed(0)}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              if (credit > 0)
+                                Text(
+                                  'Paid: Rs. ${credit.toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    color: Colors.green,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              if (isBill && debit - credit > 0)
+                                Text(
+                                  'Due: Rs. ${(debit - credit).toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    color: Colors.redAccent,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                            ],
                           ),
                         ],
+                      );
+
+                      final trailingWidget = Text(
+                        'Bal:\nRs. ${balance.toStringAsFixed(0)}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: balance > 0
+                              ? Colors.red.shade700
+                              : Colors.green.shade700,
+                        ),
                       );
 
                       if (isBill) {
                         return Card(
                           margin: const EdgeInsets.symmetric(
-                              vertical: 4.0, horizontal: 8.0),
+                            vertical: 4.0,
+                            horizontal: 8.0,
+                          ),
                           child: ExpansionTile(
                             leading: CircleAvatar(
-                              backgroundColor: theme.colorScheme.primaryContainer,
+                              backgroundColor:
+                                  theme.colorScheme.primaryContainer,
                               child: const Icon(Icons.receipt),
                             ),
-                            title: Text(
-                              row['desc'],
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(DateFormat('dd MMM yyyy HH:mm')
-                                .format(row['date'])),
+                            title: titleWidget,
+                            subtitle: subtitleWidget,
                             trailing: trailingWidget,
                             children: [
                               Padding(
                                 padding: const EdgeInsets.all(16.0),
                                 child: Table(
                                   border: TableBorder.all(
-                                      color: Colors.grey.shade300),
+                                    color: Colors.grey.shade300,
+                                  ),
                                   children: [
                                     const TableRow(
                                       decoration: BoxDecoration(
-                                          color: Color(0xFFF5F5F5)),
+                                        color: Color(0xFFF5F5F5),
+                                      ),
                                       children: [
                                         Padding(
                                           padding: EdgeInsets.all(8.0),
-                                          child: Text('Product Name',
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
+                                          child: Text(
+                                            'Product Name',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                         ),
                                         Padding(
                                           padding: EdgeInsets.all(8.0),
-                                          child: Text('Qty',
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
+                                          child: Text(
+                                            'Qty',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                         ),
                                         Padding(
                                           padding: EdgeInsets.all(8.0),
-                                          child: Text('Total',
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold)),
+                                          child: Text(
+                                            'Total',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
                                     ...items.map((item) {
-                                      final name = item['productName'] ?? item['name'] ?? 'Unknown';
+                                      final name =
+                                          item['productName'] ??
+                                          item['name'] ??
+                                          'Unknown';
                                       final qty = item['quantity'] ?? 0;
-                                      final total = item['totalPrice'] ??
+                                      final total =
+                                          item['totalPrice'] ??
                                           item['total'] ??
                                           0;
-                                      final price = item['price'] ?? item['unitPrice'] ?? item['unitCost'] ?? 0;
+                                      final price =
+                                          item['price'] ??
+                                          item['unitPrice'] ??
+                                          item['unitCost'] ??
+                                          0;
                                       return TableRow(
                                         children: [
                                           Padding(
@@ -237,26 +281,26 @@ class LedgerDetailView extends ConsumerWidget {
                                     }),
                                   ],
                                 ),
-                              )
+                              ),
                             ],
                           ),
                         );
                       } else {
                         return Card(
                           margin: const EdgeInsets.symmetric(
-                              vertical: 4.0, horizontal: 8.0),
+                            vertical: 4.0,
+                            horizontal: 8.0,
+                          ),
                           child: ListTile(
                             leading: CircleAvatar(
                               backgroundColor: Colors.green.shade100,
-                              child: const Icon(Icons.payments, color: Colors.green),
+                              child: const Icon(
+                                Icons.payments,
+                                color: Colors.green,
+                              ),
                             ),
-                            title: Text(
-                              row['desc'],
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(DateFormat('dd MMM yyyy HH:mm')
-                                .format(row['date'])),
+                            title: titleWidget,
+                            subtitle: subtitleWidget,
                             trailing: trailingWidget,
                           ),
                         );
@@ -273,7 +317,9 @@ class LedgerDetailView extends ConsumerWidget {
                       const Text(
                         'Net Current Balance: ',
                         style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         'Rs. ${runningBalance.toStringAsFixed(2)}',

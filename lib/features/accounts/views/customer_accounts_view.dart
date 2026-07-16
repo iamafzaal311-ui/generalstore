@@ -20,6 +20,11 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(accountsControllerProvider.notifier).refreshAccounts();
+      }
+    });
     _searchCtrl.addListener(() {
       setState(() {
         _searchQuery = _searchCtrl.text.toLowerCase();
@@ -83,10 +88,7 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
     );
   }
 
-  void _showCustomerDetails(
-    CustomerModel customer,
-    List<SaleModel> allSales,
-  ) {
+  void _showCustomerDetails(CustomerModel customer, List<SaleModel> allSales) {
     final customerSales = allSales
         .where((s) => s.customerId == customer.customerId)
         .toList();
@@ -142,31 +144,55 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  subtitle: Text(
-                                    'Date: ${DateFormat('dd-MM-yyyy HH:mm').format(s.timestamp)}',
-                                  ),
-                                  trailing: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Total: Rs. ${s.total.toStringAsFixed(0)}',
+                                        DateFormat(
+                                          'dd MMM yyyy HH:mm',
+                                        ).format(s.timestamp),
                                       ),
-                                      Text(
-                                        'Paid: Rs. ${s.paidAmount.toStringAsFixed(0)}',
-                                        style: const TextStyle(
-                                          color: Colors.green,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Pending: Rs. ${pending.toStringAsFixed(0)}',
-                                        style: const TextStyle(
-                                          color: Colors.red,
-                                          fontSize: 11,
-                                        ),
+                                      const SizedBox(height: 4),
+                                      Wrap(
+                                        spacing: 8,
+                                        children: [
+                                          Text(
+                                            'Total: Rs. ${s.total.toStringAsFixed(0)}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Paid: Rs. ${s.paidAmount.toStringAsFixed(0)}',
+                                            style: const TextStyle(
+                                              color: Colors.green,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          if (pending > 0)
+                                            Text(
+                                              'Pending: Rs. ${pending.toStringAsFixed(0)}',
+                                              style: const TextStyle(
+                                                color: Colors.red,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ],
+                                  ),
+                                  trailing: Text(
+                                    pending > 0
+                                        ? 'Due:\nRs. ${pending.toStringAsFixed(0)}'
+                                        : 'Cleared',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: pending > 0
+                                          ? Colors.red
+                                          : Colors.green,
+                                    ),
                                   ),
                                 ),
                               );
@@ -239,7 +265,10 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
                       Expanded(
                         child: Text(
                           cust.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                       Column(
@@ -253,7 +282,9 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
                             'Rs. ${cust.balance.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: cust.balance > 0 ? Colors.red : Colors.green,
+                              color: cust.balance > 0
+                                  ? Colors.red
+                                  : Colors.green,
                             ),
                           ),
                         ],
@@ -268,7 +299,11 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
                   const SizedBox(height: 4),
                   const Text(
                     'Tap to view bill history',
-                    style: TextStyle(color: Colors.blue, fontSize: 12, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Align(

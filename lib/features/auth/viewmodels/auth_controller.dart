@@ -1,10 +1,11 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../data/models/store_profile_model.dart';
 import '../../../core/providers/global_providers.dart';
 import '../../../data/models/user_model.dart';
 import '../../../domain/repositories/auth_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AuthState {
   final bool isLoading;
@@ -38,17 +39,21 @@ class AuthController extends StateNotifier<AuthState> {
     final user = await _repository.getCurrentUser();
     if (user != null) {
       _ref.read(currentUserProvider.notifier).state = user;
-      try {
-        final adminUid = FirebaseAuth.instance.currentUser!.uid;
-        final doc = await FirebaseFirestore.instance
-            .collection('stores')
-            .doc(adminUid)
-            .collection('profile')
-            .doc('info')
-            .get();
-        _ref.read(storeProfileProvider.notifier).state =
-            StoreProfileModel.fromFirestore(doc);
-      } catch (_) {}
+      if (Firebase.apps.isNotEmpty) {
+        try {
+          final adminUid = FirebaseAuth.instance.currentUser?.uid;
+          if (adminUid != null) {
+            final doc = await FirebaseFirestore.instance
+                .collection('stores')
+                .doc(adminUid)
+                .collection('profile')
+                .doc('info')
+                .get();
+            _ref.read(storeProfileProvider.notifier).state =
+                StoreProfileModel.fromFirestore(doc);
+          }
+        } catch (_) {}
+      }
     }
     await loadUsers();
   }
@@ -70,7 +75,11 @@ class AuthController extends StateNotifier<AuthState> {
               .get();
           final profile = StoreProfileModel.fromFirestore(doc);
           if (!profile.isActive) {
-            await FirebaseAuth.instance.signOut();
+            if (Firebase.apps.isNotEmpty) {
+              try {
+                await FirebaseAuth.instance.signOut();
+              } catch (_) {}
+            }
             _ref.read(currentUserProvider.notifier).state = null;
             state = state.copyWith(
               isLoading: false,
@@ -97,27 +106,32 @@ class AuthController extends StateNotifier<AuthState> {
   ) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      if (cred.user != null) {
-        final uid = cred.user!.uid;
-        await FirebaseFirestore.instance
-            .collection('stores')
-            .doc(uid)
-            .collection('profile')
-            .doc('info')
-            .set(profile.toMap());
-        await FirebaseFirestore.instance.collection('stores').doc(uid).set({
-          ...profile.toMap(),
-          'uid': uid,
-          'email': email,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+      if (Firebase.apps.isNotEmpty) {
+        try {
+          final cred = await FirebaseAuth.instance
+              .createUserWithEmailAndPassword(email: email, password: password);
+          if (cred.user != null) {
+            final uid = cred.user!.uid;
+            await FirebaseFirestore.instance
+                .collection('stores')
+                .doc(uid)
+                .collection('profile')
+                .doc('info')
+                .set(profile.toMap());
+            await FirebaseFirestore.instance.collection('stores').doc(uid).set({
+              ...profile.toMap(),
+              'uid': uid,
+              'email': email,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
 
-        // Log out immediately so developer can hand over credentials, or login as Admin manually.
-        await FirebaseAuth.instance.signOut();
+            // Log out immediately so developer can hand over credentials, or login as Admin manually.
+            await FirebaseAuth.instance.signOut();
+          }
+        } catch (e) {
+          state = state.copyWith(isLoading: false, errorMessage: e.toString());
+          return false;
+        }
       }
       state = state.copyWith(isLoading: false);
       return true;
@@ -143,20 +157,23 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   Future<bool> toggleStoreStatus(String uid, bool currentStatus) async {
-    try {
-      await FirebaseFirestore.instance.collection('stores').doc(uid).set({
-        'isActive': !currentStatus,
-      }, SetOptions(merge: true));
-      await FirebaseFirestore.instance
-          .collection('stores')
-          .doc(uid)
-          .collection('profile')
-          .doc('info')
-          .update({'isActive': !currentStatus});
-      return true;
-    } catch (e) {
-      return false;
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        await FirebaseFirestore.instance.collection('stores').doc(uid).set({
+          'isActive': !currentStatus,
+        }, SetOptions(merge: true));
+        await FirebaseFirestore.instance
+            .collection('stores')
+            .doc(uid)
+            .collection('profile')
+            .doc('info')
+            .update({'isActive': !currentStatus});
+        return true;
+      } catch (e) {
+        return false;
+      }
     }
+    return false;
   }
 
   Future<bool> login(String username, String password) async {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../viewmodels/auth_controller.dart';
 import '../../../data/models/store_profile_model.dart';
+import '../../../core/providers/global_providers.dart';
 
 class DeveloperDashboardView extends ConsumerStatefulWidget {
   const DeveloperDashboardView({super.key});
@@ -52,6 +53,64 @@ class _DeveloperDashboardViewState
     }
   }
 
+  Future<void> _wipeAllData() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Wipe All Data?', style: TextStyle(color: Colors.red)),
+          ],
+        ),
+        content: const Text(
+          'This will permanently DELETE all products, categories, brands, suppliers, customers, sales, purchases and expenses from BOTH local storage and Firebase.\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('YES, DELETE EVERYTHING'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final syncService = ref.read(syncServiceProvider);
+      await syncService.clearAllBusinessData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ All business data wiped successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error wiping data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,6 +118,11 @@ class _DeveloperDashboardViewState
         title: const Text('Developer Dashboard'),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadStores),
+          IconButton(
+            icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+            tooltip: 'Wipe All Data (Danger)',
+            onPressed: _wipeAllData,
+          ),
         ],
       ),
       body: _isLoading

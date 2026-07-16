@@ -24,6 +24,7 @@ class _ProductsViewState extends ConsumerState<ProductsView>
   late TabController _tabController;
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  final Set<String> _selectedProductIds = {};
 
   @override
   void initState() {
@@ -33,6 +34,15 @@ class _ProductsViewState extends ConsumerState<ProductsView>
       setState(() {
         _searchQuery = _searchCtrl.text.toLowerCase();
       });
+    });
+    // Clear search when switching tabs
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        _searchCtrl.clear();
+        setState(() {
+          _selectedProductIds.clear();
+        });
+      }
     });
   }
 
@@ -69,6 +79,25 @@ class _ProductsViewState extends ConsumerState<ProductsView>
             Tab(icon: Icon(Icons.local_shipping_outlined), text: 'Suppliers'),
           ],
         ),
+        actions: [
+          if (_tabController.index == 0 && state.products.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep, color: Colors.redAccent),
+              tooltip: 'Delete ALL Products',
+              onPressed: () {
+                _confirmDelete(context, () async {
+                  final ctrl = ref.read(inventoryControllerProvider.notifier);
+                  for (final p in state.products) {
+                    await ctrl.deleteProduct(p.productId);
+                  }
+                  setState(() {
+                    _selectedProductIds.clear();
+                  });
+                });
+              },
+            ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -82,7 +111,12 @@ class _ProductsViewState extends ConsumerState<ProductsView>
                         child: TextField(
                           controller: _searchCtrl,
                           decoration: InputDecoration(
-                            hintText: 'Search products, SKU, categories...',
+                            hintText: [
+                              'Search products by name, SKU, barcode...',
+                              'Search categories...',
+                              'Search brands...',
+                              'Search suppliers by name or phone...',
+                            ].elementAt(_tabController.index),
                             prefixIcon: const Icon(Icons.search_rounded),
                             suffixIcon: _searchQuery.isNotEmpty
                                 ? IconButton(
@@ -94,6 +128,19 @@ class _ProductsViewState extends ConsumerState<ProductsView>
                         ),
                       ),
                       const SizedBox(width: 16),
+                      if (_tabController.index == 0 && _selectedProductIds.isNotEmpty) ...[
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          ),
+                          onPressed: _deleteSelectedProducts,
+                          icon: const Icon(Icons.delete_rounded),
+                          label: Text('Delete (${_selectedProductIds.length})'),
+                        ),
+                        const SizedBox(width: 16),
+                      ],
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.colorScheme.primary,
@@ -143,6 +190,18 @@ class _ProductsViewState extends ConsumerState<ProductsView>
     }
   }
 
+  void _deleteSelectedProducts() {
+    _confirmDelete(context, () async {
+      final ctrl = ref.read(inventoryControllerProvider.notifier);
+      for (final id in _selectedProductIds) {
+        await ctrl.deleteProduct(id);
+      }
+      setState(() {
+        _selectedProductIds.clear();
+      });
+    });
+  }
+
   // --- TABS ---
   Widget _buildProductsTab(InventoryState state) {
     var list = state.products;
@@ -157,59 +216,76 @@ class _ProductsViewState extends ConsumerState<ProductsView>
     }
     if (list.isEmpty) return const Center(child: Text('No products found.'));
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SingleChildScrollView(
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('Image')),
-            DataColumn(label: Text('Product Name')),
-            DataColumn(label: Text('SKU / Barcode')),
-            DataColumn(label: Text('Category & Brand')),
-            DataColumn(label: Text('Stock')),
-            DataColumn(label: Text('Price')),
-            DataColumn(label: Text('Actions')),
-          ],
-          rows: list.map((p) {
-            final cat =
-                state.categories
-                    .where((c) => c.categoryId == p.categoryId)
-                    .firstOrNull
-                    ?.name ??
-                '-';
-            final br =
-                state.brands
-                    .where((b) => b.brandId == p.brandId)
-                    .firstOrNull
-                    ?.name ??
-                '-';
-            return DataRow(
-              cells: [
-                DataCell(
-                  p.imagePath != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.network(
-                            p.imagePath!,
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(
-                                  Icons.inventory_2,
-                                  color: Colors.grey,
-                                ),
-                          ),
-                        )
-                      : const Icon(Icons.inventory_2, color: Colors.grey),
-                ),
-                DataCell(Text(p.name)),
-                DataCell(Text('${p.sku ?? '-'}\n${p.barcode ?? '-'}')),
-                DataCell(Text('$cat\n$br')),
-                DataCell(Text('${p.stock} ${p.unit}')),
-                DataCell(Text('Rs. ${p.retailPrice.toStringAsFixed(0)}')),
-                DataCell(
-                  Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 600) {
+          // Mobile View: Cards
+          return ListView.builder(
+            padding: const EdgeInsets.all(8),
+            itemCount: list.length,
+            itemBuilder: (context, index) {
+              final p = list[index];
+              final cat =
+                  state.categories
+                      .where((c) => c.categoryId == p.categoryId)
+                      .firstOrNull
+                      ?.name ??
+                  '-';
+              final br =
+                  state.brands
+                      .where((b) => b.brandId == p.brandId)
+                      .firstOrNull
+                      ?.name ??
+                  '-';
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Checkbox(
+                        value: _selectedProductIds.contains(p.productId),
+                        onChanged: (val) {
+                          setState(() {
+                            if (val == true) {
+                              _selectedProductIds.add(p.productId);
+                            } else {
+                              _selectedProductIds.remove(p.productId);
+                            }
+                          });
+                        },
+                      ),
+                      p.imagePath != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: Image.network(
+                                p.imagePath!,
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(
+                                      Icons.inventory_2,
+                                      color: Colors.grey,
+                                    ),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.inventory_2,
+                              size: 40,
+                              color: Colors.grey,
+                            ),
+                    ],
+                  ),
+                  title: Text(
+                    p.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    'Stock: ${p.stock} ${p.unit}\nPrice: Rs. ${p.retailPrice.toStringAsFixed(0)}\nCat: $cat | Brand: $br',
+                  ),
+                  isThreeLine: true,
+                  trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
@@ -228,17 +304,122 @@ class _ProductsViewState extends ConsumerState<ProductsView>
                     ],
                   ),
                 ),
+              );
+            },
+          );
+        }
+
+        // Desktop View: DataTable
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SingleChildScrollView(
+            child: DataTable(
+              showCheckboxColumn: true,
+              onSelectAll: (val) {
+                setState(() {
+                  if (val == true) {
+                    _selectedProductIds.addAll(list.map((p) => p.productId));
+                  } else {
+                    _selectedProductIds.clear();
+                  }
+                });
+              },
+              columns: const [
+                DataColumn(label: Text('Image')),
+                DataColumn(label: Text('Product Name')),
+                DataColumn(label: Text('SKU / Barcode')),
+                DataColumn(label: Text('Category & Brand')),
+                DataColumn(label: Text('Stock')),
+                DataColumn(label: Text('Price')),
+                DataColumn(label: Text('Actions')),
               ],
-            );
-          }).toList(),
-        ),
-      ),
+              rows: list.map((p) {
+                final cat =
+                    state.categories
+                        .where((c) => c.categoryId == p.categoryId)
+                        .firstOrNull
+                        ?.name ??
+                    '-';
+                final br =
+                    state.brands
+                        .where((b) => b.brandId == p.brandId)
+                        .firstOrNull
+                        ?.name ??
+                    '-';
+                return DataRow(
+                  selected: _selectedProductIds.contains(p.productId),
+                  onSelectChanged: (val) {
+                    setState(() {
+                      if (val == true) {
+                        _selectedProductIds.add(p.productId);
+                      } else {
+                        _selectedProductIds.remove(p.productId);
+                      }
+                    });
+                  },
+                  cells: [
+                    DataCell(
+                      p.imagePath != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: Image.network(
+                                p.imagePath!,
+                                width: 40,
+                                height: 40,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const Icon(
+                                      Icons.inventory_2,
+                                      color: Colors.grey,
+                                    ),
+                              ),
+                            )
+                          : const Icon(Icons.inventory_2, color: Colors.grey),
+                    ),
+                    DataCell(Text(p.name)),
+                    DataCell(Text('${p.sku ?? '-'}\n${p.barcode ?? '-'}')),
+                    DataCell(Text('$cat\n$br')),
+                    DataCell(Text('${p.stock} ${p.unit}')),
+                    DataCell(Text('Rs. ${p.retailPrice.toStringAsFixed(0)}')),
+                    DataCell(
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.orange),
+                            onPressed: () => _showProductFormDialog(p),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _confirmDelete(
+                              context,
+                              () => ref
+                                  .read(inventoryControllerProvider.notifier)
+                                  .deleteProduct(p.productId),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildCategoriesTab(InventoryState state) {
+    var items = state.categories;
+    if (_searchQuery.isNotEmpty) {
+      items = items
+          .where((c) => c.name.toLowerCase().contains(_searchQuery))
+          .toList();
+    }
     return _buildSimpleTable(
-      items: state.categories,
+      items: items,
       columns: ['Category Name', 'Description', 'Actions'],
       cellBuilder: (c) => [
         DataCell(Text((c as CategoryModel).name)),
@@ -268,8 +449,14 @@ class _ProductsViewState extends ConsumerState<ProductsView>
   }
 
   Widget _buildBrandsTab(InventoryState state) {
+    var items = state.brands;
+    if (_searchQuery.isNotEmpty) {
+      items = items
+          .where((b) => b.name.toLowerCase().contains(_searchQuery))
+          .toList();
+    }
     return _buildSimpleTable(
-      items: state.brands,
+      items: items,
       columns: ['Brand Name', 'Description', 'Actions'],
       cellBuilder: (b) => [
         DataCell(Text((b as BrandModel).name)),
@@ -299,8 +486,19 @@ class _ProductsViewState extends ConsumerState<ProductsView>
   }
 
   Widget _buildSuppliersTab(InventoryState state) {
+    var items = state.suppliers;
+    if (_searchQuery.isNotEmpty) {
+      items = items
+          .where(
+            (s) =>
+                s.name.toLowerCase().contains(_searchQuery) ||
+                (s.phone ?? '').toLowerCase().contains(_searchQuery) ||
+                (s.contactName ?? '').toLowerCase().contains(_searchQuery),
+          )
+          .toList();
+    }
     return _buildSimpleTable(
-      items: state.suppliers,
+      items: items,
       columns: ['Company Name', 'Contact', 'Phone', 'Actions'],
       cellBuilder: (s) => [
         DataCell(Text((s as SupplierModel).name)),
@@ -336,14 +534,51 @@ class _ProductsViewState extends ConsumerState<ProductsView>
     required List<DataCell> Function(dynamic) cellBuilder,
   }) {
     if (items.isEmpty) return const Center(child: Text('No records found.'));
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SingleChildScrollView(
-        child: DataTable(
-          columns: columns.map((c) => DataColumn(label: Text(c))).toList(),
-          rows: items.map((item) => DataRow(cells: cellBuilder(item))).toList(),
-        ),
-      ),
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 600) {
+          // Mobile view: list of cards
+          return ListView.builder(
+            padding: const EdgeInsets.all(8),
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final cells = cellBuilder(items[index]);
+              // Assuming first column is Name/Title, last is Actions, middle is subtitle info
+              final titleText = (cells[0].child as Text).data ?? '';
+              final subtitleText = cells.length > 2
+                  ? (cells[1].child as Text).data ?? ''
+                  : '';
+              final actionsWidget = cells.last.child;
+
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  title: Text(
+                    titleText,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(subtitleText),
+                  trailing: actionsWidget,
+                ),
+              );
+            },
+          );
+        }
+
+        // Desktop view: DataTable
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SingleChildScrollView(
+            child: DataTable(
+              columns: columns.map((c) => DataColumn(label: Text(c))).toList(),
+              rows: items
+                  .map((item) => DataRow(cells: cellBuilder(item)))
+                  .toList(),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -406,10 +641,13 @@ class _ProductsViewState extends ConsumerState<ProductsView>
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
-                final cat = category ??
+                final cat =
+                    category ??
                     (CategoryModel()
-                      ..categoryId =
-                          const Uuid().v4().toString().substring(0, 8)
+                      ..categoryId = const Uuid().v4().toString().substring(
+                        0,
+                        8,
+                      )
                       ..isDeleted = false);
                 cat.name = nameCtrl.text;
                 cat.description = descCtrl.text;
@@ -460,7 +698,8 @@ class _ProductsViewState extends ConsumerState<ProductsView>
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
-                final b = brand ??
+                final b =
+                    brand ??
                     (BrandModel()
                       ..brandId = const Uuid().v4().toString().substring(0, 8)
                       ..isDeleted = false);
@@ -511,10 +750,13 @@ class _ProductsViewState extends ConsumerState<ProductsView>
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
-                final s = supplier ??
+                final s =
+                    supplier ??
                     (SupplierModel()
-                      ..supplierId =
-                          const Uuid().v4().toString().substring(0, 8)
+                      ..supplierId = const Uuid().v4().toString().substring(
+                        0,
+                        8,
+                      )
                       ..isDeleted = false
                       ..balance = 0.0);
                 s.name = nameCtrl.text;
@@ -555,7 +797,7 @@ class _ProductsViewState extends ConsumerState<ProductsView>
       text: product?.minimumStock.toString() ?? '10',
     );
     final expiryCtrl = TextEditingController(
-      text: product?.expiryDate != null 
+      text: product?.expiryDate != null
           ? product!.expiryDate!.toIso8601String().split('T')[0]
           : '',
     );
@@ -611,7 +853,9 @@ class _ProductsViewState extends ConsumerState<ProductsView>
               key: formKey,
               child: SingleChildScrollView(
                 child: SizedBox(
-                  width: 500,
+                  width: MediaQuery.of(context).size.width > 600
+                      ? 500
+                      : double.maxFinite,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,

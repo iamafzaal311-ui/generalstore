@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../data/models/product_model.dart';
 import 'print_helper.dart';
 import '../../data/models/expense_model.dart';
+import '../../data/models/store_profile_model.dart';
 
 /// Helper for generating simple summary PDF documents (for products/expenses).
 /// For sales invoices and receipt printing, see [PrintHelper].
@@ -13,27 +14,37 @@ class PdfHelper {
   static Future<Uint8List> generateProductStockReport(
     List<ProductModel> products, {
     String title = 'Product Stock Report',
+    StoreProfileModel? storeProfile,
   }) async {
     final theme = await PrintHelper.getUrduPdfTheme();
     final pdf = pw.Document(theme: theme);
+    final urduFont = await PrintHelper.getUrduFont();
+    final vdnLogo = await PrintHelper.getVdnLogo();
     final now = DateTime.now();
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
+        footer: (context) =>
+            PrintHelper.buildPdfFooter(urduFont, vdnLogo, isThermal: false),
         header: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
+            PrintHelper.buildPdfHeader(
+              urduFont,
+              isThermal: false,
+              profile: storeProfile,
+            ),
+            pw.SizedBox(height: 8),
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
                 pw.Text(
-                  'AL-MAKKAH GENERAL STORE',
+                  title,
                   style: pw.TextStyle(
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.teal700,
                   ),
                 ),
                 pw.Text(
@@ -44,11 +55,6 @@ class PdfHelper {
                   ),
                 ),
               ],
-            ),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              title,
-              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
             ),
             pw.Divider(thickness: 1, color: PdfColors.grey300),
             pw.SizedBox(height: 8),
@@ -109,9 +115,12 @@ class PdfHelper {
   static Future<Uint8List> generateExpensesReport(
     List<ExpenseModel> expenses, {
     String title = 'Expenses Report',
+    StoreProfileModel? storeProfile,
   }) async {
     final theme = await PrintHelper.getUrduPdfTheme();
     final pdf = pw.Document(theme: theme);
+    final urduFont = await PrintHelper.getUrduFont();
+    final vdnLogo = await PrintHelper.getVdnLogo();
     final now = DateTime.now();
     final total = expenses.fold(0.0, (sum, e) => sum + e.amount);
 
@@ -119,18 +128,25 @@ class PdfHelper {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
+        footer: (context) =>
+            PrintHelper.buildPdfFooter(urduFont, vdnLogo, isThermal: false),
         header: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
+            PrintHelper.buildPdfHeader(
+              urduFont,
+              isThermal: false,
+              profile: storeProfile,
+            ),
+            pw.SizedBox(height: 8),
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
                 pw.Text(
-                  'AL-MAKKAH GENERAL STORE',
+                  title,
                   style: pw.TextStyle(
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.teal700,
                   ),
                 ),
                 pw.Text(
@@ -141,11 +157,6 @@ class PdfHelper {
                   ),
                 ),
               ],
-            ),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              title,
-              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
             ),
             pw.Divider(thickness: 1, color: PdfColors.grey300),
             pw.SizedBox(height: 8),

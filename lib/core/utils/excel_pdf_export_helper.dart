@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'print_helper.dart';
 import '../../data/models/sale_model.dart';
 import '../../data/models/product_model.dart';
+import '../../data/models/store_profile_model.dart';
 
 class ExcelPdfExportHelper {
   static Future<Uint8List> exportSalesToExcel(List<SaleModel> sales) async {
@@ -41,32 +42,47 @@ class ExcelPdfExportHelper {
   static Future<Uint8List> exportSalesToPdf(
     List<SaleModel> sales, {
     String reportTitle = 'SALES REPORT',
+    StoreProfileModel? storeProfile,
   }) async {
     final theme = await PrintHelper.getUrduPdfTheme();
     final pdf = pw.Document(theme: theme);
+    final urduFont = await PrintHelper.getUrduFont();
+    final vdnLogo = await PrintHelper.getVdnLogo();
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
+        footer: (context) => PrintHelper.buildPdfFooter(urduFont, vdnLogo, isThermal: false),
         build: (pw.Context context) {
           return [
-            pw.Header(
-              level: 0,
-              child: pw.Text(
-                'GENERAL STORE - $reportTitle',
-                style: pw.TextStyle(
-                  fontSize: 18,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.teal,
+            PrintHelper.buildPdfHeader(
+              urduFont,
+              isThermal: false,
+              profile: storeProfile,
+            ),
+            pw.SizedBox(height: 8),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  reportTitle,
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
                 ),
-              ),
+                pw.Text(
+                  'Generated: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.now())}',
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ],
             ),
-            pw.SizedBox(height: 12),
-            pw.Text(
-              'Report Generated on: ${DateFormat('dd-MM-yyyy HH:mm').format(DateTime.now())}',
-            ),
-            pw.SizedBox(height: 24),
+            pw.Divider(thickness: 1, color: PdfColors.grey300),
+            pw.SizedBox(height: 8),
             pw.Table(
               border: const pw.TableBorder(
                 horizontalInside: pw.BorderSide(
@@ -155,29 +171,48 @@ class ExcelPdfExportHelper {
   }
 
   static Future<Uint8List> exportInventoryToPdf(
-    List<ProductModel> products,
-  ) async {
+    List<ProductModel> products, {
+    StoreProfileModel? storeProfile,
+  }) async {
     final theme = await PrintHelper.getUrduPdfTheme();
     final pdf = pw.Document(theme: theme);
+    final urduFont = await PrintHelper.getUrduFont();
+    final vdnLogo = await PrintHelper.getVdnLogo();
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
+        footer: (context) => PrintHelper.buildPdfFooter(urduFont, vdnLogo, isThermal: false),
         build: (pw.Context context) {
           return [
-            pw.Header(
-              level: 0,
-              child: pw.Text(
-                'GENERAL STORE - INVENTORY STOCK REPORT',
-                style: pw.TextStyle(
-                  fontSize: 18,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.teal,
-                ),
-              ),
+            PrintHelper.buildPdfHeader(
+              urduFont,
+              isThermal: false,
+              profile: storeProfile,
             ),
-            pw.SizedBox(height: 24),
+            pw.SizedBox(height: 8),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'INVENTORY STOCK REPORT',
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.Text(
+                  'Generated: ${DateFormat('dd MMM yyyy HH:mm').format(DateTime.now())}',
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ],
+            ),
+            pw.Divider(thickness: 1, color: PdfColors.grey300),
+            pw.SizedBox(height: 8),
             pw.Table(
               border: const pw.TableBorder(
                 horizontalInside: pw.BorderSide(
@@ -274,9 +309,12 @@ class ExcelPdfExportHelper {
     required List<SaleModel> sales,
     required List<ProductModel> currentProducts,
     required String monthYearTitle,
+    StoreProfileModel? storeProfile,
   }) async {
     final theme = await PrintHelper.getUrduPdfTheme();
     final pdf = pw.Document(theme: theme);
+    final urduFont = await PrintHelper.getUrduFont();
+    final vdnLogo = await PrintHelper.getVdnLogo();
 
     double totalRevenue = 0.0;
     double totalCost = 0.0;
@@ -328,32 +366,36 @@ class ExcelPdfExportHelper {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
+        footer: (context) => PrintHelper.buildPdfFooter(urduFont, vdnLogo, isThermal: false),
         build: (pw.Context context) {
           return [
-            pw.Header(
-              level: 0,
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'MONTHLY BUSINESS REPORT',
-                    style: pw.TextStyle(
-                      fontSize: 24,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.blue800,
-                    ),
-                  ),
-                  pw.Text(
-                    monthYearTitle,
-                    style: const pw.TextStyle(
-                      fontSize: 16,
-                      color: PdfColors.grey700,
-                    ),
-                  ),
-                ],
-              ),
+            PrintHelper.buildPdfHeader(
+              urduFont,
+              isThermal: false,
+              profile: storeProfile,
             ),
-            pw.SizedBox(height: 20),
+            pw.SizedBox(height: 8),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'MONTHLY BUSINESS REPORT',
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.Text(
+                  monthYearTitle,
+                  style: const pw.TextStyle(
+                    fontSize: 12,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ],
+            ),
+            pw.Divider(thickness: 1, color: PdfColors.grey300),
+            pw.SizedBox(height: 12),
             pw.Container(
               padding: const pw.EdgeInsets.all(16),
               decoration: pw.BoxDecoration(

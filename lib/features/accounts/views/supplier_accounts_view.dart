@@ -20,6 +20,11 @@ class _SupplierAccountsViewState extends ConsumerState<SupplierAccountsView> {
   @override
   void initState() {
     super.initState();
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(accountsControllerProvider.notifier).refreshAccounts();
+      }
+    });
     _searchCtrl.addListener(() {
       setState(() {
         _searchQuery = _searchCtrl.text.toLowerCase();
@@ -137,37 +142,64 @@ class _SupplierAccountsViewState extends ConsumerState<SupplierAccountsView> {
                                 margin: const EdgeInsets.symmetric(vertical: 6),
                                 child: ListTile(
                                   title: Text(
-                                    'Bill #${p.invoiceNumber}',
+                                    'Purchase #${p.purchaseId}',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  subtitle: Text(
-                                    'Date: ${DateFormat('dd-MM-yyyy HH:mm').format(p.timestamp)}',
-                                  ),
-                                  trailing: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Total: Rs. ${p.totalAmount.toStringAsFixed(0)}',
+                                        DateFormat(
+                                          'dd MMM yyyy HH:mm',
+                                        ).format(p.timestamp),
                                       ),
-                                      Text(
-                                        'Paid: Rs. ${p.paidAmount.toStringAsFixed(0)}',
-                                        style: const TextStyle(
-                                          color: Colors.green,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Pending: Rs. ${pending.toStringAsFixed(0)}',
-                                        style: const TextStyle(
-                                          color: Colors.red,
-                                          fontSize: 11,
-                                        ),
+                                      const SizedBox(height: 4),
+                                      Wrap(
+                                        spacing: 8,
+                                        children: [
+                                          Text(
+                                            'Total: Rs. ${p.totalAmount.toStringAsFixed(0)}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          Text(
+                                            'Paid: Rs. ${p.paidAmount.toStringAsFixed(0)}',
+                                            style: const TextStyle(
+                                              color: Colors.green,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          if (pending > 0)
+                                            Text(
+                                              'Pending: Rs. ${pending.toStringAsFixed(0)}',
+                                              style: const TextStyle(
+                                                color: Colors.red,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ],
                                   ),
+                                  trailing: Text(
+                                    pending > 0
+                                        ? 'Due:\nRs. ${pending.toStringAsFixed(0)}'
+                                        : 'Cleared',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: pending > 0
+                                          ? Colors.red
+                                          : Colors.green,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    // Navigate to purchase details
+                                  },
                                 ),
                               );
                             },
@@ -239,7 +271,10 @@ class _SupplierAccountsViewState extends ConsumerState<SupplierAccountsView> {
                       Expanded(
                         child: Text(
                           supplier.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                       Column(
@@ -253,7 +288,9 @@ class _SupplierAccountsViewState extends ConsumerState<SupplierAccountsView> {
                             'Rs. ${supplier.balance.toStringAsFixed(2)}',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: supplier.balance > 0 ? Colors.orange[800] : Colors.green,
+                              color: supplier.balance > 0
+                                  ? Colors.orange[800]
+                                  : Colors.green,
                             ),
                           ),
                         ],
@@ -268,7 +305,11 @@ class _SupplierAccountsViewState extends ConsumerState<SupplierAccountsView> {
                   const SizedBox(height: 4),
                   const Text(
                     'Tap to view bill history',
-                    style: TextStyle(color: Colors.blue, fontSize: 12, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Align(

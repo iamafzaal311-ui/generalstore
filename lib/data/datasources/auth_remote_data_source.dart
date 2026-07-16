@@ -19,8 +19,8 @@ abstract class AuthRemoteDataSource {
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  final FirebaseFirestore _firestore;
-  final FirebaseAuth _auth;
+  final FirebaseFirestore? _firestore;
+  final FirebaseAuth? _auth;
   // GoogleSignIn cannot be initialized on web without a configured OAuth clientId
   final GoogleSignIn? _googleSignIn = kIsWeb ? null : GoogleSignIn();
 
@@ -28,12 +28,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> adminLogin(String email, String password) async {
-    await _auth.signInWithEmailAndPassword(email: email, password: password);
+    await _auth?.signInWithEmailAndPassword(email: email, password: password);
   }
 
   @override
   Future<void> adminRegister(String email, String password) async {
-    await _auth.createUserWithEmailAndPassword(
+    await _auth?.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
@@ -42,33 +42,34 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<UserModel?> login(String username, String password) async {
     try {
-      final currentUser = _auth.currentUser;
+      final currentUser = _auth?.currentUser;
       if (currentUser == null) return null;
 
       final query = await _firestore
-          .collection('stores')
+          ?.collection('stores')
           .doc(currentUser.uid)
           .collection('users')
           .where('username', isEqualTo: username)
+          .where('password', isEqualTo: password)
           .limit(1)
           .get();
 
-      if (query.docs.isEmpty) return null;
-
-      final doc = query.docs.first.data();
-      final userModel = UserModel()
-        ..userId = doc['userId']
-        ..username = doc['username']
-        ..fullName = doc['fullName']
-        ..passwordHash = doc['passwordHash'] ?? ''
-        ..salt = doc['salt'] ?? ''
-        ..role = doc['role'] ?? 'Cashier'
-        ..isActive = doc['isActive'] ?? true
-        ..isDirty = false
-        ..lastUpdated = DateTime.parse(doc['lastUpdated']);
-
-      return userModel;
-    } catch (_) {
+      if (query != null && query.docs.isNotEmpty) {
+        final doc = query.docs.first.data();
+        final userModel = UserModel()
+          ..userId = doc['userId']
+          ..username = doc['username']
+          ..fullName = doc['fullName']
+          ..passwordHash = doc['passwordHash'] ?? ''
+          ..salt = doc['salt'] ?? ''
+          ..role = doc['role'] ?? 'Cashier'
+          ..isActive = doc['isActive'] ?? true
+          ..isDirty = false
+          ..lastUpdated = DateTime.parse(doc['lastUpdated']);
+        return userModel;
+      }
+      return null;
+    } catch (e) {
       return null;
     }
   }
@@ -76,27 +77,35 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<UserModel?> loginWithGoogle() async {
     if (_googleSignIn == null) return null;
-    final googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) return null;
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
+      if (googleUser == null) return null;
 
-    final googleAuth = await googleUser.authentication;
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
 
-    final userCredential = await _auth.signInWithCredential(credential);
-    return _buildFirebaseUser(userCredential.user);
+      final userCredential = await _auth?.signInWithCredential(credential);
+      if (userCredential?.user != null) {
+        return _buildFirebaseUser(userCredential!.user);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
   Future<String> sendPhoneVerificationCode(String phoneNumber) async {
     final completer = Completer<String>();
 
-    await _auth.verifyPhoneNumber(
+    await _auth?.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
-        await _auth.signInWithCredential(credential);
+        await _auth?.signInWithCredential(credential);
         if (!completer.isCompleted) {
           completer.complete('');
         }
@@ -132,39 +141,43 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       smsCode: smsCode,
     );
 
-    final userCredential = await _auth.signInWithCredential(credential);
-    return _buildFirebaseUser(userCredential.user);
+    final userCred = await _auth?.signInWithCredential(credential);
+    if (userCred?.user != null) {
+      return _buildFirebaseUser(userCred!.user);
+    }
+    return null;
   }
 
   @override
   Future<void> logout() async {
-    await _auth.signOut();
-    await _googleSignIn?.signOut();
+    await _auth?.signOut();
+    if (_googleSignIn != null) await _googleSignIn!.signOut();
   }
 
   @override
   Future<void> syncUsers(List<UserModel> localUsers) async {
-    final currentUser = _auth.currentUser;
-    if (currentUser == null) return;
+    final currentUser = _auth?.currentUser;
+    if (currentUser == null || _firestore == null) return;
 
-    final batch = _firestore.batch();
-    for (final user in localUsers) {
-      final docRef = _firestore
-          .collection('stores')
-          .doc(currentUser.uid)
-          .collection('users')
-          .doc(user.userId);
-      batch.set(docRef, {
-        'userId': user.userId,
-        'username': user.username,
-        'fullName': user.fullName,
-        'role': user.role,
-        'isActive': user.isActive,
-        'passwordHash': user.passwordHash,
-        'salt': user.salt,
-        'lastUpdated': user.lastUpdated.toUtc().toIso8601String(),
+    final batch = _firestore!.batch();
+    final usersRef = _firestore!
+        .collection('stores')
+        .doc(currentUser.uid)
+        .collection('users');
+
+    for (var u in localUsers) {
+      batch.set(usersRef.doc(u.userId), {
+        'userId': u.userId,
+        'username': u.username,
+        'passwordHash': u.passwordHash,
+        'salt': u.salt,
+        'fullName': u.fullName,
+        'role': u.role,
+        'isActive': u.isActive,
+        'lastUpdated': u.lastUpdated.toUtc().toIso8601String(),
       }, SetOptions(merge: true));
     }
+
     await batch.commit();
   }
 

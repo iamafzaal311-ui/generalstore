@@ -19,6 +19,15 @@ class PrintHelper {
     return _cachedUrduFont!;
   }
 
+  static pw.MemoryImage? _cachedVdnLogo;
+
+  static Future<pw.MemoryImage> getVdnLogo() async {
+    if (_cachedVdnLogo != null) return _cachedVdnLogo!;
+    final byteData = await rootBundle.load('assets/images/vdn_logo.png');
+    _cachedVdnLogo = pw.MemoryImage(byteData.buffer.asUint8List());
+    return _cachedVdnLogo!;
+  }
+
   static Future<pw.ThemeData> getUrduPdfTheme() async {
     return pw.ThemeData.withFont(
       base: pw.Font.helvetica(),
@@ -42,7 +51,7 @@ class PrintHelper {
     );
   }
 
-  static pw.Widget _buildPdfHeader(
+  static pw.Widget buildPdfHeader(
     pw.Font urduFont, {
     bool isThermal = false,
     StoreProfileModel? profile,
@@ -82,7 +91,7 @@ class PrintHelper {
                         'Proprietor: ${profile!.tagline}',
                         style: _ts(
                           urduFont,
-                          size: isThermal ? 8 : 11,
+                          size: isThermal ? 9 : 11,
                           color: PdfColors.blue800,
                           weight: pw.FontWeight.bold,
                         ),
@@ -92,7 +101,7 @@ class PrintHelper {
                         profile!.phone,
                         style: _ts(
                           urduFont,
-                          size: isThermal ? 8 : 11,
+                          size: isThermal ? 9 : 11,
                           weight: pw.FontWeight.bold,
                           color: PdfColors.grey800,
                         ),
@@ -143,11 +152,66 @@ class PrintHelper {
                 textDirection: pw.TextDirection.rtl,
                 style: _ts(
                   urduFont,
-                  size: isThermal ? 7 : 10,
+                  size: isThermal ? 9 : 10,
                   color: PdfColors.white,
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget buildPdfFooter(
+    pw.Font urduFont,
+    pw.MemoryImage logo, {
+    bool isThermal = false,
+  }) {
+    final fontSize = isThermal ? 7.0 : 10.0;
+    final logoSize = isThermal ? 16.0 : 24.0;
+    return pw.Container(
+      width: double.infinity,
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          pw.SizedBox(height: 8),
+          if (isThermal) ...[
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.center,
+              children: [
+                pw.Image(logo, width: logoSize, height: logoSize),
+                pw.SizedBox(width: 4),
+                pw.Text(
+                  'Developed by Vivid Digital Nexus',
+                  style: _ts(
+                    urduFont,
+                    size: fontSize,
+                    weight: pw.FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            pw.Text(
+              'Ph no: +92 328 5753463',
+              style: _ts(urduFont, size: fontSize, weight: pw.FontWeight.bold),
+            ),
+          ] else ...[
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.center,
+              children: [
+                pw.Image(logo, width: logoSize, height: logoSize),
+                pw.SizedBox(width: 4),
+                pw.Text(
+                  'Developed by Vivid Digital Nexus | Ph no: +92 328 5753463',
+                  style: _ts(
+                    urduFont,
+                    size: fontSize,
+                    weight: pw.FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -166,6 +230,7 @@ class PrintHelper {
     final pdf = pw.Document(theme: theme);
 
     final urduFont = await getUrduFont();
+    final vdnLogo = await getVdnLogo();
 
     pdf.addPage(
       pw.Page(
@@ -179,7 +244,7 @@ class PrintHelper {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-              _buildPdfHeader(
+              buildPdfHeader(
                 urduFont,
                 isThermal: true,
                 profile: storeProfile,
@@ -402,11 +467,7 @@ class PrintHelper {
                     ),
                     pw.Text(
                       'Rs. ${(sale.total + previousDues - sale.paidAmount).toStringAsFixed(0)}',
-                      style: _ts(
-                        urduFont,
-                        size: 9,
-                        weight: pw.FontWeight.bold,
-                      ),
+                      style: _ts(urduFont, size: 9, weight: pw.FontWeight.bold),
                     ),
                   ],
                 ),
@@ -425,16 +486,8 @@ class PrintHelper {
                 textAlign: pw.TextAlign.center,
               ),
               pw.SizedBox(height: 4),
-              pw.Text(
-                'Developed by Vivid Digital Nexus',
-                style: _ts(urduFont, size: 6),
-                textAlign: pw.TextAlign.center,
-              ),
-              pw.Text(
-                'Ph no: 03285753463',
-                style: _ts(urduFont, size: 7, weight: pw.FontWeight.bold),
-                textAlign: pw.TextAlign.center,
-              ),
+              buildPdfFooter(urduFont, vdnLogo, isThermal: true),
+              pw.SizedBox(height: 10 * PdfPageFormat.mm), // Extra space for thermal cutter
             ],
           );
         },
@@ -454,8 +507,8 @@ class PrintHelper {
   }) async {
     final theme = await getUrduPdfTheme();
     final pdf = pw.Document(theme: theme);
-
     final urduFont = await getUrduFont();
+    final vdnLogo = await getVdnLogo();
 
     pdf.addPage(
       pw.Page(
@@ -465,7 +518,7 @@ class PrintHelper {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _buildPdfHeader(
+              buildPdfHeader(
                 urduFont,
                 isThermal: false,
                 profile: storeProfile,
@@ -723,12 +776,7 @@ class PrintHelper {
                   style: _ts(urduFont, weight: pw.FontWeight.bold),
                 ),
               ),
-              pw.Center(
-                child: pw.Text(
-                  'Developed by Vivid Digital Nexus | WhatsApp: +923285753463',
-                  style: _ts(urduFont, size: 9, color: PdfColors.grey600),
-                ),
-              ),
+              buildPdfFooter(urduFont, vdnLogo, isThermal: false),
             ],
           );
         },

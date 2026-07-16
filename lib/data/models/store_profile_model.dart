@@ -18,17 +18,30 @@ class StoreProfileModel {
   });
 
   factory StoreProfileModel.fromMap(Map<String, dynamic> map) {
-    String name = map['storeName'] ?? 'General Store';
+    String name = map['storeName'] ?? 'HASNAIN TRADERS';
+    if (name.isEmpty) name = 'HASNAIN TRADERS';
     // Automatically correct spelling based on user feedback
     if (name.toUpperCase().contains('HUSSNAIN')) {
-      name = name.replaceAll(RegExp('HUSSNAIN', caseSensitive: false), 'HASNAIN');
+      name = name.replaceAll(
+        RegExp('HUSSNAIN', caseSensitive: false),
+        'HASNAIN',
+      );
     }
+
+    String p = map['phone'] ?? '';
+    if (p.isEmpty) p = '0307-4217267';
+
+    String a = map['address'] ?? '';
+    if (a.isEmpty) a = 'Ghosia Market Sikandar Chowk Pakkpattan';
+
+    String t = map['tagline'] ?? '';
+    if (t.isEmpty) t = 'Ali Abbas';
 
     return StoreProfileModel(
       storeName: name,
-      phone: map['phone'] ?? '',
-      address: map['address'] ?? '',
-      tagline: map['tagline'] ?? '',
+      phone: p,
+      address: a,
+      tagline: t,
       isActive: map['isActive'] ?? true,
       logoUrl: map['logoUrl'],
     );
@@ -47,7 +60,12 @@ class StoreProfileModel {
 
   factory StoreProfileModel.fromFirestore(DocumentSnapshot doc) {
     if (!doc.exists || doc.data() == null) {
-      return StoreProfileModel(storeName: 'General Store');
+      return StoreProfileModel(
+        storeName: 'HASNAIN TRADERS',
+        phone: '0307-4217267',
+        address: 'Ghosia Market Sikandar Chowk Pakkpattan',
+        tagline: 'Ali Abbas',
+      );
     }
     return StoreProfileModel.fromMap(doc.data() as Map<String, dynamic>);
   }

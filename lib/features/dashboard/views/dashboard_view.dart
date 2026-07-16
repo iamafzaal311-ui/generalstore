@@ -472,7 +472,8 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
                       final amount = double.parse(amountCtrl.text);
-                      final fullDesc = 'By: ${personCtrl.text.trim()} | ${descCtrl.text.trim()}';
+                      final fullDesc =
+                          'By: ${personCtrl.text.trim()} | ${descCtrl.text.trim()}';
                       await ref
                           .read(accountsControllerProvider.notifier)
                           .addExpense(
