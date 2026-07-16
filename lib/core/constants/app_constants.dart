@@ -9,7 +9,7 @@ library app_constants;
 // APPLICATION METADATA & BRANDING
 // ============================================================================
 
-const String appName = 'HUSSNAIN TRADERS';
+const String appName = 'HASNAIN TRADERS';
 
 /// Application version
 const String appVersion = '1.0.0';
@@ -22,7 +22,7 @@ const AppEnvironment appEnvironment = AppEnvironment.production;
 /// Store Branding
 abstract class StoreDetails {
   static const String name = 'حسنین ٹریڈرز';
-  static const String nameEnglish = 'HUSSNAIN TRADERS';
+  static const String nameEnglish = 'HASNAIN TRADERS';
   static const String proprietor = 'علی عباس';
   static const String proprietorEnglish = 'Ali Abbas';
   static const String contact = '0307-4217267';
@@ -55,7 +55,7 @@ abstract class FirestoreCollections {
 // ============================================================================
 
 abstract class AppConstants {
-  static const String appName = 'HUSSNAIN TRADERS';
+  static const String appName = 'HASNAIN TRADERS';
   static const String appNameOld = 'Al-Makkah General Store';
   static const String appVersionOld = '1.0.0';
   static const String themeKey = 'app_theme_mode';
@@ -106,7 +106,14 @@ abstract class PaymentMethods {
   static const String bank = 'bank';
   static const String credit = 'credit';
 
-  static const List<String> all = [cash, card, cheque, mobileMoney, bank, credit];
+  static const List<String> all = [
+    cash,
+    card,
+    cheque,
+    mobileMoney,
+    bank,
+    credit,
+  ];
 }
 
 /// Transaction status
@@ -167,7 +174,8 @@ abstract class AppDurations {
 
 /// Regular expressions for validation
 abstract class ValidationPatterns {
-  static const String email = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+  static const String email =
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
   static const String phone = r'^(\+92|0)[0-9]{10}$';
   static const String username = r'^[a-zA-Z0-9_]{3,20}$';
   static const String sku = r'^[A-Z0-9-_]{3,20}$';
@@ -192,14 +200,16 @@ abstract class ValidationMessages {
 // ============================================================================
 
 abstract class ErrorMessages {
-  static const String networkError = 'Network connection error. Please check your internet.';
+  static const String networkError =
+      'Network connection error. Please check your internet.';
   static const String serverError = 'Server error. Please try again later.';
   static const String unauthorizedError = 'Unauthorized. Please login again.';
   static const String notFoundError = 'Resource not found.';
   static const String conflictError = 'This resource already exists.';
   static const String validationError = 'Please check your input.';
   static const String unknownError = 'Something went wrong. Please try again.';
-  static const String offlineError = 'You are offline. Some features may not work.';
+  static const String offlineError =
+      'You are offline. Some features may not work.';
   static const String timeoutError = 'Request timed out. Please try again.';
 }
 

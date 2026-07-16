@@ -9,16 +9,16 @@ class CustomerModel extends HiveObject {
 
   @HiveField(1)
   late String name;
-  
+
   @HiveField(2)
   String? phone;
-  
+
   @HiveField(3)
   String? email;
-  
+
   @HiveField(4)
   String? address;
-  
+
   @HiveField(5)
   late double balance; // Amount customer owes us (Khata)
 

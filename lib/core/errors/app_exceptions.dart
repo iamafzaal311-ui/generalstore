@@ -171,10 +171,7 @@ abstract class Result<L, R> {
   const Result();
 
   /// Execute different callbacks based on result
-  T fold<T>(
-    T Function(L left) onLeft,
-    T Function(R right) onRight,
-  );
+  T fold<T>(T Function(L left) onLeft, T Function(R right) onRight);
 
   /// Map success value
   Result<L, T> map<T>(T Function(R right) f);
@@ -226,10 +223,7 @@ class Success<L, R> extends Result<L, R> {
 /// Utility class for error handling and conversion
 class ErrorHandler {
   /// Convert any exception to AppException
-  static AppException handleException(
-    dynamic error, {
-    StackTrace? stackTrace,
-  }) {
+  static AppException handleException(dynamic error, {StackTrace? stackTrace}) {
     debugPrint('Error Handler: $error\nStackTrace: $stackTrace');
 
     if (error is AppException) {
@@ -263,10 +257,7 @@ class ErrorHandler {
   }
 
   /// Log error with context
-  static void logError(
-    AppException exception, {
-    String? context,
-  }) {
+  static void logError(AppException exception, {String? context}) {
     if (kDebugMode) {
       print('==== ERROR ====');
       print('Context: $context');

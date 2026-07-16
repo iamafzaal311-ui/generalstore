@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import '../../domain/repositories/sales_repository.dart';
 import '../datasources/local_db_service.dart';
 import '../models/sale_model.dart';
@@ -43,19 +44,21 @@ class SalesRepositoryImpl implements SalesRepository {
       }
     }
 
-    // 3. Adjust Customer Credit (Khata) if payment is credit
-    if (sale.paymentMethod == 'Credit (Khata)' && sale.customerId != null) {
+    // 3. Adjust Customer Credit (Khata) if there is an unpaid amount
+    if (sale.customerId != null) {
       final customer = _db.customersBox.get(sale.customerId);
       if (customer != null) {
         final unpaidAmount = sale.total - sale.paidAmount;
-        customer.balance += unpaidAmount;
-        customer.isDirty = true;
-        customer.lastUpdated = DateTime.now();
-        await customer.save();
+        if (unpaidAmount != 0) {
+          customer.balance += unpaidAmount;
+          customer.isDirty = true;
+          customer.lastUpdated = DateTime.now();
+          await customer.save();
+        }
       }
     }
-    
-    await _sync.syncDirtyRecords();
+
+    unawaited(_sync.syncDirtyRecords());
   }
 
   @override
@@ -85,14 +88,16 @@ class SalesRepositoryImpl implements SalesRepository {
       }
 
       // Revert credit from customer (Khata)
-      if (sale.paymentMethod == 'Credit (Khata)' && sale.customerId != null) {
+      if (sale.customerId != null) {
         final customer = _db.customersBox.get(sale.customerId);
         if (customer != null) {
           final unpaidAmount = sale.total - sale.paidAmount;
-          customer.balance -= unpaidAmount;
-          customer.isDirty = true;
-          customer.lastUpdated = DateTime.now();
-          await customer.save();
+          if (unpaidAmount != 0) {
+            customer.balance -= unpaidAmount;
+            customer.isDirty = true;
+            customer.lastUpdated = DateTime.now();
+            await customer.save();
+          }
         }
       }
     }

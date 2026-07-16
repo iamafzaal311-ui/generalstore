@@ -11,11 +11,7 @@ class AuthState {
   final String? errorMessage;
   final List<UserModel> users;
 
-  AuthState({
-    this.isLoading = false,
-    this.errorMessage,
-    this.users = const [],
-  });
+  AuthState({this.isLoading = false, this.errorMessage, this.users = const []});
 
   AuthState copyWith({
     bool? isLoading,
@@ -44,8 +40,14 @@ class AuthController extends StateNotifier<AuthState> {
       _ref.read(currentUserProvider.notifier).state = user;
       try {
         final adminUid = FirebaseAuth.instance.currentUser!.uid;
-        final doc = await FirebaseFirestore.instance.collection('stores').doc(adminUid).collection('profile').doc('info').get();
-        _ref.read(storeProfileProvider.notifier).state = StoreProfileModel.fromFirestore(doc);
+        final doc = await FirebaseFirestore.instance
+            .collection('stores')
+            .doc(adminUid)
+            .collection('profile')
+            .doc('info')
+            .get();
+        _ref.read(storeProfileProvider.notifier).state =
+            StoreProfileModel.fromFirestore(doc);
       } catch (_) {}
     }
     await loadUsers();
@@ -57,16 +59,24 @@ class AuthController extends StateNotifier<AuthState> {
       final user = await _repository.adminLogin(email, password);
       if (user != null) {
         _ref.read(currentUserProvider.notifier).state = user;
-        
+
         try {
           final adminUid = FirebaseAuth.instance.currentUser!.uid;
-          final doc = await FirebaseFirestore.instance.collection('stores').doc(adminUid).collection('profile').doc('info').get();
+          final doc = await FirebaseFirestore.instance
+              .collection('stores')
+              .doc(adminUid)
+              .collection('profile')
+              .doc('info')
+              .get();
           final profile = StoreProfileModel.fromFirestore(doc);
           if (!profile.isActive) {
-             await FirebaseAuth.instance.signOut();
-             _ref.read(currentUserProvider.notifier).state = null;
-             state = state.copyWith(isLoading: false, errorMessage: 'This store has been deactivated by the Developer.');
-             return false;
+            await FirebaseAuth.instance.signOut();
+            _ref.read(currentUserProvider.notifier).state = null;
+            state = state.copyWith(
+              isLoading: false,
+              errorMessage: 'This store has been deactivated by the Developer.',
+            );
+            return false;
           }
           _ref.read(storeProfileProvider.notifier).state = profile;
         } catch (_) {}
@@ -80,20 +90,32 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
-  Future<bool> registerStore(String email, String password, StoreProfileModel profile) async {
+  Future<bool> registerStore(
+    String email,
+    String password,
+    StoreProfileModel profile,
+  ) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
+      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
       if (cred.user != null) {
         final uid = cred.user!.uid;
-        await FirebaseFirestore.instance.collection('stores').doc(uid).collection('profile').doc('info').set(profile.toMap());
+        await FirebaseFirestore.instance
+            .collection('stores')
+            .doc(uid)
+            .collection('profile')
+            .doc('info')
+            .set(profile.toMap());
         await FirebaseFirestore.instance.collection('stores').doc(uid).set({
           ...profile.toMap(),
           'uid': uid,
           'email': email,
           'createdAt': FieldValue.serverTimestamp(),
         });
-        
+
         // Log out immediately so developer can hand over credentials, or login as Admin manually.
         await FirebaseAuth.instance.signOut();
       }
@@ -107,7 +129,9 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<List<Map<String, dynamic>>> fetchAllStores() async {
     try {
-      final snap = await FirebaseFirestore.instance.collectionGroup('profile').get();
+      final snap = await FirebaseFirestore.instance
+          .collectionGroup('profile')
+          .get();
       return snap.docs.map((d) {
         final data = d.data();
         data['uid'] = d.reference.parent.parent?.id ?? '';
@@ -120,8 +144,15 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<bool> toggleStoreStatus(String uid, bool currentStatus) async {
     try {
-      await FirebaseFirestore.instance.collection('stores').doc(uid).set({'isActive': !currentStatus}, SetOptions(merge: true));
-      await FirebaseFirestore.instance.collection('stores').doc(uid).collection('profile').doc('info').update({'isActive': !currentStatus});
+      await FirebaseFirestore.instance.collection('stores').doc(uid).set({
+        'isActive': !currentStatus,
+      }, SetOptions(merge: true));
+      await FirebaseFirestore.instance
+          .collection('stores')
+          .doc(uid)
+          .collection('profile')
+          .doc('info')
+          .update({'isActive': !currentStatus});
       return true;
     } catch (e) {
       return false;
@@ -172,13 +203,16 @@ class AuthController extends StateNotifier<AuthState> {
   Future<String?> sendPhoneVerificationCode(String phoneNumber) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      final verificationId = await _repository.sendPhoneVerificationCode(phoneNumber);
+      final verificationId = await _repository.sendPhoneVerificationCode(
+        phoneNumber,
+      );
       state = state.copyWith(isLoading: false);
       return verificationId;
     } catch (e) {
       String msg = e.toString();
       if (msg.contains('configuration-not-found')) {
-        msg = 'Phone Auth is not configured for Web. Please use Username/Password or sign up locally.';
+        msg =
+            'Phone Auth is not configured for Web. Please use Username/Password or sign up locally.';
       }
       state = state.copyWith(isLoading: false, errorMessage: msg);
       return null;
@@ -275,7 +309,9 @@ class AuthController extends StateNotifier<AuthState> {
   }
 }
 
-final authControllerProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
-  final repo = ref.watch(authRepositoryProvider);
-  return AuthController(repo, ref);
-});
+final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
+  (ref) {
+    final repo = ref.watch(authRepositoryProvider);
+    return AuthController(repo, ref);
+  },
+);

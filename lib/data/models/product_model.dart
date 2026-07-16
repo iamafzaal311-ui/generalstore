@@ -42,7 +42,7 @@ class ProductModel extends HiveObject {
 
   @HiveField(12)
   late String unit; // 'kg', 'pcs', 'pack', 'liter', etc.
-  
+
   @HiveField(13)
   late double openingStock;
 

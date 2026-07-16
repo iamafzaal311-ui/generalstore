@@ -12,13 +12,13 @@ class PurchaseModel extends HiveObject {
 
   @HiveField(2)
   late String supplierId;
-  
+
   @HiveField(3)
   late double totalAmount;
 
   @HiveField(4)
   late double paidAmount;
-  
+
   @HiveField(5)
   late DateTime timestamp;
 

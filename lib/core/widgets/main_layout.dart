@@ -55,9 +55,7 @@ class MainLayout extends ConsumerWidget {
             )
           : null,
       drawer: !isDesktop
-          ? Drawer(
-              child: _SidebarContent(currentRoute: currentRoute),
-            )
+          ? Drawer(child: _SidebarContent(currentRoute: currentRoute))
           : null,
       body: Row(
         children: [
@@ -68,7 +66,9 @@ class MainLayout extends ConsumerWidget {
                 decoration: BoxDecoration(
                   border: Border(
                     right: BorderSide(
-                      color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
+                      color: Theme.of(
+                        context,
+                      ).dividerColor.withValues(alpha: 0.1),
                     ),
                   ),
                 ),
@@ -99,7 +99,9 @@ class _SidebarContent extends ConsumerWidget {
     final storeProfile = ref.watch(storeProfileProvider);
     final role = currentUser?.role ?? 'Cashier';
     final name = currentUser?.fullName ?? 'ALI ABBAS';
-    final initials = name.isNotEmpty ? name.substring(0, name.length > 1 ? 2 : 1).toUpperCase() : 'US';
+    final initials = name.isNotEmpty
+        ? name.substring(0, name.length > 1 ? 2 : 1).toUpperCase()
+        : 'US';
 
     return Column(
       children: [
@@ -127,7 +129,9 @@ class _SidebarContent extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      storeProfile?.storeName ?? 'General Store',
+                      (storeProfile?.storeName ?? 'General Store').toUpperCase().contains('HUSSNAIN') 
+                        ? (storeProfile?.storeName ?? 'General Store').replaceAll(RegExp('HUSSNAIN', caseSensitive: false), 'HASNAIN')
+                        : (storeProfile?.storeName ?? 'General Store'),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
@@ -136,7 +140,9 @@ class _SidebarContent extends ConsumerWidget {
                     Text(
                       'General Store ERP',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                        color: theme.textTheme.bodySmall?.color?.withValues(
+                          alpha: 0.6,
+                        ),
                       ),
                     ),
                   ],
@@ -188,6 +194,18 @@ class _SidebarContent extends ConsumerWidget {
                   label: 'Accounts & Ledgers',
                   route: '/accounts',
                   isSelected: currentRoute == '/accounts',
+                ),
+                _SidebarMenuItem(
+                  icon: Icons.people_rounded,
+                  label: 'Customer Khata',
+                  route: '/customer-accounts',
+                  isSelected: currentRoute == '/customer-accounts',
+                ),
+                _SidebarMenuItem(
+                  icon: Icons.local_shipping_rounded,
+                  label: 'Supplier Khata',
+                  route: '/supplier-accounts',
+                  isSelected: currentRoute == '/supplier-accounts',
                 ),
                 _SidebarMenuItem(
                   icon: Icons.analytics_rounded,
@@ -276,7 +294,9 @@ class _SidebarContent extends ConsumerWidget {
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+                backgroundColor: theme.colorScheme.primary.withValues(
+                  alpha: 0.1,
+                ),
                 child: Text(
                   initials,
                   style: TextStyle(
@@ -301,7 +321,9 @@ class _SidebarContent extends ConsumerWidget {
                     Text(
                       role,
                       style: TextStyle(
-                        color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                        color: theme.textTheme.bodySmall?.color?.withValues(
+                          alpha: 0.6,
+                        ),
                         fontSize: 12,
                       ),
                     ),
@@ -347,7 +369,11 @@ class _SidebarContent extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.chat_bubble_outline_rounded, size: 14, color: theme.colorScheme.primary),
+                    Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'WhatsApp: +92 328 5753463',
@@ -382,7 +408,7 @@ class _SidebarMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: InkWell(
@@ -395,7 +421,9 @@ class _SidebarMenuItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: Container(
           decoration: BoxDecoration(
-            color: isSelected ? theme.colorScheme.primary.withValues(alpha: 0.08) : Colors.transparent,
+            color: isSelected
+                ? theme.colorScheme.primary.withValues(alpha: 0.08)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -403,7 +431,9 @@ class _SidebarMenuItem extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: isSelected ? theme.colorScheme.primary : theme.iconTheme.color?.withValues(alpha: 0.7),
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.iconTheme.color?.withValues(alpha: 0.7),
                 size: 22,
               ),
               const SizedBox(width: 16),
@@ -411,8 +441,14 @@ class _SidebarMenuItem extends StatelessWidget {
                 child: Text(
                   label,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isSelected ? theme.colorScheme.primary : theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.textTheme.bodyMedium?.color?.withValues(
+                            alpha: 0.8,
+                          ),
                   ),
                 ),
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodels/accounts_controller.dart';
+import 'ledger_detail_view.dart';
 
 class AccountsView extends ConsumerStatefulWidget {
   const AccountsView({super.key});
@@ -9,7 +10,8 @@ class AccountsView extends ConsumerStatefulWidget {
   ConsumerState<AccountsView> createState() => _AccountsViewState();
 }
 
-class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerProviderStateMixin {
+class _AccountsViewState extends ConsumerState<AccountsView>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
@@ -54,23 +56,41 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
                   children: [
                     TextFormField(
                       controller: titleCtrl,
-                      decoration: const InputDecoration(labelText: 'Expense Title*'),
-                      validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                      decoration: const InputDecoration(
+                        labelText: 'Expense Title*',
+                      ),
+                      validator: (val) =>
+                          val == null || val.trim().isEmpty ? 'Required' : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: amountCtrl,
-                      decoration: const InputDecoration(labelText: 'Amount (Rs.)*'),
+                      decoration: const InputDecoration(
+                        labelText: 'Amount (Rs.)*',
+                      ),
                       keyboardType: TextInputType.number,
-                      validator: (val) => val == null || double.tryParse(val) == null ? 'Invalid' : null,
+                      validator: (val) =>
+                          val == null || double.tryParse(val) == null
+                          ? 'Invalid'
+                          : null,
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       initialValue: category,
                       decoration: const InputDecoration(labelText: 'Category'),
-                      items: ['Rent', 'Salaries', 'Utilities', 'Stationery', 'Other']
-                          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                          .toList(),
+                      items:
+                          [
+                                'Rent',
+                                'Salaries',
+                                'Utilities',
+                                'Stationery',
+                                'Other',
+                              ]
+                              .map(
+                                (c) =>
+                                    DropdownMenuItem(value: c, child: Text(c)),
+                              )
+                              .toList(),
                       onChanged: (val) {
                         if (val != null) {
                           setStateDialog(() {
@@ -82,13 +102,18 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: descCtrl,
-                      decoration: const InputDecoration(labelText: 'Description'),
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                      ),
                     ),
                   ],
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
@@ -96,11 +121,15 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
                   ),
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
-                      await ref.read(accountsControllerProvider.notifier).addExpense(
+                      await ref
+                          .read(accountsControllerProvider.notifier)
+                          .addExpense(
                             title: titleCtrl.text.trim(),
                             category: category,
                             amount: double.parse(amountCtrl.text),
-                            description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
+                            description: descCtrl.text.trim().isEmpty
+                                ? null
+                                : descCtrl.text.trim(),
                           );
                       if (context.mounted) Navigator.pop(context);
                     }
@@ -124,18 +153,27 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text(isCustomer ? 'Receive Payment from $name' : 'Pay to $name'),
+          title: Text(
+            isCustomer ? 'Receive Payment from $name' : 'Pay to $name',
+          ),
           content: Form(
             key: formKey,
             child: TextFormField(
               controller: amountCtrl,
-              decoration: const InputDecoration(labelText: 'Payment Amount (Rs.)*'),
+              decoration: const InputDecoration(
+                labelText: 'Payment Amount (Rs.)*',
+              ),
               keyboardType: TextInputType.number,
-              validator: (val) => val == null || double.tryParse(val) == null ? 'Invalid' : null,
+              validator: (val) => val == null || double.tryParse(val) == null
+                  ? 'Invalid'
+                  : null,
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.colorScheme.primary,
@@ -145,9 +183,13 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
                 if (formKey.currentState!.validate()) {
                   final amt = double.parse(amountCtrl.text);
                   if (isCustomer) {
-                    await ref.read(accountsControllerProvider.notifier).receiveCustomerPayment(personId, amt);
+                    await ref
+                        .read(accountsControllerProvider.notifier)
+                        .receiveCustomerPayment(personId, amt);
                   } else {
-                    await ref.read(accountsControllerProvider.notifier).paySupplier(personId, amt);
+                    await ref
+                        .read(accountsControllerProvider.notifier)
+                        .paySupplier(personId, amt);
                   }
                   if (context.mounted) Navigator.pop(context);
                 }
@@ -172,11 +214,19 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
           controller: _tabController,
           indicatorColor: theme.colorScheme.primary,
           labelColor: theme.colorScheme.primary,
-          unselectedLabelColor: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.6),
+          unselectedLabelColor: theme.textTheme.bodyMedium?.color?.withValues(
+            alpha: 0.6,
+          ),
           tabs: const [
-            Tab(icon: Icon(Icons.account_balance_rounded), text: 'Cashbook Summary'),
+            Tab(
+              icon: Icon(Icons.account_balance_rounded),
+              text: 'Cashbook Summary',
+            ),
             Tab(icon: Icon(Icons.people_rounded), text: 'Customer Ledgers'),
-            Tab(icon: Icon(Icons.local_shipping_rounded), text: 'Supplier Ledgers'),
+            Tab(
+              icon: Icon(Icons.local_shipping_rounded),
+              text: 'Supplier Ledgers',
+            ),
             Tab(icon: Icon(Icons.receipt_long_rounded), text: 'Expenses'),
           ],
         ),
@@ -205,14 +255,19 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
                           style: ElevatedButton.styleFrom(
                             backgroundColor: theme.colorScheme.primary,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                           onPressed: _showAddExpenseDialog,
                           icon: const Icon(Icons.add_rounded),
                           label: const Text('New Expense'),
                         ),
-                      ]
+                      ],
                     ],
                   ),
                 ),
@@ -272,7 +327,9 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
           const SizedBox(height: 24),
           Card(
             color: theme.colorScheme.primary.withValues(alpha: 0.08),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(32.0),
               child: Row(
@@ -334,11 +391,21 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   'Rs. ${value.toStringAsFixed(0)}',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -350,7 +417,9 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
 
   // --- CUSTOMER LEDGER TAB ---
   Widget _buildCustomerLedger(AccountsState state) {
-    final filtered = state.customers.where((c) => c.name.toLowerCase().contains(_searchQuery)).toList();
+    final filtered = state.customers
+        .where((c) => c.name.toLowerCase().contains(_searchQuery))
+        .toList();
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: filtered.length,
@@ -358,9 +427,22 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
         final cust = filtered[index];
         return Card(
           child: ListTile(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LedgerDetailView(customer: cust),
+                ),
+              );
+            },
             leading: const CircleAvatar(child: Icon(Icons.person)),
-            title: Text(cust.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('Phone: ${cust.phone ?? "-"} | Address: ${cust.address ?? "-"}'),
+            title: Text(
+              cust.name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              'Phone: ${cust.phone ?? "-"} | Address: ${cust.address ?? "-"}',
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -368,7 +450,10 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('Due Balance:', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    const Text(
+                      'Due Balance:',
+                      style: TextStyle(fontSize: 10, color: Colors.grey),
+                    ),
                     Text(
                       'Rs. ${cust.balance.toStringAsFixed(2)}',
                       style: TextStyle(
@@ -380,7 +465,11 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
-                  onPressed: () => _showRecordPaymentDialog(cust.customerId, cust.name, true),
+                  onPressed: () => _showRecordPaymentDialog(
+                    cust.customerId,
+                    cust.name,
+                    true,
+                  ),
                   child: const Text('Pay Off'),
                 ),
               ],
@@ -393,7 +482,9 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
 
   // --- SUPPLIER LEDGER TAB ---
   Widget _buildSupplierLedger(AccountsState state) {
-    final filtered = state.suppliers.where((s) => s.name.toLowerCase().contains(_searchQuery)).toList();
+    final filtered = state.suppliers
+        .where((s) => s.name.toLowerCase().contains(_searchQuery))
+        .toList();
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: filtered.length,
@@ -401,9 +492,22 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
         final supplier = filtered[index];
         return Card(
           child: ListTile(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LedgerDetailView(supplier: supplier),
+                ),
+              );
+            },
             leading: const CircleAvatar(child: Icon(Icons.local_shipping)),
-            title: Text(supplier.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('Contact: ${supplier.contactName ?? "-"} | Phone: ${supplier.phone ?? "-"}'),
+            title: Text(
+              supplier.name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              'Contact: ${supplier.contactName ?? "-"} | Phone: ${supplier.phone ?? "-"}',
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -411,19 +515,28 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('We Owe:', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    const Text(
+                      'We Owe:',
+                      style: TextStyle(fontSize: 10, color: Colors.grey),
+                    ),
                     Text(
                       'Rs. ${supplier.balance.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: supplier.balance > 0 ? Colors.orange[800] : Colors.green,
+                        color: supplier.balance > 0
+                            ? Colors.orange[800]
+                            : Colors.green,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
-                  onPressed: () => _showRecordPaymentDialog(supplier.supplierId, supplier.name, false),
+                  onPressed: () => _showRecordPaymentDialog(
+                    supplier.supplierId,
+                    supplier.name,
+                    false,
+                  ),
                   child: const Text('Settle'),
                 ),
               ],
@@ -437,7 +550,8 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
   // --- EXPENSES TAB ---
   Widget _buildExpenses(AccountsState state) {
     final filtered = state.expenses.where((e) {
-      return e.title.toLowerCase().contains(_searchQuery) || e.category.toLowerCase().contains(_searchQuery);
+      return e.title.toLowerCase().contains(_searchQuery) ||
+          e.category.toLowerCase().contains(_searchQuery);
     }).toList();
 
     return ListView.builder(
@@ -448,20 +562,30 @@ class _AccountsViewState extends ConsumerState<AccountsView> with SingleTickerPr
         return Card(
           child: ListTile(
             leading: const CircleAvatar(child: Icon(Icons.receipt_long)),
-            title: Text(exp.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('Category: ${exp.category} | Description: ${exp.description ?? "-"}'),
+            title: Text(
+              exp.title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              'Category: ${exp.category} | Description: ${exp.description ?? "-"}',
+            ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Rs. ${exp.amount.toStringAsFixed(0)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.red),
                   onPressed: () {
-                    ref.read(accountsControllerProvider.notifier).deleteExpense(exp.expenseId);
+                    ref
+                        .read(accountsControllerProvider.notifier)
+                        .deleteExpense(exp.expenseId);
                   },
                 ),
               ],

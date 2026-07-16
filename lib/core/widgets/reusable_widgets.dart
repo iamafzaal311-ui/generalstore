@@ -18,10 +18,7 @@ class LoadingWidget extends StatelessWidget {
   final String? message;
   final double size;
 
-  const LoadingWidget({super.key, 
-    this.message,
-    this.size = 50,
-  });
+  const LoadingWidget({super.key, this.message, this.size = 50});
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +29,7 @@ class LoadingWidget extends StatelessWidget {
           SizedBox(
             width: size,
             height: size,
-            child: const CircularProgressIndicator(
-              strokeWidth: 3,
-            ),
+            child: const CircularProgressIndicator(strokeWidth: 3),
           ),
           if (message != null) ...[
             const SizedBox(height: AppSpacing.md),
@@ -60,7 +55,8 @@ class ErrorWidget extends StatelessWidget {
   final VoidCallback? onRetry;
   final String retryButtonText;
 
-  const ErrorWidget({super.key, 
+  const ErrorWidget({
+    super.key,
     required this.message,
     this.onRetry,
     this.retryButtonText = 'Retry',
@@ -80,10 +76,7 @@ class ErrorWidget extends StatelessWidget {
               color: context.colorScheme.error,
             ),
             const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Error',
-              style: context.textTheme.headlineSmall,
-            ),
+            Text('Error', style: context.textTheme.headlineSmall),
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
@@ -116,7 +109,8 @@ class EmptyStateWidget extends StatelessWidget {
   final VoidCallback? onAction;
   final IconData? icon;
 
-  const EmptyStateWidget({super.key, 
+  const EmptyStateWidget({
+    super.key,
     required this.message,
     this.actionText,
     this.onAction,
@@ -131,11 +125,7 @@ class EmptyStateWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+            Icon(icon, size: 64, color: Colors.grey[400]),
             const SizedBox(height: AppSpacing.lg),
             Text(
               message,
@@ -146,10 +136,7 @@ class EmptyStateWidget extends StatelessWidget {
             ),
             if (actionText != null && onAction != null) ...[
               const SizedBox(height: AppSpacing.lg),
-              ElevatedButton(
-                onPressed: onAction,
-                child: Text(actionText!),
-              ),
+              ElevatedButton(onPressed: onAction, child: Text(actionText!)),
             ],
           ],
         ),
@@ -171,7 +158,8 @@ class ActionCard extends StatelessWidget {
   final String? actionTooltip;
   final EdgeInsetsGeometry padding;
 
-  const ActionCard({super.key, 
+  const ActionCard({
+    super.key,
     required this.title,
     required this.child,
     this.actionIcon,
@@ -191,10 +179,7 @@ class ActionCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  title,
-                  style: context.textTheme.titleMedium,
-                ),
+                Text(title, style: context.textTheme.titleMedium),
                 if (actionIcon != null && onAction != null)
                   IconButton(
                     icon: Icon(actionIcon),
@@ -223,7 +208,8 @@ class StatusBadge extends StatelessWidget {
   final Color? textColor;
   final IconData? icon;
 
-  const StatusBadge({super.key, 
+  const StatusBadge({
+    super.key,
     required this.label,
     required this.backgroundColor,
     this.textColor,
@@ -269,7 +255,8 @@ class InfoRow extends StatelessWidget {
   final TextStyle? valueStyle;
   final IconData? icon;
 
-  const InfoRow({super.key, 
+  const InfoRow({
+    super.key,
     required this.label,
     required this.value,
     this.valueStyle,
@@ -289,17 +276,16 @@ class InfoRow extends StatelessWidget {
                 Icon(icon, size: 18),
                 const SizedBox(width: AppSpacing.sm),
               ],
-              Text(
-                label,
-                style: context.textTheme.bodyMedium,
-              ),
+              Text(label, style: context.textTheme.bodyMedium),
             ],
           ),
           Text(
             value,
-            style: valueStyle ?? context.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style:
+                valueStyle ??
+                context.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ),
@@ -320,7 +306,8 @@ class SearchBar extends StatelessWidget {
   final IconData searchIcon;
   final int maxLines;
 
-  const SearchBar({super.key, 
+  const SearchBar({
+    super.key,
     this.controller,
     this.hintText = 'Search...',
     this.onChanged,
@@ -368,7 +355,8 @@ class DataTableWidget extends StatelessWidget {
   final String? emptyMessage;
   final ScrollController? horizontalScrollController;
 
-  const DataTableWidget({super.key, 
+  const DataTableWidget({
+    super.key,
     required this.columns,
     required this.rows,
     this.isLoading = false,
@@ -390,11 +378,12 @@ class DataTableWidget extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       controller: horizontalScrollController,
       child: DataTable(
-        columns: columns
-            .map((col) => DataColumn(label: Text(col)))
-            .toList(),
+        columns: columns.map((col) => DataColumn(label: Text(col))).toList(),
         rows: rows
-            .map((row) => DataRow(cells: row.map((cell) => DataCell(cell)).toList()))
+            .map(
+              (row) =>
+                  DataRow(cells: row.map((cell) => DataCell(cell)).toList()),
+            )
             .toList(),
       ),
     );
@@ -455,7 +444,8 @@ class InputField extends StatefulWidget {
   final bool obscureText;
   final ValueChanged<String>? onChanged;
 
-  const InputField({super.key, 
+  const InputField({
+    super.key,
     required this.label,
     this.hint,
     this.validator,
@@ -512,10 +502,7 @@ class _InputFieldState extends State<InputField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: context.textTheme.labelMedium,
-        ),
+        Text(widget.label, style: context.textTheme.labelMedium),
         const SizedBox(height: AppSpacing.sm),
         TextField(
           controller: widget.controller,
@@ -532,13 +519,13 @@ class _InputFieldState extends State<InputField> {
           },
           decoration: InputDecoration(
             hintText: widget.hint,
-            prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon) : null,
+            prefixIcon: widget.prefixIcon != null
+                ? Icon(widget.prefixIcon)
+                : null,
             errorText: _errorText,
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.md),
-              borderSide: const BorderSide(
-                color: AppTheme.errorColor,
-              ),
+              borderSide: const BorderSide(color: AppTheme.errorColor),
             ),
           ),
         ),
@@ -557,7 +544,8 @@ class ButtonGroup extends StatelessWidget {
   final MainAxisAlignment alignment;
   final MainAxisSize mainAxisSize;
 
-  const ButtonGroup({super.key, 
+  const ButtonGroup({
+    super.key,
     required this.buttons,
     this.alignment = MainAxisAlignment.end,
     this.mainAxisSize = MainAxisSize.min,
@@ -571,9 +559,7 @@ class ButtonGroup extends StatelessWidget {
       children: [
         for (int i = 0; i < buttons.length; i++) ...[
           if (i > 0) const SizedBox(width: AppSpacing.md),
-          Flexible(
-            child: buttons[i].build(),
-          ),
+          Flexible(child: buttons[i].build()),
         ],
       ],
     );
@@ -638,7 +624,8 @@ class SectionHeader extends StatelessWidget {
   final VoidCallback? onAction;
   final Icon? actionIcon;
 
-  const SectionHeader({super.key, 
+  const SectionHeader({
+    super.key,
     required this.title,
     this.actionText,
     this.onAction,
@@ -652,10 +639,7 @@ class SectionHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: context.textTheme.headlineSmall,
-          ),
+          Text(title, style: context.textTheme.headlineSmall),
           if (actionText != null && onAction != null)
             TextButton(
               onPressed: onAction,

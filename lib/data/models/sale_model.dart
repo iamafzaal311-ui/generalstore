@@ -30,10 +30,10 @@ class SaleModel extends HiveObject {
 
   @HiveField(8)
   late double changeAmount;
-  
+
   @HiveField(9)
   late String paymentMethod; // 'Cash', 'Card', 'Mobile Payment', 'Credit (Khata)'
-  
+
   @HiveField(10)
   late DateTime timestamp;
 

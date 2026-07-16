@@ -24,7 +24,7 @@ class UserModel extends HiveObject {
 
   @HiveField(6)
   late bool isActive;
-  
+
   @HiveField(7)
   late bool isDirty;
 

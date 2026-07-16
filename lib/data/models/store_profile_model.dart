@@ -18,8 +18,14 @@ class StoreProfileModel {
   });
 
   factory StoreProfileModel.fromMap(Map<String, dynamic> map) {
+    String name = map['storeName'] ?? 'General Store';
+    // Automatically correct spelling based on user feedback
+    if (name.toUpperCase().contains('HUSSNAIN')) {
+      name = name.replaceAll(RegExp('HUSSNAIN', caseSensitive: false), 'HASNAIN');
+    }
+
     return StoreProfileModel(
-      storeName: map['storeName'] ?? 'General Store',
+      storeName: name,
       phone: map['phone'] ?? '',
       address: map['address'] ?? '',
       tagline: map['tagline'] ?? '',

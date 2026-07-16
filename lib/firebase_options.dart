@@ -68,7 +68,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '852285088649',
     projectId: 'generalstore-dd7a5',
     storageBucket: 'generalstore-dd7a5.firebasestorage.app',
-    iosClientId: '852285088649-1lt5o4fhr7f7ttd3upht3c6jfd55uhug.apps.googleusercontent.com',
+    iosClientId:
+        '852285088649-1lt5o4fhr7f7ttd3upht3c6jfd55uhug.apps.googleusercontent.com',
     iosBundleId: 'com.example.generalstore',
   );
 }

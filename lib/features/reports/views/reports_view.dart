@@ -1,22 +1,57 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../core/utils/excel_pdf_export_helper.dart';
+import '../../../core/utils/excel_helper.dart';
 import '../../pos/viewmodels/pos_controller.dart';
 import '../../products/viewmodels/inventory_controller.dart';
 
 class ReportsView extends ConsumerWidget {
   const ReportsView({super.key});
 
+  Future<void> _saveExcelFile(
+    BuildContext context,
+    List<int> bytes,
+    String fileName,
+  ) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final folder = Directory('${dir.path}\\GeneralStore_Exports');
+      if (!await folder.exists()) {
+        await folder.create(recursive: true);
+      }
+      final file = File('${folder.path}\\$fileName.xlsx');
+      await file.writeAsBytes(bytes);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Saved Successfully!\nLocation: ${file.path}'),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving file: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reports Center'),
-      ),
+      appBar: AppBar(title: const Text('Reports Center')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -24,12 +59,16 @@ class ReportsView extends ConsumerWidget {
           children: [
             Text(
               'Export Formats & Ledger Logs',
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Select a report category to download or print ledger metrics.',
-              style: TextStyle(color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6)),
+              style: TextStyle(
+                color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+              ),
             ),
             const SizedBox(height: 32),
             Row(
@@ -39,24 +78,50 @@ class ReportsView extends ConsumerWidget {
                   child: _buildReportCard(
                     context: context,
                     title: 'Monthly Sales Report',
-                    description: 'Transactions and revenue for the current month.',
+                    description:
+                        'Transactions and revenue for the current month.',
                     icon: Icons.calendar_month_rounded,
                     color: theme.colorScheme.primary,
                     onPdfPressed: () async {
-                      final allSales = await ref.read(salesRepositoryProvider).getSales();
+                      final allSales = await ref
+                          .read(salesRepositoryProvider)
+                          .getSales();
                       final now = DateTime.now();
-                      final monthlySales = allSales.where((s) => s.timestamp.month == now.month && s.timestamp.year == now.year).toList();
-                      final pdfBytes = await ExcelPdfExportHelper.exportSalesToPdf(monthlySales, reportTitle: 'MONTHLY SALES REPORT');
+                      final monthlySales = allSales
+                          .where(
+                            (s) =>
+                                s.timestamp.month == now.month &&
+                                s.timestamp.year == now.year,
+                          )
+                          .toList();
+                      final pdfBytes =
+                          await ExcelPdfExportHelper.exportSalesToPdf(
+                            monthlySales,
+                            reportTitle: 'MONTHLY SALES REPORT',
+                          );
                       await Printing.layoutPdf(onLayout: (format) => pdfBytes);
                     },
                     onExcelPressed: () async {
-                      final allSales = await ref.read(salesRepositoryProvider).getSales();
+                      final allSales = await ref
+                          .read(salesRepositoryProvider)
+                          .getSales();
                       final now = DateTime.now();
-                      final monthlySales = allSales.where((s) => s.timestamp.month == now.month && s.timestamp.year == now.year).toList();
-                      await ExcelPdfExportHelper.exportSalesToExcel(monthlySales);
+                      final monthlySales = allSales
+                          .where(
+                            (s) =>
+                                s.timestamp.month == now.month &&
+                                s.timestamp.year == now.year,
+                          )
+                          .toList();
+                      final bytes =
+                          await ExcelPdfExportHelper.exportSalesToExcel(
+                            monthlySales,
+                          );
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Monthly Excel generated successfully.')),
+                        await _saveExcelFile(
+                          context,
+                          bytes,
+                          'Monthly_Sales_Report_${now.month}_${now.year}',
                         );
                       }
                     },
@@ -67,20 +132,32 @@ class ReportsView extends ConsumerWidget {
                   child: _buildReportCard(
                     context: context,
                     title: 'All Sales & Revenue',
-                    description: 'Detailed record of all transactions ever processed.',
+                    description:
+                        'Detailed record of all transactions ever processed.',
                     icon: Icons.analytics_rounded,
                     color: Colors.blueAccent,
                     onPdfPressed: () async {
-                      final sales = await ref.read(salesRepositoryProvider).getSales();
-                      final pdfBytes = await ExcelPdfExportHelper.exportSalesToPdf(sales, reportTitle: 'ALL SALES REPORT');
+                      final sales = await ref
+                          .read(salesRepositoryProvider)
+                          .getSales();
+                      final pdfBytes =
+                          await ExcelPdfExportHelper.exportSalesToPdf(
+                            sales,
+                            reportTitle: 'ALL SALES REPORT',
+                          );
                       await Printing.layoutPdf(onLayout: (format) => pdfBytes);
                     },
                     onExcelPressed: () async {
-                      final sales = await ref.read(salesRepositoryProvider).getSales();
-                      await ExcelPdfExportHelper.exportSalesToExcel(sales);
+                      final sales = await ref
+                          .read(salesRepositoryProvider)
+                          .getSales();
+                      final bytes =
+                          await ExcelPdfExportHelper.exportSalesToExcel(sales);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('All Sales report generated.')),
+                        await _saveExcelFile(
+                          context,
+                          bytes,
+                          'All_Sales_Report_${DateTime.now().millisecondsSinceEpoch}',
                         );
                       }
                     },
@@ -91,18 +168,34 @@ class ReportsView extends ConsumerWidget {
                   child: _buildReportCard(
                     context: context,
                     title: 'Current Inventory',
-                    description: 'Complete stock inventory listing including values and quantities.',
+                    description:
+                        'Complete stock inventory listing including values and quantities.',
                     icon: Icons.inventory_2_rounded,
                     color: theme.colorScheme.secondary,
                     onPdfPressed: () async {
-                      final products = ref.read(inventoryControllerProvider).products;
-                      final pdfBytes = await ExcelPdfExportHelper.exportInventoryToPdf(products);
+                      final products = ref
+                          .read(inventoryControllerProvider)
+                          .products;
+                      final pdfBytes =
+                          await ExcelPdfExportHelper.exportInventoryToPdf(
+                            products,
+                          );
                       await Printing.layoutPdf(onLayout: (format) => pdfBytes);
                     },
-                    onExcelPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Excel Stock export triggered successfully.')),
+                    onExcelPressed: () async {
+                      final products = ref
+                          .read(inventoryControllerProvider)
+                          .products;
+                      final bytes = await ExcelHelper.exportProductsToExcel(
+                        products,
                       );
+                      if (context.mounted) {
+                        await _saveExcelFile(
+                          context,
+                          bytes,
+                          'Current_Inventory_Stock_${DateTime.now().millisecondsSinceEpoch}',
+                        );
+                      }
                     },
                   ),
                 ),
@@ -116,7 +209,8 @@ class ReportsView extends ConsumerWidget {
                   child: _buildReportCard(
                     context: context,
                     title: 'Business Profit & Loss Report',
-                    description: 'Comprehensive month-wise business report including profit, loss, and product sales history.',
+                    description:
+                        'Comprehensive month-wise business report including profit, loss, and product sales history.',
                     icon: Icons.query_stats_rounded,
                     color: Colors.purple,
                     onPdfPressed: () async {
@@ -129,22 +223,40 @@ class ReportsView extends ConsumerWidget {
                       );
 
                       if (selectedDate != null) {
-                        final allSales = await ref.read(salesRepositoryProvider).getSales();
-                        final monthlySales = allSales.where((s) => s.timestamp.month == selectedDate.month && s.timestamp.year == selectedDate.year).toList();
-                        final currentProducts = ref.read(inventoryControllerProvider).products;
-                        
-                        final title = 'For ${DateFormat('MMMM yyyy').format(selectedDate)}';
-                        final pdfBytes = await ExcelPdfExportHelper.exportBusinessReportToPdf(
-                          sales: monthlySales, 
-                          currentProducts: currentProducts,
-                          monthYearTitle: title
+                        final allSales = await ref
+                            .read(salesRepositoryProvider)
+                            .getSales();
+                        final monthlySales = allSales
+                            .where(
+                              (s) =>
+                                  s.timestamp.month == selectedDate.month &&
+                                  s.timestamp.year == selectedDate.year,
+                            )
+                            .toList();
+                        final currentProducts = ref
+                            .read(inventoryControllerProvider)
+                            .products;
+
+                        final title =
+                            'For ${DateFormat('MMMM yyyy').format(selectedDate)}';
+                        final pdfBytes =
+                            await ExcelPdfExportHelper.exportBusinessReportToPdf(
+                              sales: monthlySales,
+                              currentProducts: currentProducts,
+                              monthYearTitle: title,
+                            );
+                        await Printing.layoutPdf(
+                          onLayout: (format) => pdfBytes,
                         );
-                        await Printing.layoutPdf(onLayout: (format) => pdfBytes);
                       }
                     },
                     onExcelPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Excel export not available for Business Reports yet.')),
+                        const SnackBar(
+                          content: Text(
+                            'Excel export not available for Business Reports yet.',
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -182,11 +294,19 @@ class ReportsView extends ConsumerWidget {
               child: Icon(icon, color: color),
             ),
             const SizedBox(height: 16),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
             const SizedBox(height: 8),
             Text(
               description,
-              style: TextStyle(color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.7), fontSize: 13),
+              style: TextStyle(
+                color: theme.textTheme.bodyMedium?.color?.withValues(
+                  alpha: 0.7,
+                ),
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 24),
             Column(

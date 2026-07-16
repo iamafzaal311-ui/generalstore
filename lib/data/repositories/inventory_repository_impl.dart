@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../../core/services/sync_service.dart';
 import '../../domain/repositories/inventory_repository.dart';
 import '../datasources/local_db_service.dart';
@@ -5,7 +6,6 @@ import '../models/product_model.dart';
 import '../models/category_model.dart';
 import '../models/brand_model.dart';
 import '../models/supplier_model.dart';
-
 
 class InventoryRepositoryImpl implements InventoryRepository {
   final LocalDbService _db;
@@ -28,9 +28,12 @@ class InventoryRepositoryImpl implements InventoryRepository {
     } else {
       await _db.categoriesBox.put(category.categoryId, category);
     }
-    try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
+    try {
+      unawaited(_sync.syncDirtyRecords());
+    } catch (e) {
+      print('Sync error: $e');
+    }
   }
-
 
   @override
   Future<void> deleteCategory(String categoryId) async {
@@ -40,7 +43,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
       category.isDirty = true;
       category.lastUpdated = DateTime.now();
       await category.save();
-      try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
+      try {
+        unawaited(_sync.syncDirtyRecords());
+      } catch (e) {
+        print('Sync error: $e');
+      }
     }
   }
 
@@ -59,9 +66,12 @@ class InventoryRepositoryImpl implements InventoryRepository {
     } else {
       await _db.brandsBox.put(brand.brandId, brand);
     }
-    try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
+    try {
+      unawaited(_sync.syncDirtyRecords());
+    } catch (e) {
+      print('Sync error: $e');
+    }
   }
-
 
   @override
   Future<void> deleteBrand(String brandId) async {
@@ -71,7 +81,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
       brand.isDirty = true;
       brand.lastUpdated = DateTime.now();
       await brand.save();
-      try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
+      try {
+        unawaited(_sync.syncDirtyRecords());
+      } catch (e) {
+        print('Sync error: $e');
+      }
     }
   }
 
@@ -90,9 +104,12 @@ class InventoryRepositoryImpl implements InventoryRepository {
     } else {
       await _db.suppliersBox.put(supplier.supplierId, supplier);
     }
-    try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
+    try {
+      unawaited(_sync.syncDirtyRecords());
+    } catch (e) {
+      print('Sync error: $e');
+    }
   }
-
 
   @override
   Future<void> deleteSupplier(String supplierId) async {
@@ -102,7 +119,11 @@ class InventoryRepositoryImpl implements InventoryRepository {
       supplier.isDirty = true;
       supplier.lastUpdated = DateTime.now();
       await supplier.save();
-      try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
+      try {
+        unawaited(_sync.syncDirtyRecords());
+      } catch (e) {
+        print('Sync error: $e');
+      }
     }
   }
 
@@ -121,9 +142,12 @@ class InventoryRepositoryImpl implements InventoryRepository {
     } else {
       await _db.productsBox.put(product.productId, product);
     }
-    try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
+    try {
+      unawaited(_sync.syncDirtyRecords());
+    } catch (e) {
+      print('Sync error: $e');
+    }
   }
-
 
   @override
   Future<void> deleteProduct(String productId) async {
@@ -133,13 +157,19 @@ class InventoryRepositoryImpl implements InventoryRepository {
       product.isDirty = true;
       product.lastUpdated = DateTime.now();
       await product.save();
-      try { await _sync.syncDirtyRecords(); } catch (e) { print('Sync error: $e'); }
+      try {
+        unawaited(_sync.syncDirtyRecords());
+      } catch (e) {
+        print('Sync error: $e');
+      }
     }
   }
 
   @override
   Future<ProductModel?> getProductByBarcode(String barcode) async {
-    return _db.productsBox.values.where((e) => e.barcode == barcode && !e.isDeleted).firstOrNull;
+    return _db.productsBox.values
+        .where((e) => e.barcode == barcode && !e.isDeleted)
+        .firstOrNull;
   }
 
   @override

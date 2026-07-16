@@ -1,10 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
 import '../../../core/providers/global_providers.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/sale_model.dart';
-
 
 class DashboardState {
   final double totalSales;
@@ -63,21 +61,29 @@ class DashboardController extends StateNotifier<DashboardState> {
       final db = _ref.read(localDbServiceProvider);
 
       final sales = db.salesBox.values.where((e) => !e.isDeleted).toList();
-      final products = db.productsBox.values.where((e) => !e.isDeleted).toList();
-      final expenses = db.expensesBox.values.where((e) => !e.isDeleted).toList();
+      final products = db.productsBox.values
+          .where((e) => !e.isDeleted)
+          .toList();
+      final expenses = db.expensesBox.values
+          .where((e) => !e.isDeleted)
+          .toList();
 
       // Compute statistics
       final totalS = sales.fold(0.0, (sum, s) => sum + s.total);
       final totalE = expenses.fold(0.0, (sum, e) => sum + e.amount);
 
       // Low stock warning list
-      final lowStockList = products.where((p) => p.stock <= p.minimumStock).toList();
+      final lowStockList = products
+          .where((p) => p.stock <= p.minimumStock)
+          .toList();
 
       // Near expiry products (expiry date within 30 days)
       final now = DateTime.now();
       final limitDate = now.add(const Duration(days: 30));
       final nearExpiryList = products.where((p) {
-        return p.expiryDate != null && p.expiryDate!.isAfter(now) && p.expiryDate!.isBefore(limitDate);
+        return p.expiryDate != null &&
+            p.expiryDate!.isAfter(now) &&
+            p.expiryDate!.isBefore(limitDate);
       }).toList();
 
       // Compute total profits (Retail Price - Purchase Cost)
@@ -94,7 +100,9 @@ class DashboardController extends StateNotifier<DashboardState> {
       state = state.copyWith(
         totalSales: totalS,
         totalExpenses: totalE,
-        totalProfit: profitSum > 0 ? profitSum : (totalS * 0.2), // Default 20% margin if zero
+        totalProfit: profitSum > 0
+            ? profitSum
+            : (totalS * 0.2), // Default 20% margin if zero
         lowStockProducts: lowStockList,
         nearExpiryProducts: nearExpiryList,
         recentSales: sales.length > 5 ? sales.sublist(0, 5) : sales,
@@ -104,11 +112,9 @@ class DashboardController extends StateNotifier<DashboardState> {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
-
 }
 
 final dashboardControllerProvider =
     StateNotifierProvider<DashboardController, DashboardState>((ref) {
-  return DashboardController(ref);
-});
-
+      return DashboardController(ref);
+    });

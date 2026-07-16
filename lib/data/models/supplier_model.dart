@@ -9,19 +9,19 @@ class SupplierModel extends HiveObject {
 
   @HiveField(1)
   late String name;
-  
+
   @HiveField(2)
   String? contactName;
-  
+
   @HiveField(3)
   String? phone;
-  
+
   @HiveField(4)
   String? email;
-  
+
   @HiveField(5)
   String? address;
-  
+
   @HiveField(6)
   late double balance; // Amount we owe supplier
 

@@ -20,7 +20,7 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
   final _proprietorCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
-  
+
   String? _logoUrl;
   bool _isUploadingLogo = false;
 
@@ -28,10 +28,10 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
     setState(() {
       _isUploadingLogo = true;
     });
-    
+
     final imgService = ImgBBService();
     String? url = await imgService.pickAndUploadImage();
-    
+
     if (url != null) {
       setState(() {
         _logoUrl = url;
@@ -48,7 +48,7 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
         );
       }
     }
-    
+
     setState(() {
       _isUploadingLogo = false;
     });
@@ -75,15 +75,21 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
         logoUrl: _logoUrl,
       );
 
-      final success = await ref.read(authControllerProvider.notifier).registerStore(
-        _emailCtrl.text.trim(),
-        _passwordCtrl.text.trim(),
-        profile,
-      );
+      final success = await ref
+          .read(authControllerProvider.notifier)
+          .registerStore(
+            _emailCtrl.text.trim(),
+            _passwordCtrl.text.trim(),
+            profile,
+          );
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Store registered successfully! You can now log in as Admin.')),
+          const SnackBar(
+            content: Text(
+              'Store registered successfully! You can now log in as Admin.',
+            ),
+          ),
         );
         context.go('/login');
       }
@@ -96,9 +102,7 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Register New Store (Dev)'),
-      ),
+      appBar: AppBar(title: const Text('Register New Store (Dev)')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -106,7 +110,9 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
             constraints: const BoxConstraints(maxWidth: 400),
             child: Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Form(
@@ -114,9 +120,18 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.storefront_rounded, size: 64, color: Colors.blue),
+                      const Icon(
+                        Icons.storefront_rounded,
+                        size: 64,
+                        color: Colors.blue,
+                      ),
                       const SizedBox(height: 16),
-                      Text('Create Store Profile', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      Text(
+                        'Create Store Profile',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 24),
 
                       // Logo Picker
@@ -125,16 +140,27 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
                         child: CircleAvatar(
                           radius: 50,
                           backgroundColor: Colors.grey.shade200,
-                          backgroundImage: _logoUrl != null ? NetworkImage(_logoUrl!) : null,
+                          backgroundImage: _logoUrl != null
+                              ? NetworkImage(_logoUrl!)
+                              : null,
                           child: _isUploadingLogo
                               ? const CircularProgressIndicator()
                               : (_logoUrl == null
-                                  ? const Icon(Icons.add_a_photo, size: 30, color: Colors.grey)
-                                  : null),
+                                    ? const Icon(
+                                        Icons.add_a_photo,
+                                        size: 30,
+                                        color: Colors.grey,
+                                      )
+                                    : null),
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(_logoUrl != null ? 'Logo Added' : 'Tap to add Store Logo (Optional)', style: const TextStyle(color: Colors.grey)),
+                      Text(
+                        _logoUrl != null
+                            ? 'Logo Added'
+                            : 'Tap to add Store Logo (Optional)',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
                       const SizedBox(height: 24),
 
                       if (state.errorMessage != null)
@@ -142,43 +168,69 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
                           padding: const EdgeInsets.all(8),
                           margin: const EdgeInsets.only(bottom: 16),
                           color: Colors.red.shade100,
-                          child: Text(state.errorMessage!, style: const TextStyle(color: Colors.red)),
+                          child: Text(
+                            state.errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
                         ),
 
                       TextFormField(
                         controller: _emailCtrl,
-                        decoration: const InputDecoration(labelText: 'Admin Email', prefixIcon: Icon(Icons.email)),
+                        decoration: const InputDecoration(
+                          labelText: 'Admin Email',
+                          prefixIcon: Icon(Icons.email),
+                        ),
                         keyboardType: TextInputType.emailAddress,
-                        validator: (v) => v!.isEmpty || !v.contains('@') ? 'Enter a valid email' : null,
+                        validator: (v) => v!.isEmpty || !v.contains('@')
+                            ? 'Enter a valid email'
+                            : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _passwordCtrl,
-                        decoration: const InputDecoration(labelText: 'Admin Password', prefixIcon: Icon(Icons.lock)),
+                        decoration: const InputDecoration(
+                          labelText: 'Admin Password',
+                          prefixIcon: Icon(Icons.lock),
+                        ),
                         obscureText: true,
-                        validator: (v) => v!.length < 6 ? 'Password must be at least 6 characters' : null,
+                        validator: (v) => v!.length < 6
+                            ? 'Password must be at least 6 characters'
+                            : null,
                       ),
                       const Divider(height: 32),
-                      
+
                       TextFormField(
                         controller: _storeNameCtrl,
-                        decoration: const InputDecoration(labelText: 'Store Name', prefixIcon: Icon(Icons.store)),
-                        validator: (v) => v!.isEmpty ? 'Enter store name' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Store Name',
+                          prefixIcon: Icon(Icons.store),
+                        ),
+                        validator: (v) =>
+                            v!.isEmpty ? 'Enter store name' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _proprietorCtrl,
-                        decoration: const InputDecoration(labelText: 'Proprietor Name', prefixIcon: Icon(Icons.person)),
+                        decoration: const InputDecoration(
+                          labelText: 'Proprietor Name',
+                          prefixIcon: Icon(Icons.person),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _phoneCtrl,
-                        decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone)),
+                        decoration: const InputDecoration(
+                          labelText: 'Phone Number',
+                          prefixIcon: Icon(Icons.phone),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _addressCtrl,
-                        decoration: const InputDecoration(labelText: 'Store Address', prefixIcon: Icon(Icons.location_on)),
+                        decoration: const InputDecoration(
+                          labelText: 'Store Address',
+                          prefixIcon: Icon(Icons.location_on),
+                        ),
                       ),
                       const SizedBox(height: 24),
 
@@ -187,12 +239,23 @@ class _RegisterStoreViewState extends ConsumerState<RegisterStoreView> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
                           onPressed: state.isLoading ? null : _submit,
                           child: state.isLoading
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Text('Register Store', style: TextStyle(fontSize: 16)),
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'Register Store',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                         ),
                       ),
                     ],

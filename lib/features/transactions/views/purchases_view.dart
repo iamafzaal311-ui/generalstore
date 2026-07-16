@@ -14,10 +14,27 @@ class PurchasesView extends ConsumerStatefulWidget {
 }
 
 class _PurchasesViewState extends ConsumerState<PurchasesView> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(transactionsControllerProvider.notifier).refreshPurchases());
+    _searchCtrl.addListener(() {
+      setState(() {
+        _searchQuery = _searchCtrl.text.toLowerCase();
+      });
+    });
+    Future.microtask(
+      () =>
+          ref.read(transactionsControllerProvider.notifier).refreshPurchases(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   void _showNewPurchaseDialog() {
@@ -30,8 +47,11 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
     final loosePiecesCtrl = TextEditingController(text: '0');
     final cartonPriceCtrl = TextEditingController(text: '0');
     final loosePriceCtrl = TextEditingController(text: '0');
-    
+    final minStockCtrl = TextEditingController(text: '0');
+    final expiryCtrl = TextEditingController();
+
     final paidCtrl = TextEditingController(text: '0');
+    final invoiceCtrl = TextEditingController();
     final addFormKey = GlobalKey<FormState>();
 
     showDialog(
@@ -48,15 +68,50 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      DropdownButtonFormField<SupplierModel>(
-                        initialValue: txState.selectedSupplier,
-                        decoration: const InputDecoration(labelText: 'Select Supplier'),
-                        items: invState.suppliers.map((s) {
-                          return DropdownMenuItem(value: s, child: Text(s.name));
-                        }).toList(),
-                        onChanged: (val) {
-                          ref.read(transactionsControllerProvider.notifier).selectSupplier(val);
-                        },
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<SupplierModel>(
+                              initialValue: txState.selectedSupplier,
+                              decoration: const InputDecoration(
+                                labelText: 'Select Supplier',
+                              ),
+                              items: invState.suppliers.map((s) {
+                                return DropdownMenuItem(
+                                  value: s,
+                                  child: Text(s.name),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                ref
+                                    .read(
+                                      transactionsControllerProvider.notifier,
+                                    )
+                                    .selectSupplier(val);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline),
+                            tooltip: 'Add New Supplier',
+                            onPressed: () {
+                              Navigator.pop(
+                                context,
+                              ); // Close purchase dialog temporarily
+                              // TODO: Trigger a quick add supplier dialog and re-open this.
+                              // Since we don't have a global method for it here, we'll prompt the user to use Accounts for full setup, or we can just push a quick dialog.
+                              _showQuickAddSupplierDialog();
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: invoiceCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Supplier Invoice Number (Optional)',
+                        ),
                       ),
                       const SizedBox(height: 16),
                       const Divider(),
@@ -67,15 +122,21 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                           children: [
                             DropdownButtonFormField<ProductModel>(
                               initialValue: selectedProduct,
-                              decoration: const InputDecoration(labelText: 'Product'),
+                              decoration: const InputDecoration(
+                                labelText: 'Product',
+                              ),
                               items: invState.products.map((p) {
-                                return DropdownMenuItem(value: p, child: Text(p.name));
+                                return DropdownMenuItem(
+                                  value: p,
+                                  child: Text(p.name),
+                                );
                               }).toList(),
                               onChanged: (val) {
                                 if (val != null) {
                                   setStateDialog(() {
                                     selectedProduct = val;
-                                    loosePriceCtrl.text = val.purchasePrice.toString();
+                                    loosePriceCtrl.text = val.purchasePrice
+                                        .toString();
                                   });
                                 }
                               },
@@ -86,27 +147,45 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                 Expanded(
                                   child: TextFormField(
                                     controller: cartonsCtrl,
-                                    decoration: const InputDecoration(labelText: 'Cartons'),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Cartons',
+                                    ),
                                     keyboardType: TextInputType.number,
-                                    validator: (val) => val == null || double.tryParse(val) == null ? 'Invalid' : null,
+                                    validator: (val) =>
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: TextFormField(
                                     controller: piecesPerCartonCtrl,
-                                    decoration: const InputDecoration(labelText: 'Pieces in 1 Carton'),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Pieces in 1 Carton',
+                                    ),
                                     keyboardType: TextInputType.number,
-                                    validator: (val) => val == null || double.tryParse(val) == null ? 'Invalid' : null,
+                                    validator: (val) =>
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: TextFormField(
                                     controller: cartonPriceCtrl,
-                                    decoration: const InputDecoration(labelText: 'Carton Price'),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Carton Price',
+                                    ),
                                     keyboardType: TextInputType.number,
-                                    validator: (val) => val == null || double.tryParse(val) == null ? 'Invalid' : null,
+                                    validator: (val) =>
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
                                   ),
                                 ),
                               ],
@@ -117,52 +196,131 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                 Expanded(
                                   child: TextFormField(
                                     controller: loosePiecesCtrl,
-                                    decoration: const InputDecoration(labelText: 'Loose Pieces'),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Loose Pieces',
+                                    ),
                                     keyboardType: TextInputType.number,
-                                    validator: (val) => val == null || double.tryParse(val) == null ? 'Invalid' : null,
+                                    validator: (val) =>
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: TextFormField(
                                     controller: loosePriceCtrl,
-                                    decoration: const InputDecoration(labelText: 'Loose Piece Price'),
+                                    decoration: const InputDecoration(
+                                      labelText: 'Loose Piece Price',
+                                    ),
                                     keyboardType: TextInputType.number,
-                                    validator: (val) => val == null || double.tryParse(val) == null ? 'Invalid' : null,
+                                    validator: (val) =>
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: minStockCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Low Stock Limit',
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: expiryCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Expiry (YYYY-MM-DD)',
+                                      hintText: 'Optional',
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
                                 ElevatedButton.icon(
                                   icon: const Icon(Icons.add_box_rounded),
                                   label: const Text("Add"),
-                                  style: ElevatedButton.styleFrom(backgroundColor: theme.colorScheme.primary, foregroundColor: Colors.white),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: theme.colorScheme.primary,
+                                    foregroundColor: Colors.white,
+                                  ),
                                   onPressed: () {
-                                    if (addFormKey.currentState!.validate() && selectedProduct != null) {
-                                      final cartons = double.parse(cartonsCtrl.text);
-                                      final ppc = double.parse(piecesPerCartonCtrl.text);
-                                      final cPrice = double.parse(cartonPriceCtrl.text);
-                                      
-                                      final loose = double.parse(loosePiecesCtrl.text);
-                                      final lPrice = double.parse(loosePriceCtrl.text);
-                                      
+                                    if (addFormKey.currentState!.validate() &&
+                                        selectedProduct != null) {
+                                      final cartons = double.parse(
+                                        cartonsCtrl.text,
+                                      );
+                                      final ppc = double.parse(
+                                        piecesPerCartonCtrl.text,
+                                      );
+                                      final cPrice = double.parse(
+                                        cartonPriceCtrl.text,
+                                      );
+
+                                      final loose = double.parse(
+                                        loosePiecesCtrl.text,
+                                      );
+                                      final lPrice = double.parse(
+                                        loosePriceCtrl.text,
+                                      );
+
                                       final totalQty = (cartons * ppc) + loose;
-                                      final totalCost = (cartons * cPrice) + (loose * lPrice);
-                                      
+                                      final totalCost =
+                                          (cartons * cPrice) + (loose * lPrice);
+
                                       if (totalQty > 0) {
                                         final unitPrice = totalCost / totalQty;
-                                        
-                                        ref.read(transactionsControllerProvider.notifier).addToCart(
+
+                                        ref
+                                            .read(
+                                              transactionsControllerProvider
+                                                  .notifier,
+                                            )
+                                            .addToCart(
                                               selectedProduct!,
                                               totalQty,
                                               unitPrice,
                                             );
-                                            
-                                        selectedProduct!.purchasePrice = unitPrice;
-                                        selectedProduct!.wholesalePrice = unitPrice;
-                                        selectedProduct!.lastUpdated = DateTime.now();
+
+                                        selectedProduct!.purchasePrice =
+                                            unitPrice;
+                                        selectedProduct!.wholesalePrice =
+                                            unitPrice;
+                                        selectedProduct!.lastUpdated =
+                                            DateTime.now();
                                         selectedProduct!.isDirty = true;
-                                        
-                                        ref.read(inventoryControllerProvider.notifier).saveProduct(selectedProduct!);
+
+                                        final minS = double.tryParse(
+                                          minStockCtrl.text,
+                                        );
+                                        if (minS != null)
+                                          selectedProduct!.minimumStock = minS;
+
+                                        if (expiryCtrl.text.trim().isNotEmpty) {
+                                          try {
+                                            selectedProduct!.expiryDate =
+                                                DateTime.parse(
+                                                  expiryCtrl.text.trim(),
+                                                );
+                                          } catch (_) {}
+                                        }
+
+                                        ref
+                                            .read(
+                                              inventoryControllerProvider
+                                                  .notifier,
+                                            )
+                                            .saveProduct(selectedProduct!);
 
                                         setStateDialog(() {
                                           selectedProduct = null;
@@ -184,7 +342,10 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                       if (txState.cart.isNotEmpty) ...[
                         const Align(
                           alignment: Alignment.centerLeft,
-                          child: Text('Purchase Invoice Items:', style: TextStyle(fontWeight: FontWeight.bold)),
+                          child: Text(
+                            'Purchase Invoice Items:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                         const SizedBox(height: 8),
                         ConstrainedBox(
@@ -197,11 +358,22 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                               return ListTile(
                                 dense: true,
                                 title: Text(item.product.name),
-                                subtitle: Text('${item.quantity} units x Rs.${item.purchasePrice.toStringAsFixed(2)} = Rs.${item.total.toStringAsFixed(0)}'),
+                                subtitle: Text(
+                                  '${item.quantity} units x Rs.${item.purchasePrice.toStringAsFixed(2)} = Rs.${item.total.toStringAsFixed(0)}',
+                                ),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.remove_circle, color: Colors.redAccent, size: 20),
+                                  icon: const Icon(
+                                    Icons.remove_circle,
+                                    color: Colors.redAccent,
+                                    size: 20,
+                                  ),
                                   onPressed: () {
-                                    ref.read(transactionsControllerProvider.notifier).removeFromCart(item.product.productId);
+                                    ref
+                                        .read(
+                                          transactionsControllerProvider
+                                              .notifier,
+                                        )
+                                        .removeFromCart(item.product.productId);
                                     setStateDialog(() {});
                                   },
                                 ),
@@ -215,18 +387,25 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                           children: [
                             Text(
                               'Grand Total: Rs. ${txState.totalAmount.toStringAsFixed(2)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: paidCtrl,
-                          decoration: const InputDecoration(labelText: 'Paid to Supplier (Rs.)'),
+                          decoration: const InputDecoration(
+                            labelText: 'Paid to Supplier (Rs.)',
+                          ),
                           keyboardType: TextInputType.number,
                           onChanged: (val) {
                             final p = double.tryParse(val) ?? 0.0;
-                            ref.read(transactionsControllerProvider.notifier).setPaidAmount(p);
+                            ref
+                                .read(transactionsControllerProvider.notifier)
+                                .setPaidAmount(p);
                           },
                         ),
                       ],
@@ -244,15 +423,22 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                     backgroundColor: theme.colorScheme.primary,
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: txState.cart.isEmpty || txState.selectedSupplier == null
+                  onPressed:
+                      txState.cart.isEmpty || txState.selectedSupplier == null
                       ? null
                       : () async {
                           try {
-                            await ref.read(transactionsControllerProvider.notifier).savePurchase();
+                            await ref
+                                .read(transactionsControllerProvider.notifier)
+                                .savePurchase(invoiceCtrl.text);
                             if (context.mounted) {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Stock purchase recorded successfully!')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Stock purchase recorded successfully!',
+                                  ),
+                                ),
                               );
                             }
                           } catch (e) {
@@ -276,6 +462,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
   @override
   Widget build(BuildContext context) {
     final txState = ref.watch(transactionsControllerProvider);
+    final invState = ref.watch(inventoryControllerProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -286,7 +473,9 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: _showNewPurchaseDialog,
             icon: const Icon(Icons.add_shopping_cart_rounded),
@@ -297,94 +486,393 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
       ),
       body: txState.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Card(
-                clipBehavior: Clip.antiAlias,
-                child: txState.purchases.isEmpty
-                    ? const Center(child: Text('No stock purchases recorded.'))
-                    : ListView.separated(
-                        separatorBuilder: (context, index) => const Divider(height: 1),
-                        itemCount: txState.purchases.length,
-                        itemBuilder: (context, index) {
-                          final purchase = txState.purchases[index];
-                          final unpaid = purchase.totalAmount - purchase.paidAmount;
-                          
-                          int totalUnits = 0;
-                          try {
-                            final items = jsonDecode(purchase.itemsJson) as List;
-                            for (var item in items) {
-                              totalUnits += (item['quantity'] as num).toInt();
-                            }
-                          } catch (_) {}
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    decoration: const InputDecoration(
+                      hintText: 'Search by Invoice # or Supplier Name...',
+                      prefixIcon: Icon(Icons.search_rounded),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0,
+                      vertical: 8.0,
+                    ),
+                    child: Card(
+                      clipBehavior: Clip.antiAlias,
+                      child: txState.purchases.isEmpty
+                          ? const Center(
+                              child: Text('No stock purchases recorded.'),
+                            )
+                          : Builder(
+                              builder: (context) {
+                                final filteredPurchases = txState.purchases
+                                    .where((p) {
+                                      final supplier = invState.suppliers
+                                          .where(
+                                            (s) => s.supplierId == p.supplierId,
+                                          )
+                                          .firstOrNull;
+                                      final supplierName =
+                                          supplier?.name.toLowerCase() ?? '';
+                                      final invNo = p.invoiceNumber
+                                          .toLowerCase();
+                                      return supplierName.contains(
+                                            _searchQuery,
+                                          ) ||
+                                          invNo.contains(_searchQuery);
+                                    })
+                                    .toList();
 
-                          List<dynamic> itemsList = [];
-                          try {
-                            itemsList = jsonDecode(purchase.itemsJson) as List;
-                          } catch (_) {}
+                                if (filteredPurchases.isEmpty) {
+                                  return const Center(
+                                    child: Text('No purchases match search.'),
+                                  );
+                                }
 
-                          return ExpansionTile(
-                            leading: CircleAvatar(
-                              backgroundColor: theme.colorScheme.primaryContainer,
-                              child: Icon(Icons.shopping_bag_rounded, color: theme.colorScheme.primary),
-                            ),
-                            title: Text('Inv #: ${purchase.invoiceNumber} (Total Units: $totalUnits)'),
-                            subtitle: Text('Date: ${purchase.timestamp.toLocal().toString().split(' ')[0]} | Total: Rs. ${purchase.totalAmount.toStringAsFixed(0)}'),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text('Paid: Rs. ${purchase.paidAmount.toStringAsFixed(0)}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                                    if (unpaid > 0)
-                                      Text('Due: Rs. ${unpaid.toStringAsFixed(0)}', style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                                const SizedBox(width: 12),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                  onPressed: () {
-                                    ref.read(transactionsControllerProvider.notifier).deletePurchase(purchase.purchaseId);
-                                  },
-                                ),
-                              ],
-                            ),
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                                child: Table(
-                                  border: TableBorder.all(color: Colors.grey.shade300),
-                                  children: [
-                                    const TableRow(
-                                      decoration: BoxDecoration(color: Color(0xFFF5F5F5)),
-                                      children: [
-                                        Padding(padding: EdgeInsets.all(8.0), child: Text('Product Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                                        Padding(padding: EdgeInsets.all(8.0), child: Text('Quantity', style: TextStyle(fontWeight: FontWeight.bold))),
-                                        Padding(padding: EdgeInsets.all(8.0), child: Text('Unit Cost', style: TextStyle(fontWeight: FontWeight.bold))),
-                                        Padding(padding: EdgeInsets.all(8.0), child: Text('Total', style: TextStyle(fontWeight: FontWeight.bold))),
-                                      ],
-                                    ),
-                                    ...itemsList.map((item) {
-                                      return TableRow(
+                                return ListView.separated(
+                                  separatorBuilder: (context, index) =>
+                                      const Divider(height: 1),
+                                  itemCount: filteredPurchases.length,
+                                  itemBuilder: (context, index) {
+                                    final purchase = filteredPurchases[index];
+                                    final unpaid =
+                                        purchase.totalAmount -
+                                        purchase.paidAmount;
+
+                                    int totalUnits = 0;
+                                    try {
+                                      final items =
+                                          jsonDecode(purchase.itemsJson)
+                                              as List;
+                                      for (var item in items) {
+                                        totalUnits += (item['quantity'] as num)
+                                            .toInt();
+                                      }
+                                    } catch (_) {}
+
+                                    List<dynamic> itemsList = [];
+                                    try {
+                                      itemsList =
+                                          jsonDecode(purchase.itemsJson)
+                                              as List;
+                                    } catch (_) {}
+
+                                    final supplier = invState.suppliers
+                                        .where(
+                                          (s) =>
+                                              s.supplierId ==
+                                              purchase.supplierId,
+                                        )
+                                        .firstOrNull;
+                                    final supplierName =
+                                        supplier?.name ?? 'Unknown Supplier';
+
+                                    return ExpansionTile(
+                                      leading: CircleAvatar(
+                                        backgroundColor:
+                                            theme.colorScheme.primaryContainer,
+                                        child: Icon(
+                                          Icons.local_shipping_rounded,
+                                          color: theme.colorScheme.primary,
+                                        ),
+                                      ),
+                                      title: Text(
+                                        'Supplier: $supplierName',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        'Inv #: ${purchase.invoiceNumber} | Date: ${purchase.timestamp.toLocal().toString().split(' ')[0]} | Total: Rs. ${purchase.totalAmount.toStringAsFixed(0)}',
+                                      ),
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Padding(padding: const EdgeInsets.all(8.0), child: Text(item['name'] ?? '-')),
-                                          Padding(padding: const EdgeInsets.all(8.0), child: Text('${item['quantity']}')),
-                                          Padding(padding: const EdgeInsets.all(8.0), child: Text('Rs. ${(item['purchasePrice'] as num?)?.toStringAsFixed(0) ?? '0'}')),
-                                          Padding(padding: const EdgeInsets.all(8.0), child: Text('Rs. ${(item['total'] as num?)?.toStringAsFixed(0) ?? '0'}')),
+                                          Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
+                                            children: [
+                                              Text(
+                                                'Paid: Rs. ${purchase.paidAmount.toStringAsFixed(0)}',
+                                                style: const TextStyle(
+                                                  color: Colors.green,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              if (unpaid > 0)
+                                                Text(
+                                                  'Due: Rs. ${unpaid.toStringAsFixed(0)}',
+                                                  style: const TextStyle(
+                                                    color: Colors.redAccent,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                          const SizedBox(width: 12),
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                              color: Colors.red,
+                                            ),
+                                            onPressed: () async {
+                                              final confirm =
+                                                  await showDialog<bool>(
+                                                    context: context,
+                                                    builder: (c) => AlertDialog(
+                                                      title: const Text(
+                                                        'Delete Purchase?',
+                                                      ),
+                                                      content: Text(
+                                                        'Are you sure you want to completely delete Invoice ${purchase.invoiceNumber}?\n\nWARNING: This will subtract the stock of these items back to what they were before, and revert the supplier balance.',
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.pop(
+                                                                c,
+                                                                false,
+                                                              ),
+                                                          child: const Text(
+                                                            'Cancel',
+                                                          ),
+                                                        ),
+                                                        TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.pop(
+                                                                c,
+                                                                true,
+                                                              ),
+                                                          child: const Text(
+                                                            'Complete Delete',
+                                                            style: TextStyle(
+                                                              color: Colors.red,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                              if (confirm == true) {
+                                                ref
+                                                    .read(
+                                                      transactionsControllerProvider
+                                                          .notifier,
+                                                    )
+                                                    .deletePurchase(
+                                                      purchase.purchaseId,
+                                                    );
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        'Purchase deleted and stock reverted.',
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                          ),
                                         ],
-                                      );
-                                    }),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-              ),
+                                      ),
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16.0,
+                                            vertical: 8.0,
+                                          ),
+                                          child: Table(
+                                            border: TableBorder.all(
+                                              color: Colors.grey.shade300,
+                                            ),
+                                            children: [
+                                              const TableRow(
+                                                decoration: BoxDecoration(
+                                                  color: Color(0xFFF5F5F5),
+                                                ),
+                                                children: [
+                                                  Padding(
+                                                    padding: EdgeInsets.all(
+                                                      8.0,
+                                                    ),
+                                                    child: Text(
+                                                      'Product Name',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.all(
+                                                      8.0,
+                                                    ),
+                                                    child: Text(
+                                                      'Quantity',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.all(
+                                                      8.0,
+                                                    ),
+                                                    child: Text(
+                                                      'Unit Cost',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  Padding(
+                                                    padding: EdgeInsets.all(
+                                                      8.0,
+                                                    ),
+                                                    child: Text(
+                                                      'Total',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              ...itemsList.map((item) {
+                                                return TableRow(
+                                                  children: [
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8.0,
+                                                          ),
+                                                      child: Text(
+                                                        item['name'] ?? '-',
+                                                      ),
+                                                    ),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8.0,
+                                                          ),
+                                                      child: Text(
+                                                        '${item['quantity']}',
+                                                      ),
+                                                    ),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8.0,
+                                                          ),
+                                                      child: Text(
+                                                        'Rs. ${(item['purchasePrice'] as num?)?.toStringAsFixed(0) ?? '0'}',
+                                                      ),
+                                                    ),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            8.0,
+                                                          ),
+                                                      child: Text(
+                                                        'Rs. ${(item['total'] as num?)?.toStringAsFixed(0) ?? '0'}',
+                                                      ),
+                                                    ),
+                                                  ],
+                                                );
+                                              }),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ),
+                ),
+              ],
             ),
+    );
+  }
+
+  void _showQuickAddSupplierDialog() {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (c) {
+        return AlertDialog(
+          title: const Text('Add Quick Supplier'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Supplier Name*',
+                  ),
+                  validator: (val) =>
+                      val == null || val.isEmpty ? 'Required' : null,
+                ),
+                TextFormField(
+                  controller: phoneCtrl,
+                  decoration: const InputDecoration(labelText: 'Phone'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final newSupplier = SupplierModel()
+                    ..supplierId = DateTime.now().millisecondsSinceEpoch
+                        .toString()
+                    ..name = nameCtrl.text.trim()
+                    ..phone = phoneCtrl.text.trim()
+                    ..balance = 0.0
+                    ..isDirty = true
+                    ..lastUpdated = DateTime.now()
+                    ..isDeleted = false;
+                  await ref
+                      .read(inventoryControllerProvider.notifier)
+                      .saveSupplier(newSupplier);
+                  if (mounted) {
+                    Navigator.pop(c);
+                    _showNewPurchaseDialog(); // reopen purchase dialog
+                  }
+                }
+              },
+              child: const Text('Add & Continue'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

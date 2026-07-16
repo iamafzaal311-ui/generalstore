@@ -118,12 +118,7 @@ class ResponsiveHelper {
 }
 
 /// Device types
-enum DeviceType {
-  mobile,
-  tablet,
-  desktop,
-  largeDesktop,
-}
+enum DeviceType { mobile, tablet, desktop, largeDesktop }
 
 /// Responsive widget builder
 /// Usage: ResponsiveBuilder(
@@ -138,7 +133,8 @@ class ResponsiveBuilder extends StatelessWidget {
   final WidgetBuilder? largeDesktop;
   final WidgetBuilder? fallback;
 
-  const ResponsiveBuilder({super.key, 
+  const ResponsiveBuilder({
+    super.key,
     this.mobile,
     this.tablet,
     this.desktop,
@@ -183,7 +179,8 @@ class AdaptiveContainer extends StatelessWidget {
   final EdgeInsetsGeometry? margin;
   final Color? color;
 
-  const AdaptiveContainer({super.key, 
+  const AdaptiveContainer({
+    super.key,
     required this.child,
     this.maxWidth,
     this.padding,
@@ -193,7 +190,8 @@ class AdaptiveContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxContentWidth = maxWidth ?? ResponsiveHelper.getMaxContentWidth(context);
+    final maxContentWidth =
+        maxWidth ?? ResponsiveHelper.getMaxContentWidth(context);
 
     return Container(
       color: color,
@@ -215,7 +213,8 @@ class ResponsiveTwoColumn extends StatelessWidget {
   final Widget second;
   final double spacing;
 
-  const ResponsiveTwoColumn({super.key, 
+  const ResponsiveTwoColumn({
+    super.key,
     required this.first,
     required this.second,
     this.spacing = AppSpacing.md,
@@ -253,7 +252,8 @@ class ResponsiveGrid extends StatelessWidget {
   final int? tabletColumns;
   final int? desktopColumns;
 
-  const ResponsiveGrid({super.key, 
+  const ResponsiveGrid({
+    super.key,
     required this.children,
     this.spacing = AppSpacing.md,
     this.mobileColumns = 1,

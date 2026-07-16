@@ -9,7 +9,7 @@ class BrandModel extends HiveObject {
 
   @HiveField(1)
   late String name;
-  
+
   @HiveField(2)
   String? description;
 

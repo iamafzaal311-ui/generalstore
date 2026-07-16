@@ -9,22 +9,26 @@ import '../../features/pos/views/pos_view.dart';
 import '../../features/products/views/products_view.dart';
 import '../../features/transactions/views/purchases_view.dart';
 import '../../features/accounts/views/accounts_view.dart';
+import '../../features/accounts/views/customer_accounts_view.dart';
+import '../../features/accounts/views/supplier_accounts_view.dart';
+import '../../features/accounts/views/expense_view.dart';
 import '../../features/reports/views/reports_view.dart';
 import '../../features/sales/views/sales_view.dart';
 import '../../features/settings/views/settings_view.dart';
 import '../widgets/main_layout.dart';
 
-final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
+  debugLabel: 'root',
+);
+final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>(
+  debugLabel: 'shell',
+);
 
 final goRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/login',
   routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginView(),
-    ),
+    GoRoute(path: '/login', builder: (context, state) => const LoginView()),
     GoRoute(
       path: '/register-store',
       builder: (context, state) => const RegisterStoreView(),
@@ -39,14 +43,8 @@ final goRouter = GoRouter(
         return MainLayout(child: child);
       },
       routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) => const DashboardView(),
-        ),
-        GoRoute(
-          path: '/pos',
-          builder: (context, state) => const POSView(),
-        ),
+        GoRoute(path: '/', builder: (context, state) => const DashboardView()),
+        GoRoute(path: '/pos', builder: (context, state) => const POSView()),
         GoRoute(
           path: '/products',
           builder: (context, state) => const ProductsView(),
@@ -55,13 +53,22 @@ final goRouter = GoRouter(
           path: '/purchases',
           builder: (context, state) => const PurchasesView(),
         ),
-        GoRoute(
-          path: '/sales',
-          builder: (context, state) => const SalesView(),
-        ),
+        GoRoute(path: '/sales', builder: (context, state) => const SalesView()),
         GoRoute(
           path: '/accounts',
           builder: (context, state) => const AccountsView(),
+        ),
+        GoRoute(
+          path: '/expenses',
+          builder: (context, state) => const ExpenseView(),
+        ),
+        GoRoute(
+          path: '/customer-accounts',
+          builder: (context, state) => const CustomerAccountsView(),
+        ),
+        GoRoute(
+          path: '/supplier-accounts',
+          builder: (context, state) => const SupplierAccountsView(),
         ),
         GoRoute(
           path: '/reports',

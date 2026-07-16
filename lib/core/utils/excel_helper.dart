@@ -7,20 +7,33 @@ import '../../data/models/sale_model.dart';
 /// Helper for generating Excel exports (products, expenses, sales).
 class ExcelHelper {
   /// Generate an Excel workbook for current product stock.
-  static Future<Uint8List> exportProductsToExcel(List<ProductModel> products) async {
+  static Future<Uint8List> exportProductsToExcel(
+    List<ProductModel> products,
+  ) async {
     final excel = Excel.createExcel();
     final Sheet sheet = excel['Product Stock'];
     excel.delete('Sheet1');
 
     // Header row
     final headers = [
-      'Product Name', 'SKU', 'Barcode', 'Category ID',
-      'Unit', 'Stock', 'Min Stock', 'Max Stock',
-      'Purchase Price', 'Wholesale Price', 'Retail Price', 'Min Price',
+      'Product Name',
+      'SKU',
+      'Barcode',
+      'Category ID',
+      'Unit',
+      'Stock',
+      'Min Stock',
+      'Max Stock',
+      'Purchase Price',
+      'Wholesale Price',
+      'Retail Price',
+      'Min Price',
     ];
 
     for (int col = 0; col < headers.length; col++) {
-      final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0));
+      final cell = sheet.cell(
+        CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0),
+      );
       cell.value = TextCellValue(headers[col]);
     }
 
@@ -28,12 +41,23 @@ class ExcelHelper {
     for (int row = 0; row < products.length; row++) {
       final p = products[row];
       final rowData = [
-        p.name, p.sku ?? '', p.barcode ?? '', p.categoryId ?? '',
-        p.unit, p.stock, p.minimumStock, p.maximumStock,
-        p.purchasePrice, p.wholesalePrice, p.retailPrice, p.minimumPrice,
+        p.name,
+        p.sku ?? '',
+        p.barcode ?? '',
+        p.categoryId ?? '',
+        p.unit,
+        p.stock,
+        p.minimumStock,
+        p.maximumStock,
+        p.purchasePrice,
+        p.wholesalePrice,
+        p.retailPrice,
+        p.minimumPrice,
       ];
       for (int col = 0; col < rowData.length; col++) {
-        final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1));
+        final cell = sheet.cell(
+          CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1),
+        );
         final val = rowData[col];
         if (val is double) {
           cell.value = DoubleCellValue(val);
@@ -50,14 +74,24 @@ class ExcelHelper {
   }
 
   /// Generate an Excel workbook for expenses.
-  static Future<Uint8List> exportExpensesToExcel(List<ExpenseModel> expenses) async {
+  static Future<Uint8List> exportExpensesToExcel(
+    List<ExpenseModel> expenses,
+  ) async {
     final excel = Excel.createExcel();
     final Sheet sheet = excel['Expenses'];
     excel.delete('Sheet1');
 
-    final headers = ['Title', 'Category', 'Amount (Rs.)', 'Description', 'Date'];
+    final headers = [
+      'Title',
+      'Category',
+      'Amount (Rs.)',
+      'Description',
+      'Date',
+    ];
     for (int col = 0; col < headers.length; col++) {
-      final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0));
+      final cell = sheet.cell(
+        CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0),
+      );
       cell.value = TextCellValue(headers[col]);
     }
 
@@ -71,7 +105,9 @@ class ExcelHelper {
         e.timestamp.toLocal().toString().split(' ')[0],
       ];
       for (int col = 0; col < rowData.length; col++) {
-        final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1));
+        final cell = sheet.cell(
+          CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1),
+        );
         final val = rowData[col];
         if (val is double) {
           cell.value = DoubleCellValue(val);
@@ -92,11 +128,21 @@ class ExcelHelper {
     excel.delete('Sheet1');
 
     final headers = [
-      'Invoice #', 'Date', 'Cashier ID', 'Customer ID',
-      'Subtotal', 'Discount', 'Total', 'Paid', 'Change', 'Payment Method'
+      'Invoice #',
+      'Date',
+      'Cashier ID',
+      'Customer ID',
+      'Subtotal',
+      'Discount',
+      'Total',
+      'Paid',
+      'Change',
+      'Payment Method',
     ];
     for (int col = 0; col < headers.length; col++) {
-      final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0));
+      final cell = sheet.cell(
+        CellIndex.indexByColumnRow(columnIndex: col, rowIndex: 0),
+      );
       cell.value = TextCellValue(headers[col]);
     }
 
@@ -115,7 +161,9 @@ class ExcelHelper {
         s.paymentMethod,
       ];
       for (int col = 0; col < rowData.length; col++) {
-        final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1));
+        final cell = sheet.cell(
+          CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1),
+        );
         final val = rowData[col];
         if (val is double) {
           cell.value = DoubleCellValue(val);

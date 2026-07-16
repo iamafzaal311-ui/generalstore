@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/transactions_repository.dart';
 import '../datasources/local_db_service.dart';
 import '../models/purchase_model.dart';
 import '../models/sale_model.dart';
-
 
 import '../../core/services/sync_service.dart';
 
@@ -15,7 +16,9 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
 
   @override
   Future<List<PurchaseModel>> getPurchases() async {
-    final purchases = _db.purchasesBox.values.where((e) => !e.isDeleted).toList();
+    final purchases = _db.purchasesBox.values
+        .where((e) => !e.isDeleted)
+        .toList();
     purchases.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return purchases;
   }
@@ -58,7 +61,7 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
         await supplier.save();
       }
     }
-    await _sync.syncDirtyRecords();
+    unawaited(_sync.syncDirtyRecords());
   }
 
   @override
@@ -102,7 +105,7 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
         }
       }
     }
-    await _sync.syncDirtyRecords();
+    unawaited(_sync.syncDirtyRecords());
   }
 
   @override

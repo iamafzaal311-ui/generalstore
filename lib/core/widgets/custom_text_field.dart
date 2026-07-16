@@ -61,10 +61,7 @@ class CustomTextField extends StatelessWidget {
         hintText: hintText,
         prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
         suffixIcon: suffixIcon != null
-            ? IconButton(
-                icon: Icon(suffixIcon),
-                onPressed: onSuffixIconTap,
-              )
+            ? IconButton(icon: Icon(suffixIcon), onPressed: onSuffixIconTap)
             : null,
       ),
     );

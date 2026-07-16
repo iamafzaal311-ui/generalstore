@@ -11,7 +11,6 @@ import '../datasources/local_db_service.dart';
 import '../models/user_model.dart';
 import '../../core/utils/default_data_helper.dart';
 
-
 class AuthRepositoryImpl implements AuthRepository {
   final LocalDbService _db;
   final AuthRemoteDataSource _remote;
@@ -61,12 +60,12 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserModel?> adminLogin(String email, String password) async {
     await initialize();
-    
+
     final oldUser = FirebaseAuth.instance.currentUser;
     final oldUid = oldUser?.uid;
 
     await _remote.adminLogin(email, password);
-    
+
     final newUser = FirebaseAuth.instance.currentUser;
     final newUid = newUser?.uid;
 
@@ -94,7 +93,12 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<UserModel?> login(String username, String password) async {
     await initialize();
 
-    var user = _db.usersBox.values.where((u) => u.username.trim().toLowerCase() == username.trim().toLowerCase()).firstOrNull;
+    var user = _db.usersBox.values
+        .where(
+          (u) =>
+              u.username.trim().toLowerCase() == username.trim().toLowerCase(),
+        )
+        .firstOrNull;
 
     if (user != null && user.isActive) {
       final hashed = HashHelper.hashPassword(password.trim(), user.salt);
@@ -124,7 +128,10 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserModel?> verifyPhoneCode(String verificationId, String smsCode) async {
+  Future<UserModel?> verifyPhoneCode(
+    String verificationId,
+    String smsCode,
+  ) async {
     await initialize();
     final user = await _remote.verifyPhoneCode(verificationId, smsCode);
     if (user == null) return null;
@@ -144,7 +151,7 @@ class AuthRepositoryImpl implements AuthRepository {
       existing.isActive = user.isActive;
       existing.isDirty = user.isDirty;
       existing.lastUpdated = user.lastUpdated;
-      
+
       await existing.save(); // HiveObject save
       _currentUser = existing;
       return;
@@ -164,7 +171,12 @@ class AuthRepositoryImpl implements AuthRepository {
     await initialize();
 
     final trimmedUsername = username.trim();
-    final existing = _db.usersBox.values.where((u) => u.username.trim().toLowerCase() == trimmedUsername.toLowerCase()).firstOrNull;
+    final existing = _db.usersBox.values
+        .where(
+          (u) =>
+              u.username.trim().toLowerCase() == trimmedUsername.toLowerCase(),
+        )
+        .firstOrNull;
 
     if (existing != null) {
       throw Exception('Username already exists');
@@ -184,14 +196,16 @@ class AuthRepositoryImpl implements AuthRepository {
       ..lastUpdated = DateTime.now();
 
     await _db.usersBox.put(user.userId, user);
-    await _sync.syncDirtyRecords();
+    unawaited(_sync.syncDirtyRecords());
   }
 
   @override
   Future<void> resetPassword(String userId, String newPassword) async {
     await initialize();
 
-    final user = _db.usersBox.values.where((u) => u.userId == userId).firstOrNull;
+    final user = _db.usersBox.values
+        .where((u) => u.userId == userId)
+        .firstOrNull;
 
     if (user == null) throw Exception('User not found');
 
@@ -204,14 +218,16 @@ class AuthRepositoryImpl implements AuthRepository {
     user.lastUpdated = DateTime.now();
 
     await user.save();
-    await _sync.syncDirtyRecords();
+    unawaited(_sync.syncDirtyRecords());
   }
 
   @override
   Future<void> toggleUserStatus(String userId, bool isActive) async {
     await initialize();
 
-    final user = _db.usersBox.values.where((u) => u.userId == userId).firstOrNull;
+    final user = _db.usersBox.values
+        .where((u) => u.userId == userId)
+        .firstOrNull;
 
     if (user == null) throw Exception('User not found');
 
@@ -220,13 +236,13 @@ class AuthRepositoryImpl implements AuthRepository {
     user.lastUpdated = DateTime.now();
 
     await user.save();
-    await _sync.syncDirtyRecords();
+    unawaited(_sync.syncDirtyRecords());
   }
 
   @override
   Future<void> deleteUser(String userId) async {
     await initialize();
-    
+
     await _db.usersBox.delete(userId);
     try {
       final oldUser = FirebaseAuth.instance.currentUser;
@@ -257,9 +273,9 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> logout() async {
     if (_currentUser?.role == 'Admin') {
       try {
-        await _sync.syncDirtyRecords();
+        unawaited(_sync.syncDirtyRecords());
       } catch (_) {}
-      // We DO NOT call _remote.logout() and _db.cleanDb() here because we want 
+      // We DO NOT call _remote.logout() and _db.cleanDb() here because we want
       // the local session (for Staff) to keep working and syncing with Firebase!
     }
     _currentUser = null;

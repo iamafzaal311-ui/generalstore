@@ -9,13 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:developer' as developer;
 
 /// Log levels
-enum LogLevel {
-  verbose,
-  debug,
-  info,
-  warning,
-  error,
-}
+enum LogLevel { verbose, debug, info, warning, error }
 
 /// Log entry
 class LogEntry {
@@ -157,7 +151,8 @@ class AppLogger {
 
   /// Print log to console
   static void _printLog(LogEntry entry) {
-    final prefix = '${entry.level.name.toUpperCase().padRight(7)} | ${entry.tag.padRight(15)}';
+    final prefix =
+        '${entry.level.name.toUpperCase().padRight(7)} | ${entry.tag.padRight(15)}';
 
     switch (entry.level) {
       case LogLevel.verbose:
@@ -203,14 +198,13 @@ class AppLogger {
   }
 
   /// Export logs as formatted string
-  static String exportLogs({
-    LogLevel? minLevel,
-    String? tagFilter,
-  }) {
+  static String exportLogs({LogLevel? minLevel, String? tagFilter}) {
     List<LogEntry> filtered = _logs;
 
     if (minLevel != null) {
-      filtered = filtered.where((log) => log.level.index >= minLevel.index).toList();
+      filtered = filtered
+          .where((log) => log.level.index >= minLevel.index)
+          .toList();
     }
 
     if (tagFilter != null) {
@@ -232,7 +226,8 @@ class AppLogger {
       final result = await function();
       stopwatch.stop();
 
-      final message = '$methodName executed in ${stopwatch.elapsedMilliseconds}ms';
+      final message =
+          '$methodName executed in ${stopwatch.elapsedMilliseconds}ms';
       if (stopwatch.elapsedMilliseconds > warnThresholdMs) {
         warning(tag, '⏱️  $message (slow)');
       } else {
@@ -264,7 +259,8 @@ class AppLogger {
       final result = function();
       stopwatch.stop();
 
-      final message = '$methodName executed in ${stopwatch.elapsedMilliseconds}ms';
+      final message =
+          '$methodName executed in ${stopwatch.elapsedMilliseconds}ms';
       if (stopwatch.elapsedMilliseconds > warnThresholdMs) {
         warning(tag, '⏱️  $message (slow)');
       } else {

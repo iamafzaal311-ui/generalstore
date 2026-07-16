@@ -32,6 +32,7 @@ class POSState {
   final CustomerModel? selectedCustomer;
   final String paymentMethod;
   final double discount; // Flat overall discount
+  final double discountPercentage; // Percentage overall discount
   final double paidAmount;
   final bool isLoading;
   final String? errorMessage;
@@ -42,6 +43,7 @@ class POSState {
     this.selectedCustomer,
     this.paymentMethod = 'Cash',
     this.discount = 0.0,
+    this.discountPercentage = 0.0,
     this.paidAmount = 0.0,
     this.isLoading = false,
     this.errorMessage,
@@ -49,18 +51,23 @@ class POSState {
   });
 
   double get subtotal => cart.fold(0.0, (sum, item) => sum + item.subtotal);
-  
-  // Total discounts combined (item-level discounts + flat overall discount)
-  double get totalDiscount => cart.fold(0.0, (sum, item) => sum + item.discount) + discount;
-  
+
+  // Total discounts combined (item-level discounts + flat overall discount + percentage discount)
+  double get totalDiscount =>
+      cart.fold(0.0, (sum, item) => sum + item.discount) +
+      discount +
+      ((subtotal * discountPercentage) / 100);
+
   double get grandTotal => subtotal - totalDiscount;
-  double get changeAmount => paidAmount >= grandTotal ? paidAmount - grandTotal : 0.0;
+  double get changeAmount =>
+      paidAmount >= grandTotal ? paidAmount - grandTotal : 0.0;
 
   POSState copyWith({
     List<CartItem>? cart,
     CustomerModel? selectedCustomer,
     String? paymentMethod,
     double? discount,
+    double? discountPercentage,
     double? paidAmount,
     bool? isLoading,
     String? errorMessage,
@@ -71,6 +78,7 @@ class POSState {
       selectedCustomer: selectedCustomer ?? this.selectedCustomer,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       discount: discount ?? this.discount,
+      discountPercentage: discountPercentage ?? this.discountPercentage,
       paidAmount: paidAmount ?? this.paidAmount,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage ?? this.errorMessage,
@@ -103,7 +111,9 @@ class POSController extends StateNotifier<POSState> {
   }
 
   void addToCart(ProductModel product, [double quantity = 1.0]) {
-    final existingIndex = state.cart.indexWhere((item) => item.product.productId == product.productId);
+    final existingIndex = state.cart.indexWhere(
+      (item) => item.product.productId == product.productId,
+    );
     final updatedCart = List<CartItem>.from(state.cart);
 
     if (existingIndex >= 0) {
@@ -114,8 +124,35 @@ class POSController extends StateNotifier<POSState> {
     state = state.copyWith(cart: updatedCart);
   }
 
+  void addManualItem({
+    required String name,
+    required double price,
+    required double quantity,
+    required String unit,
+  }) {
+    final manualProduct = ProductModel()
+      ..productId = 'MANUAL-${const Uuid().v4()}'
+      ..name = name
+      ..barcode = null
+      ..sku = null
+      ..categoryId = null
+      ..brandId = null
+      ..purchasePrice =
+          price // For manual items, we can set purchase price to same or 0
+      ..retailPrice = price
+      ..stock =
+          999999 // Unlimited stock
+      ..unit = unit
+      ..minimumStock = 0
+      ..isDeleted = false;
+
+    addToCart(manualProduct, quantity);
+  }
+
   void updateQuantity(String productId, double quantity) {
-    final index = state.cart.indexWhere((item) => item.product.productId == productId);
+    final index = state.cart.indexWhere(
+      (item) => item.product.productId == productId,
+    );
     if (index >= 0 && quantity > 0) {
       final updatedCart = List<CartItem>.from(state.cart);
       updatedCart[index].quantity = quantity;
@@ -124,7 +161,9 @@ class POSController extends StateNotifier<POSState> {
   }
 
   void removeFromCart(String productId) {
-    final updatedCart = state.cart.where((item) => item.product.productId != productId).toList();
+    final updatedCart = state.cart
+        .where((item) => item.product.productId != productId)
+        .toList();
     state = state.copyWith(cart: updatedCart);
   }
 
@@ -140,13 +179,19 @@ class POSController extends StateNotifier<POSState> {
     state = state.copyWith(discount: discount);
   }
 
+  void setPercentageDiscount(double percentage) {
+    state = state.copyWith(discountPercentage: percentage);
+  }
+
   void setPaidAmount(double paid) {
     state = state.copyWith(paidAmount: paid);
   }
 
   Future<void> scanAndAddBarcode(String barcode) async {
     try {
-      final product = await _ref.read(inventoryControllerProvider.notifier).getProductByBarcode(barcode);
+      final product = await _ref
+          .read(inventoryControllerProvider.notifier)
+          .getProductByBarcode(barcode);
       if (product != null) {
         addToCart(product);
       } else {
@@ -171,7 +216,12 @@ class POSController extends StateNotifier<POSState> {
     selectCustomer(customer);
   }
 
-  Future<void> checkout(BuildContext context, {bool printReceipt = true, String? customerName, String? customerPhone}) async {
+  Future<void> checkout(
+    BuildContext context, {
+    bool printReceipt = true,
+    String? customerName,
+    String? customerPhone,
+  }) async {
     if (state.cart.isEmpty) {
       state = state.copyWith(errorMessage: 'Cart is empty');
       return;
@@ -179,17 +229,42 @@ class POSController extends StateNotifier<POSState> {
 
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
+      if (customerName != null &&
+          customerName.isNotEmpty &&
+          state.selectedCustomer == null) {
+        final customer = CustomerModel()
+          ..customerId = const Uuid().v4()
+          ..name = customerName
+          ..phone = customerPhone?.isEmpty ?? true ? null : customerPhone
+          ..balance = 0.0
+          ..isDeleted = false;
+        await _salesRepo.saveCustomer(customer);
+        state = state.copyWith(
+          selectedCustomer: customer,
+          customers: [...state.customers, customer],
+        );
+      }
+
       final timestamp = DateTime.now();
-      final invoice = 'INV-${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}-${timestamp.millisecondsSinceEpoch.toString().substring(8)}';
-      
+      final invoice =
+          'INV-${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}-${timestamp.millisecondsSinceEpoch.toString().substring(8)}';
+
       final invState = _ref.read(inventoryControllerProvider);
 
       final itemsListJson = state.cart.map((item) {
         final brandName = item.product.brandId != null
-            ? (invState.brands.where((b) => b.brandId == item.product.brandId).firstOrNull?.name ?? '')
+            ? (invState.brands
+                      .where((b) => b.brandId == item.product.brandId)
+                      .firstOrNull
+                      ?.name ??
+                  '')
             : '';
         final categoryName = item.product.categoryId != null
-            ? (invState.categories.where((c) => c.categoryId == item.product.categoryId).firstOrNull?.name ?? '')
+            ? (invState.categories
+                      .where((c) => c.categoryId == item.product.categoryId)
+                      .firstOrNull
+                      ?.name ??
+                  '')
             : '';
 
         return {
@@ -222,6 +297,11 @@ class POSController extends StateNotifier<POSState> {
         ..itemsJson = jsonEncode(itemsListJson)
         ..isDeleted = false;
 
+      // Capture old balance before saving sale
+      final oldBalance = state.selectedCustomer != null
+          ? state.selectedCustomer!.balance
+          : 0.0;
+
       // 1. Save local transaction & trigger stock deductions
       await _salesRepo.saveSale(sale);
 
@@ -231,7 +311,8 @@ class POSController extends StateNotifier<POSState> {
       // 3. Print receipt asynchronously
       if (printReceipt) {
         final finalCustomerName = customerName ?? state.selectedCustomer?.name;
-        final finalCustomerPhone = customerPhone ?? state.selectedCustomer?.phone;
+        final finalCustomerPhone =
+            customerPhone ?? state.selectedCustomer?.phone;
         final storeProfile = _ref.read(storeProfileProvider);
 
         final pdfBytes = await PrintHelper.generateThermalReceipt(
@@ -241,6 +322,7 @@ class POSController extends StateNotifier<POSState> {
           storeProfile: storeProfile,
           customerName: finalCustomerName,
           customerPhone: finalCustomerPhone,
+          previousDues: oldBalance > 0 ? oldBalance : null,
         );
         await Printing.layoutPdf(onLayout: (format) => pdfBytes);
       }
@@ -258,7 +340,9 @@ class POSController extends StateNotifier<POSState> {
   }
 }
 
-final posControllerProvider = StateNotifierProvider<POSController, POSState>((ref) {
+final posControllerProvider = StateNotifierProvider<POSController, POSState>((
+  ref,
+) {
   final repo = ref.watch(salesRepositoryProvider);
   return POSController(repo, ref);
 });

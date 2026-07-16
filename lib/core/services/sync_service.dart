@@ -13,7 +13,6 @@ import '../../data/models/supplier_model.dart';
 import '../../data/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
 class SyncService {
   final LocalDbService _db;
   final Connectivity _connectivity = Connectivity();
@@ -25,12 +24,14 @@ class SyncService {
   }
 
   void _startMonitoring() {
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((result) {
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((
+      result,
+    ) {
       if (!result.contains(ConnectivityResult.none)) {
         syncDirtyRecords();
       }
     });
-    
+
     // Also monitor auth state to trigger sync on login
     FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user != null) {
@@ -54,10 +55,14 @@ class SyncService {
         return; // Don't sync if no admin is logged in
       }
       final adminUid = user.uid;
-      final storeRef = FirebaseFirestore.instance.collection('stores').doc(adminUid);
+      final storeRef = FirebaseFirestore.instance
+          .collection('stores')
+          .doc(adminUid);
 
       // 1. Sync Categories
-      final dirtyCats = _db.categoriesBox.values.where((e) => e.isDirty).toList();
+      final dirtyCats = _db.categoriesBox.values
+          .where((e) => e.isDirty)
+          .toList();
       for (final cat in dirtyCats) {
         await storeRef.collection('categories').doc(cat.categoryId).set({
           'categoryId': cat.categoryId,
@@ -85,7 +90,9 @@ class SyncService {
       }
 
       // 3. Sync Suppliers
-      final dirtySuppliers = _db.suppliersBox.values.where((e) => e.isDirty).toList();
+      final dirtySuppliers = _db.suppliersBox.values
+          .where((e) => e.isDirty)
+          .toList();
       for (final sup in dirtySuppliers) {
         await storeRef.collection('suppliers').doc(sup.supplierId).set({
           'supplierId': sup.supplierId,
@@ -103,7 +110,9 @@ class SyncService {
       }
 
       // 4. Sync Customers
-      final dirtyCustomers = _db.customersBox.values.where((e) => e.isDirty).toList();
+      final dirtyCustomers = _db.customersBox.values
+          .where((e) => e.isDirty)
+          .toList();
       for (final cust in dirtyCustomers) {
         await storeRef.collection('customers').doc(cust.customerId).set({
           'customerId': cust.customerId,
@@ -120,7 +129,9 @@ class SyncService {
       }
 
       // 5. Sync Products
-      final dirtyProducts = _db.productsBox.values.where((e) => e.isDirty).toList();
+      final dirtyProducts = _db.productsBox.values
+          .where((e) => e.isDirty)
+          .toList();
       for (final prod in dirtyProducts) {
         await storeRef.collection('products').doc(prod.productId).set({
           'productId': prod.productId,
@@ -172,7 +183,9 @@ class SyncService {
       }
 
       // 7. Sync Purchases
-      final dirtyPurchases = _db.purchasesBox.values.where((e) => e.isDirty).toList();
+      final dirtyPurchases = _db.purchasesBox.values
+          .where((e) => e.isDirty)
+          .toList();
       for (final purchase in dirtyPurchases) {
         await storeRef.collection('purchases').doc(purchase.purchaseId).set({
           'purchaseId': purchase.purchaseId,
@@ -190,7 +203,9 @@ class SyncService {
       }
 
       // 8. Sync Expenses
-      final dirtyExpenses = _db.expensesBox.values.where((e) => e.isDirty).toList();
+      final dirtyExpenses = _db.expensesBox.values
+          .where((e) => e.isDirty)
+          .toList();
       for (final expense in dirtyExpenses) {
         await storeRef.collection('expenses').doc(expense.expenseId).set({
           'expenseId': expense.expenseId,
@@ -235,7 +250,9 @@ class SyncService {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
       final adminUid = user.uid;
-      final storeRef = FirebaseFirestore.instance.collection('stores').doc(adminUid);
+      final storeRef = FirebaseFirestore.instance
+          .collection('stores')
+          .doc(adminUid);
 
       // 1. Restore Users
       final usersSnapshot = await storeRef.collection('users').get();
@@ -338,7 +355,9 @@ class SyncService {
           ..openingStock = (data['openingStock'] as num).toDouble()
           ..minimumStock = (data['minimumStock'] as num).toDouble()
           ..maximumStock = (data['maximumStock'] as num).toDouble()
-          ..expiryDate = data['expiryDate'] != null ? DateTime.parse(data['expiryDate']) : null
+          ..expiryDate = data['expiryDate'] != null
+              ? DateTime.parse(data['expiryDate'])
+              : null
           ..description = data['description']
           ..isDirty = false
           ..lastUpdated = DateTime.parse(data['lastUpdated'])

@@ -1,6 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
 
-
 import '../models/brand_model.dart';
 import '../models/category_model.dart';
 import '../models/customer_model.dart';
@@ -10,6 +9,7 @@ import '../models/purchase_model.dart';
 import '../models/sale_model.dart';
 import '../models/supplier_model.dart';
 import '../models/user_model.dart';
+import '../models/payment_model.dart';
 
 class LocalDbService {
   bool _isInitialized = false;
@@ -23,6 +23,7 @@ class LocalDbService {
   late Box<SaleModel> salesBox;
   late Box<PurchaseModel> purchasesBox;
   late Box<ExpenseModel> expensesBox;
+  late Box<PaymentModel> paymentsBox;
   late Box<String> settingsBox;
 
   Future<void> init() async {
@@ -40,6 +41,7 @@ class LocalDbService {
     Hive.registerAdapter(SaleModelAdapter());
     Hive.registerAdapter(PurchaseModelAdapter());
     Hive.registerAdapter(ExpenseModelAdapter());
+    Hive.registerAdapter(PaymentModelAdapter());
 
     // Open Boxes
     usersBox = await Hive.openBox<UserModel>('users');
@@ -51,6 +53,7 @@ class LocalDbService {
     salesBox = await Hive.openBox<SaleModel>('sales');
     purchasesBox = await Hive.openBox<PurchaseModel>('purchases');
     expensesBox = await Hive.openBox<ExpenseModel>('expenses');
+    paymentsBox = await Hive.openBox<PaymentModel>('payments');
     settingsBox = await Hive.openBox<String>('settings');
 
     _isInitialized = true;
@@ -66,6 +69,7 @@ class LocalDbService {
     await salesBox.clear();
     await purchasesBox.clear();
     await expensesBox.clear();
+    await paymentsBox.clear();
     await settingsBox.clear();
   }
 }

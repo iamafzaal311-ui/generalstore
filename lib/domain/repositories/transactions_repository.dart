@@ -6,7 +6,7 @@ abstract class TransactionsRepository {
   Future<List<PurchaseModel>> getPurchases();
   Future<void> savePurchase(PurchaseModel purchase);
   Future<void> deletePurchase(String purchaseId);
-  
+
   // Sales (additional logs access)
   Future<List<SaleModel>> getSalesLogs();
 }

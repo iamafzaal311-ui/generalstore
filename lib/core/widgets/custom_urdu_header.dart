@@ -7,7 +7,13 @@ import '../utils/text_helper.dart';
 class CustomUrduHeader extends ConsumerWidget {
   const CustomUrduHeader({super.key});
 
-  TextStyle _getStyle(String text, {double? fontSize, FontWeight? fontWeight, Color? color, double? height}) {
+  TextStyle _getStyle(
+    String text, {
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? height,
+  }) {
     final isUrdu = TextHelper.isUrdu(text);
     return isUrdu
         ? GoogleFonts.notoNastaliqUrdu(
@@ -17,7 +23,9 @@ class CustomUrduHeader extends ConsumerWidget {
             height: height ?? 1.5,
           )
         : GoogleFonts.poppins(
-            fontSize: fontSize != null ? fontSize * 0.75 : null, // Poppins is naturally larger than Nastaliq
+            fontSize: fontSize != null
+                ? fontSize * 0.75
+                : null, // Poppins is naturally larger than Nastaliq
             fontWeight: fontWeight,
             color: color,
             height: height ?? 1.2,
@@ -32,10 +40,18 @@ class CustomUrduHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(storeProfileProvider);
 
-    final storeName = (profile?.storeName ?? '').isNotEmpty ? profile!.storeName : 'حسنین ٹریڈرز';
-    final tagline = (profile?.tagline ?? '').isNotEmpty ? profile!.tagline : 'علی عباس';
-    final phone = (profile?.phone ?? '').isNotEmpty ? profile!.phone : '0307-4217267';
-    final address = (profile?.address ?? '').isNotEmpty ? profile!.address : 'ایڈریس: غوثیہ مارکیٹ سکندر چوک پاک پتن';
+    final storeName = (profile?.storeName ?? '').isNotEmpty
+        ? profile!.storeName
+        : 'حسنین ٹریڈرز';
+    final tagline = (profile?.tagline ?? '').isNotEmpty
+        ? profile!.tagline
+        : 'علی عباس';
+    final phone = (profile?.phone ?? '').isNotEmpty
+        ? profile!.phone
+        : '0307-4217267';
+    final address = (profile?.address ?? '').isNotEmpty
+        ? profile!.address
+        : 'ایڈریس: غوثیہ مارکیٹ سکندر چوک پاک پتن';
 
     return Container(
       width: double.infinity,
@@ -67,13 +83,22 @@ class CustomUrduHeader extends ConsumerWidget {
                   children: [
                     Text(
                       tagline,
-                      style: _getStyle(tagline, fontSize: 24, color: Colors.blue.shade800, fontWeight: FontWeight.bold),
+                      style: _getStyle(
+                        tagline,
+                        fontSize: 24,
+                        color: Colors.blue.shade800,
+                        fontWeight: FontWeight.bold,
+                      ),
                       textDirection: _getDirection(tagline),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.phone, size: 16, color: Colors.grey.shade700),
+                        Icon(
+                          Icons.phone,
+                          size: 16,
+                          color: Colors.grey.shade700,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           phone,
@@ -93,7 +118,12 @@ class CustomUrduHeader extends ConsumerWidget {
                   child: Text(
                     storeName,
                     textAlign: TextAlign.right,
-                    style: _getStyle(storeName, fontSize: 48, color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                    style: _getStyle(
+                      storeName,
+                      fontSize: 48,
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.bold,
+                    ),
                     textDirection: _getDirection(storeName),
                   ),
                 ),
@@ -114,7 +144,12 @@ class CustomUrduHeader extends ConsumerWidget {
             child: Text(
               address,
               textAlign: TextAlign.center,
-              style: _getStyle(address, fontSize: 18, color: Colors.white, fontWeight: FontWeight.w500),
+              style: _getStyle(
+                address,
+                fontSize: 18,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
               textDirection: _getDirection(address),
             ),
           ),

@@ -12,7 +12,7 @@ class ExpenseModel extends HiveObject {
 
   @HiveField(2)
   late String category; // 'Rent', 'Salaries', 'Utilities', 'Stationery', 'Other'
-  
+
   @HiveField(3)
   late double amount;
 

@@ -19,7 +19,8 @@ class ProductsView extends ConsumerStatefulWidget {
   ConsumerState<ProductsView> createState() => _ProductsViewState();
 }
 
-class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerProviderStateMixin {
+class _ProductsViewState extends ConsumerState<ProductsView>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
@@ -49,7 +50,10 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Inventory Management', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: const Text(
+          'Inventory Management',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
         backgroundColor: const Color(0xFF1E3A8A), // Deep blue
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
@@ -94,7 +98,10 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.colorScheme.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
                         ),
                         onPressed: () => _handleAddAction(context),
                         icon: const Icon(Icons.add_rounded),
@@ -140,7 +147,13 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
   Widget _buildProductsTab(InventoryState state) {
     var list = state.products;
     if (_searchQuery.isNotEmpty) {
-      list = list.where((p) => p.name.toLowerCase().contains(_searchQuery) || (p.sku ?? '').toLowerCase().contains(_searchQuery)).toList();
+      list = list
+          .where(
+            (p) =>
+                p.name.toLowerCase().contains(_searchQuery) ||
+                (p.sku ?? '').toLowerCase().contains(_searchQuery),
+          )
+          .toList();
     }
     if (list.isEmpty) return const Center(child: Text('No products found.'));
 
@@ -158,32 +171,65 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
             DataColumn(label: Text('Actions')),
           ],
           rows: list.map((p) {
-            final cat = state.categories.where((c) => c.categoryId == p.categoryId).firstOrNull?.name ?? '-';
-            final br = state.brands.where((b) => b.brandId == p.brandId).firstOrNull?.name ?? '-';
-            return DataRow(cells: [
-              DataCell(
-                p.imagePath != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Image.network(p.imagePath!, width: 40, height: 40, fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.inventory_2, color: Colors.grey),
+            final cat =
+                state.categories
+                    .where((c) => c.categoryId == p.categoryId)
+                    .firstOrNull
+                    ?.name ??
+                '-';
+            final br =
+                state.brands
+                    .where((b) => b.brandId == p.brandId)
+                    .firstOrNull
+                    ?.name ??
+                '-';
+            return DataRow(
+              cells: [
+                DataCell(
+                  p.imagePath != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.network(
+                            p.imagePath!,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.inventory_2,
+                                  color: Colors.grey,
+                                ),
+                          ),
+                        )
+                      : const Icon(Icons.inventory_2, color: Colors.grey),
+                ),
+                DataCell(Text(p.name)),
+                DataCell(Text('${p.sku ?? '-'}\n${p.barcode ?? '-'}')),
+                DataCell(Text('$cat\n$br')),
+                DataCell(Text('${p.stock} ${p.unit}')),
+                DataCell(Text('Rs. ${p.retailPrice.toStringAsFixed(0)}')),
+                DataCell(
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.orange),
+                        onPressed: () => _showProductFormDialog(p),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _confirmDelete(
+                          context,
+                          () => ref
+                              .read(inventoryControllerProvider.notifier)
+                              .deleteProduct(p.productId),
                         ),
-                      )
-                    : const Icon(Icons.inventory_2, color: Colors.grey),
-              ),
-              DataCell(Text(p.name)),
-              DataCell(Text('${p.sku ?? '-'}\n${p.barcode ?? '-'}')),
-              DataCell(Text('$cat\n$br')),
-              DataCell(Text('${p.stock} ${p.unit}')),
-              DataCell(Text('Rs. ${p.retailPrice.toStringAsFixed(0)}')),
-              DataCell(Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(icon: const Icon(Icons.edit, color: Colors.orange), onPressed: () => _showProductFormDialog(p)),
-                  IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _confirmDelete(context, () => ref.read(inventoryControllerProvider.notifier).deleteProduct(p.productId))),
-                ],
-              )),
-            ]);
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
           }).toList(),
         ),
       ),
@@ -197,13 +243,26 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
       cellBuilder: (c) => [
         DataCell(Text((c as CategoryModel).name)),
         DataCell(Text(c.description ?? '-')),
-        DataCell(Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(icon: const Icon(Icons.edit, color: Colors.orange), onPressed: () => _showCategoryFormDialog(c)),
-            IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _confirmDelete(context, () => ref.read(inventoryControllerProvider.notifier).deleteCategory(c.categoryId))),
-          ],
-        )),
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.orange),
+                onPressed: () => _showCategoryFormDialog(c),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _confirmDelete(
+                  context,
+                  () => ref
+                      .read(inventoryControllerProvider.notifier)
+                      .deleteCategory(c.categoryId),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -215,13 +274,26 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
       cellBuilder: (b) => [
         DataCell(Text((b as BrandModel).name)),
         DataCell(Text(b.description ?? '-')),
-        DataCell(Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(icon: const Icon(Icons.edit, color: Colors.orange), onPressed: () => _showBrandFormDialog(b)),
-            IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _confirmDelete(context, () => ref.read(inventoryControllerProvider.notifier).deleteBrand(b.brandId))),
-          ],
-        )),
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.orange),
+                onPressed: () => _showBrandFormDialog(b),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _confirmDelete(
+                  context,
+                  () => ref
+                      .read(inventoryControllerProvider.notifier)
+                      .deleteBrand(b.brandId),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -234,18 +306,35 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
         DataCell(Text((s as SupplierModel).name)),
         DataCell(Text(s.contactName ?? '-')),
         DataCell(Text(s.phone ?? '-')),
-        DataCell(Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(icon: const Icon(Icons.edit, color: Colors.orange), onPressed: () => _showSupplierFormDialog(s)),
-            IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _confirmDelete(context, () => ref.read(inventoryControllerProvider.notifier).deleteSupplier(s.supplierId))),
-          ],
-        )),
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.orange),
+                onPressed: () => _showSupplierFormDialog(s),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _confirmDelete(
+                  context,
+                  () => ref
+                      .read(inventoryControllerProvider.notifier)
+                      .deleteSupplier(s.supplierId),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildSimpleTable({required List<dynamic> items, required List<String> columns, required List<DataCell> Function(dynamic) cellBuilder}) {
+  Widget _buildSimpleTable({
+    required List<dynamic> items,
+    required List<String> columns,
+    required List<DataCell> Function(dynamic) cellBuilder,
+  }) {
     if (items.isEmpty) return const Center(child: Text('No records found.'));
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -265,7 +354,10 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
         title: const Text('Confirm Delete'),
         content: const Text('Are you sure you want to delete this record?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
@@ -293,21 +385,37 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Category Name'), validator: (v) => v!.isEmpty ? 'Required' : null),
+              TextFormField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Category Name'),
+                validator: (v) => v!.isEmpty ? 'Required' : null,
+              ),
               const SizedBox(height: 12),
-              TextFormField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description')),
+              TextFormField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
-                final cat = category ?? CategoryModel()..categoryId = const Uuid().v4().toString().substring(0, 8)..isDeleted = false;
+                final cat = category ??
+                    (CategoryModel()
+                      ..categoryId =
+                          const Uuid().v4().toString().substring(0, 8)
+                      ..isDeleted = false);
                 cat.name = nameCtrl.text;
                 cat.description = descCtrl.text;
-                ref.read(inventoryControllerProvider.notifier).saveCategory(cat);
+                ref
+                    .read(inventoryControllerProvider.notifier)
+                    .saveCategory(cat);
                 Navigator.pop(context);
               }
             },
@@ -331,18 +439,31 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Brand Name'), validator: (v) => v!.isEmpty ? 'Required' : null),
+              TextFormField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Brand Name'),
+                validator: (v) => v!.isEmpty ? 'Required' : null,
+              ),
               const SizedBox(height: 12),
-              TextFormField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description')),
+              TextFormField(
+                controller: descCtrl,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
-                final b = brand ?? BrandModel()..brandId = const Uuid().v4().toString().substring(0, 8)..isDeleted = false;
+                final b = brand ??
+                    (BrandModel()
+                      ..brandId = const Uuid().v4().toString().substring(0, 8)
+                      ..isDeleted = false);
                 b.name = nameCtrl.text;
                 b.description = descCtrl.text;
                 ref.read(inventoryControllerProvider.notifier).saveBrand(b);
@@ -369,18 +490,33 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Supplier Name'), validator: (v) => v!.isEmpty ? 'Required' : null),
+              TextFormField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(labelText: 'Supplier Name'),
+                validator: (v) => v!.isEmpty ? 'Required' : null,
+              ),
               const SizedBox(height: 12),
-              TextFormField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone')),
+              TextFormField(
+                controller: phoneCtrl,
+                decoration: const InputDecoration(labelText: 'Phone'),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
-                final s = supplier ?? SupplierModel()..supplierId = const Uuid().v4().toString().substring(0, 8)..isDeleted = false;
+                final s = supplier ??
+                    (SupplierModel()
+                      ..supplierId =
+                          const Uuid().v4().toString().substring(0, 8)
+                      ..isDeleted = false
+                      ..balance = 0.0);
                 s.name = nameCtrl.text;
                 s.phone = phoneCtrl.text;
                 ref.read(inventoryControllerProvider.notifier).saveSupplier(s);
@@ -397,27 +533,51 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
   void _showProductFormDialog([ProductModel? product]) {
     final formKey = GlobalKey<FormState>();
     final nameCtrl = TextEditingController(text: product?.name);
-    
-    final generatedSku = 'HT-PROD-${Random().nextInt(9999).toString().padLeft(4, '0')}';
+
+    final generatedSku =
+        'HT-PROD-${Random().nextInt(9999).toString().padLeft(4, '0')}';
     final generatedBarcode = '${Random().nextInt(999999999) + 100000000000}';
     final skuCtrl = TextEditingController(text: product?.sku ?? generatedSku);
-    final barcodeCtrl = TextEditingController(text: product?.barcode ?? generatedBarcode);
-    
-    final purchasePriceCtrl = TextEditingController(text: product?.purchasePrice.toString() ?? '0');
-    final retailPriceCtrl = TextEditingController(text: product?.retailPrice.toString() ?? '0');
-    final stockCtrl = TextEditingController(text: product?.stock.toString() ?? '0');
+    final barcodeCtrl = TextEditingController(
+      text: product?.barcode ?? generatedBarcode,
+    );
+
+    final purchasePriceCtrl = TextEditingController(
+      text: product?.purchasePrice.toString() ?? '0',
+    );
+    final retailPriceCtrl = TextEditingController(
+      text: product?.retailPrice.toString() ?? '0',
+    );
+    final stockCtrl = TextEditingController(
+      text: product?.stock.toString() ?? '0',
+    );
+    final minStockCtrl = TextEditingController(
+      text: product?.minimumStock.toString() ?? '10',
+    );
+    final expiryCtrl = TextEditingController(
+      text: product?.expiryDate != null 
+          ? product!.expiryDate!.toIso8601String().split('T')[0]
+          : '',
+    );
     final unitCtrl = TextEditingController(text: product?.unit ?? 'pcs');
-    
-    final cartonsCtrl = TextEditingController(text: '0'); // Start at 0 so user adds new cartons
-    final piecesPerCartonCtrl = TextEditingController(text: product?.piecesPerCarton?.toString() ?? '1');
-    final cartonPriceCtrl = TextEditingController(text: '0'); // Start at 0 for new stock addition
+
+    final cartonsCtrl = TextEditingController(
+      text: '0',
+    ); // Start at 0 so user adds new cartons
+    final piecesPerCartonCtrl = TextEditingController(
+      text: product?.piecesPerCarton?.toString() ?? '1',
+    );
+    final cartonPriceCtrl = TextEditingController(
+      text: '0',
+    ); // Start at 0 for new stock addition
 
     void recalcPrices() {
       final cPrice = double.tryParse(cartonPriceCtrl.text) ?? 0;
       final pcs = double.tryParse(piecesPerCartonCtrl.text) ?? 1;
       final ctns = double.tryParse(cartonsCtrl.text) ?? 0;
-      if (cPrice > 0 && pcs > 0) purchasePriceCtrl.text = (cPrice / pcs).toStringAsFixed(2);
-      
+      if (cPrice > 0 && pcs > 0)
+        purchasePriceCtrl.text = (cPrice / pcs).toStringAsFixed(2);
+
       final existingStock = product?.stock ?? 0;
       if (ctns > 0 && pcs > 0) {
         stockCtrl.text = (existingStock + (ctns * pcs)).toStringAsFixed(0);
@@ -425,11 +585,11 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
         stockCtrl.text = existingStock.toStringAsFixed(0);
       }
     }
+
     cartonPriceCtrl.addListener(recalcPrices);
     piecesPerCartonCtrl.addListener(recalcPrices);
     cartonsCtrl.addListener(recalcPrices);
 
-    final state = ref.read(inventoryControllerProvider);
     String? selectedCategory = product?.categoryId;
     String? selectedBrand = product?.brandId;
     String? uploadedImageUrl = product?.imagePath;
@@ -442,7 +602,11 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
           final theme = Theme.of(context);
           final storeProfile = ref.read(storeProfileProvider);
           return AlertDialog(
-            title: Text(product == null ? 'Add Stock (${storeProfile?.storeName ?? 'General Store'})' : 'Edit Product'),
+            title: Text(
+              product == null
+                  ? 'Add Stock (${storeProfile?.storeName ?? 'General Store'})'
+                  : 'Edit Product',
+            ),
             content: Form(
               key: formKey,
               child: SingleChildScrollView(
@@ -458,11 +622,21 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
                             CircleAvatar(
                               radius: 50,
                               backgroundColor: Colors.grey[200],
-                              backgroundImage: uploadedImageUrl != null ? NetworkImage(uploadedImageUrl!) : null,
-                              child: uploadedImageUrl == null ? const Icon(Icons.inventory_2, size: 40, color: Colors.grey) : null,
+                              backgroundImage: uploadedImageUrl != null
+                                  ? NetworkImage(uploadedImageUrl!)
+                                  : null,
+                              child: uploadedImageUrl == null
+                                  ? const Icon(
+                                      Icons.inventory_2,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    )
+                                  : null,
                             ),
                             if (isUploadingImage)
-                              const Positioned.fill(child: CircularProgressIndicator()),
+                              const Positioned.fill(
+                                child: CircularProgressIndicator(),
+                              ),
                             Positioned(
                               bottom: 0,
                               right: 0,
@@ -470,28 +644,48 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
                                 radius: 18,
                                 backgroundColor: theme.colorScheme.primary,
                                 child: IconButton(
-                                  icon: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                                  icon: const Icon(
+                                    Icons.camera_alt,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
                                   onPressed: () async {
                                     final picker = ImagePicker();
-                                    final xfile = await picker.pickImage(source: ImageSource.gallery);
+                                    final xfile = await picker.pickImage(
+                                      source: ImageSource.gallery,
+                                    );
                                     if (xfile != null) {
                                       setState(() => isUploadingImage = true);
                                       try {
                                         final imgbb = ImgBBService();
-                                        final url = await imgbb.uploadImage(xfile);
+                                        final url = await imgbb.uploadImage(
+                                          xfile,
+                                        );
                                         if (url != null) {
                                           setState(() {
                                             uploadedImageUrl = url;
                                             isUploadingImage = false;
                                           });
                                         } else {
-                                          setState(() => isUploadingImage = false);
+                                          setState(
+                                            () => isUploadingImage = false,
+                                          );
                                           if (mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to upload image')));
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Failed to upload image',
+                                                ),
+                                              ),
+                                            );
                                           }
                                         }
                                       } catch (e) {
-                                        setState(() => isUploadingImage = false);
+                                        setState(
+                                          () => isUploadingImage = false,
+                                        );
                                       }
                                     }
                                   },
@@ -502,53 +696,237 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
                         ),
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Product Name*'), validator: (v) => v!.isEmpty ? 'Required' : null),
+                      TextFormField(
+                        controller: nameCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Product Name*',
+                        ),
+                        validator: (v) => v!.isEmpty ? 'Required' : null,
+                      ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(child: DropdownButtonFormField<String>(isExpanded: true, initialValue: selectedBrand, decoration: const InputDecoration(labelText: 'Brand'), items: state.brands.map((b) => DropdownMenuItem(value: b.brandId, child: Text(b.name, overflow: TextOverflow.ellipsis))).toList(), onChanged: (v) => selectedBrand = v)),
-                          IconButton(icon: const Icon(Icons.add_circle, color: Colors.teal), onPressed: _showBrandFormDialog),
-                          const SizedBox(width: 8),
-                          Expanded(child: DropdownButtonFormField<String>(isExpanded: true, initialValue: selectedCategory, decoration: const InputDecoration(labelText: 'Category'), items: state.categories.map((c) => DropdownMenuItem(value: c.categoryId, child: Text(c.name, overflow: TextOverflow.ellipsis))).toList(), onChanged: (v) => selectedCategory = v)),
-                          IconButton(icon: const Icon(Icons.add_circle, color: Colors.teal), onPressed: _showCategoryFormDialog),
-                        ],
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final invState = ref.watch(
+                            inventoryControllerProvider,
+                          );
+
+                          // Ensure selected values still exist in the lists, otherwise reset to null
+                          if (selectedBrand != null &&
+                              !invState.brands.any(
+                                (b) => b.brandId == selectedBrand,
+                              )) {
+                            selectedBrand = null;
+                          }
+                          if (selectedCategory != null &&
+                              !invState.categories.any(
+                                (c) => c.categoryId == selectedCategory,
+                              )) {
+                            selectedCategory = null;
+                          }
+
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  isExpanded: true,
+                                  value: selectedBrand,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Brand',
+                                  ),
+                                  items: invState.brands
+                                      .map(
+                                        (b) => DropdownMenuItem(
+                                          value: b.brandId,
+                                          child: Text(
+                                            b.name,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) => selectedBrand = v,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.add_circle,
+                                  color: Colors.teal,
+                                ),
+                                onPressed: _showBrandFormDialog,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  isExpanded: true,
+                                  value: selectedCategory,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Category',
+                                  ),
+                                  items: invState.categories
+                                      .map(
+                                        (c) => DropdownMenuItem(
+                                          value: c.categoryId,
+                                          child: Text(
+                                            c.name,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) => selectedCategory = v,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.add_circle,
+                                  color: Colors.teal,
+                                ),
+                                onPressed: _showCategoryFormDialog,
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 24),
-                      const Text('Carton & Stock Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const Text(
+                        'Carton & Stock Information',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                       const Divider(),
                       Row(
                         children: [
-                          Expanded(child: TextFormField(controller: cartonsCtrl, decoration: const InputDecoration(labelText: 'Cartons'), keyboardType: TextInputType.number)),
+                          Expanded(
+                            child: TextFormField(
+                              controller: cartonsCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Cartons',
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
                           const SizedBox(width: 12),
-                          Expanded(child: TextFormField(controller: piecesPerCartonCtrl, decoration: const InputDecoration(labelText: 'Pieces in Carton'), keyboardType: TextInputType.number)),
+                          Expanded(
+                            child: TextFormField(
+                              controller: piecesPerCartonCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Pieces in Carton',
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(controller: cartonPriceCtrl, decoration: const InputDecoration(labelText: 'Carton Price (Total Purchase)', helperText: 'Auto-calculates Purchase Price'), keyboardType: TextInputType.number),
+                      TextFormField(
+                        controller: cartonPriceCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Carton Price (Total Purchase)',
+                          helperText: 'Auto-calculates Purchase Price',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
                       const SizedBox(height: 24),
-                      const Text('Prices & Identifiers', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const Text(
+                        'Prices & Identifiers',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                       const Divider(),
                       Row(
                         children: [
-                          Expanded(child: TextFormField(controller: purchasePriceCtrl, decoration: const InputDecoration(labelText: 'Purchase / Wholesale Price (Rs.)*'), keyboardType: TextInputType.number)),
+                          Expanded(
+                            child: TextFormField(
+                              controller: purchasePriceCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Purchase / Wholesale Price (Rs.)*',
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
                           const SizedBox(width: 12),
-                          Expanded(child: TextFormField(controller: retailPriceCtrl, decoration: const InputDecoration(labelText: 'Retail / Sale Price (Rs.)*'), keyboardType: TextInputType.number)),
+                          Expanded(
+                            child: TextFormField(
+                              controller: retailPriceCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Retail / Sale Price (Rs.)*',
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(child: TextFormField(controller: stockCtrl, decoration: const InputDecoration(labelText: 'Total Pieces in Stock*'), keyboardType: TextInputType.number)),
+                          Expanded(
+                            child: TextFormField(
+                              controller: stockCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Total Pieces in Stock*',
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
                           const SizedBox(width: 12),
-                          Expanded(child: TextFormField(controller: unitCtrl, decoration: const InputDecoration(labelText: 'Unit (pcs, etc)*'))),
+                          Expanded(
+                            child: TextFormField(
+                              controller: unitCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Unit (pcs, etc)*',
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(child: TextFormField(controller: skuCtrl, decoration: const InputDecoration(labelText: 'SKU (Auto Generated)'))),
+                          Expanded(
+                            child: TextFormField(
+                              controller: skuCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'SKU (Auto Generated)',
+                              ),
+                            ),
+                          ),
                           const SizedBox(width: 12),
-                          Expanded(child: TextFormField(controller: barcodeCtrl, decoration: const InputDecoration(labelText: 'Barcode (Auto Generated)'))),
+                          Expanded(
+                            child: TextFormField(
+                              controller: barcodeCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Barcode (Auto Generated)',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: minStockCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Low Stock Limit*',
+                              ),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: expiryCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Expiry Date (YYYY-MM-DD)',
+                                hintText: 'Optional',
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -557,7 +935,10 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
               ElevatedButton(
                 onPressed: () {
                   if (formKey.currentState!.validate()) {
@@ -571,28 +952,40 @@ class _ProductsViewState extends ConsumerState<ProductsView> with SingleTickerPr
                       ..maximumStock = 0
                       ..wholesalePrice = 0
                       ..minimumPrice = 0;
-                      
+
                     p.name = nameCtrl.text;
                     p.sku = skuCtrl.text;
                     p.barcode = barcodeCtrl.text;
                     p.categoryId = selectedCategory;
                     p.brandId = selectedBrand;
-                    p.purchasePrice = double.tryParse(purchasePriceCtrl.text) ?? 0;
+                    p.purchasePrice =
+                        double.tryParse(purchasePriceCtrl.text) ?? 0;
                     p.retailPrice = double.tryParse(retailPriceCtrl.text) ?? 0;
                     p.stock = double.tryParse(stockCtrl.text) ?? 0;
+                    p.minimumStock = double.tryParse(minStockCtrl.text) ?? 0;
+                    if (expiryCtrl.text.trim().isNotEmpty) {
+                      try {
+                        p.expiryDate = DateTime.parse(expiryCtrl.text.trim());
+                      } catch (_) {}
+                    }
                     p.unit = unitCtrl.text;
                     p.imagePath = uploadedImageUrl;
-                    
+
                     final addedCartons = double.tryParse(cartonsCtrl.text) ?? 0;
                     p.cartons = (product?.cartons ?? 0) + addedCartons;
-                    p.piecesPerCarton = double.tryParse(piecesPerCartonCtrl.text) ?? 1;
-                    
-                    final newCartonPrice = double.tryParse(cartonPriceCtrl.text) ?? 0;
+                    p.piecesPerCarton =
+                        double.tryParse(piecesPerCartonCtrl.text) ?? 1;
+
+                    final newCartonPrice =
+                        double.tryParse(cartonPriceCtrl.text) ?? 0;
                     if (newCartonPrice > 0) {
-                      p.cartonPrice = newCartonPrice; // Update to the latest carton price
+                      p.cartonPrice =
+                          newCartonPrice; // Update to the latest carton price
                     }
 
-                    ref.read(inventoryControllerProvider.notifier).saveProduct(p);
+                    ref
+                        .read(inventoryControllerProvider.notifier)
+                        .saveProduct(p);
                     Navigator.pop(context);
                   }
                 },

@@ -14,7 +14,9 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(authControllerProvider.notifier).loadUsers());
+    Future.microtask(
+      () => ref.read(authControllerProvider.notifier).loadUsers(),
+    );
   }
 
   void _showCreateUserDialog() {
@@ -40,28 +42,45 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                     children: [
                       TextFormField(
                         controller: usernameCtrl,
-                        decoration: const InputDecoration(labelText: 'Username'),
-                        validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Username',
+                        ),
+                        validator: (val) => val == null || val.trim().isEmpty
+                            ? 'Required'
+                            : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: fullNameCtrl,
-                        decoration: const InputDecoration(labelText: 'Full Name'),
-                        validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Full Name',
+                        ),
+                        validator: (val) => val == null || val.trim().isEmpty
+                            ? 'Required'
+                            : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: passwordCtrl,
                         obscureText: true,
-                        decoration: const InputDecoration(labelText: 'Initial Password'),
-                        validator: (val) => val == null || val.length < 4 ? 'Min 4 characters' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Initial Password',
+                        ),
+                        validator: (val) => val == null || val.length < 4
+                            ? 'Min 4 characters'
+                            : null,
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: selectedRole,
+                        initialValue: selectedRole,
                         decoration: const InputDecoration(labelText: 'Role'),
                         items: ['Staff', 'Cashier', 'Stock Manager', 'Admin']
-                            .map((role) => DropdownMenuItem(value: role, child: Text(role)))
+                            .map(
+                              (role) => DropdownMenuItem(
+                                value: role,
+                                child: Text(role),
+                              ),
+                            )
                             .toList(),
                         onChanged: (val) {
                           if (val != null) {
@@ -86,7 +105,9 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
                       try {
-                        await ref.read(authControllerProvider.notifier).createUser(
+                        await ref
+                            .read(authControllerProvider.notifier)
+                            .createUser(
                               username: usernameCtrl.text.trim(),
                               fullName: fullNameCtrl.text.trim(),
                               password: passwordCtrl.text,
@@ -95,7 +116,9 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                         if (context.mounted) {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('User created successfully')),
+                            const SnackBar(
+                              content: Text('User created successfully'),
+                            ),
                           );
                         }
                       } catch (e) {
@@ -133,7 +156,8 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
               controller: newPasswordCtrl,
               obscureText: true,
               decoration: const InputDecoration(labelText: 'New Password'),
-              validator: (val) => val == null || val.length < 4 ? 'Min 4 characters' : null,
+              validator: (val) =>
+                  val == null || val.length < 4 ? 'Min 4 characters' : null,
             ),
           ),
           actions: [
@@ -149,14 +173,15 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
                   try {
-                    await ref.read(authControllerProvider.notifier).resetPassword(
-                          userId,
-                          newPasswordCtrl.text,
-                        );
+                    await ref
+                        .read(authControllerProvider.notifier)
+                        .resetPassword(userId, newPasswordCtrl.text);
                     if (context.mounted) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Password reset successful')),
+                        const SnackBar(
+                          content: Text('Password reset successful'),
+                        ),
                       );
                     }
                   } catch (e) {
@@ -189,14 +214,22 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.lock_rounded, size: 64, color: theme.colorScheme.error),
+              Icon(
+                Icons.lock_rounded,
+                size: 64,
+                color: theme.colorScheme.error,
+              ),
               const SizedBox(height: 16),
               Text(
                 'Access Denied',
-                style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
-              const Text('Only the Admin is authorized to access User Management.'),
+              const Text(
+                'Only the Admin is authorized to access User Management.',
+              ),
             ],
           ),
         ),
@@ -211,7 +244,9 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.colorScheme.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: _showCreateUserDialog,
             icon: const Icon(Icons.add_rounded),
@@ -230,11 +265,36 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
                     columns: const [
-                      DataColumn(label: Text('Full Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Username', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Role', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(
+                        label: Text(
+                          'Full Name',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Username',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Role',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Status',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      DataColumn(
+                        label: Text(
+                          'Actions',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     ],
                     rows: authState.users.map((user) {
                       return DataRow(
@@ -243,9 +303,14 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                           DataCell(Text(user.username)),
                           DataCell(
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.secondary.withValues(alpha: 0.1),
+                                color: theme.colorScheme.secondary.withValues(
+                                  alpha: 0.1,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
@@ -264,19 +329,28 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                               children: [
                                 Switch(
                                   value: user.isActive,
-                                  onChanged: user.username == 'admin' // Protect default super admin
+                                  onChanged:
+                                      user.username ==
+                                          'admin' // Protect default super admin
                                       ? null
                                       : (value) {
                                           ref
-                                              .read(authControllerProvider.notifier)
-                                              .toggleUserStatus(user.userId, value);
+                                              .read(
+                                                authControllerProvider.notifier,
+                                              )
+                                              .toggleUserStatus(
+                                                user.userId,
+                                                value,
+                                              );
                                         },
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   user.isActive ? 'Active' : 'Inactive',
                                   style: TextStyle(
-                                    color: user.isActive ? Colors.green : Colors.grey,
+                                    color: user.isActive
+                                        ? Colors.green
+                                        : Colors.grey,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -289,30 +363,51 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                               children: [
                                 IconButton(
                                   icon: const Icon(Icons.key_rounded, size: 20),
-                                  onPressed: () => _showResetPasswordDialog(user.userId, user.username),
+                                  onPressed: () => _showResetPasswordDialog(
+                                    user.userId,
+                                    user.username,
+                                  ),
                                   tooltip: 'Reset Password',
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete_rounded, size: 20, color: Colors.red),
+                                  icon: const Icon(
+                                    Icons.delete_rounded,
+                                    size: 20,
+                                    color: Colors.red,
+                                  ),
                                   onPressed: () async {
-                                          final confirm = await showDialog<bool>(
-                                            context: context,
-                                            builder: (ctx) => AlertDialog(
-                                              title: const Text('Delete User'),
-                                              content: Text('Are you sure you want to delete ${user.username}?'),
-                                              actions: [
-                                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(ctx, true), 
-                                                  child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                                                ),
-                                              ],
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('Delete User'),
+                                        content: Text(
+                                          'Are you sure you want to delete ${user.username}?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, true),
+                                            child: const Text(
+                                              'Delete',
+                                              style: TextStyle(
+                                                color: Colors.red,
+                                              ),
                                             ),
-                                          );
-                                          if (confirm == true && context.mounted) {
-                                            ref.read(authControllerProvider.notifier).deleteUser(user.userId);
-                                          }
-                                        },
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true && context.mounted) {
+                                      ref
+                                          .read(authControllerProvider.notifier)
+                                          .deleteUser(user.userId);
+                                    }
+                                  },
                                   tooltip: 'Delete User',
                                 ),
                               ],

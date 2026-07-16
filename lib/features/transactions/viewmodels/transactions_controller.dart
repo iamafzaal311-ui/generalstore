@@ -87,7 +87,8 @@ class TransactionsController extends StateNotifier<TransactionsState> {
           ..totalAmount = 5000.0
           ..paidAmount = 5000.0
           ..timestamp = DateTime.now()
-          ..itemsJson = '[{"productName": "Dummy Item", "quantity": 10, "purchasePrice": 500}]'
+          ..itemsJson =
+              '[{"productName": "Dummy Item", "quantity": 10, "purchasePrice": 500}]'
           ..isDirty = false
           ..lastUpdated = DateTime.now()
           ..isDeleted = false;
@@ -105,20 +106,26 @@ class TransactionsController extends StateNotifier<TransactionsState> {
   }
 
   void addToCart(ProductModel product, double qty, double cost) {
-    final existingIndex = state.cart.indexWhere((item) => item.product.productId == product.productId);
+    final existingIndex = state.cart.indexWhere(
+      (item) => item.product.productId == product.productId,
+    );
     final updatedCart = List<PurchaseCartItem>.from(state.cart);
 
     if (existingIndex >= 0) {
       updatedCart[existingIndex].quantity += qty;
       updatedCart[existingIndex].purchasePrice = cost;
     } else {
-      updatedCart.add(PurchaseCartItem(product: product, quantity: qty, purchasePrice: cost));
+      updatedCart.add(
+        PurchaseCartItem(product: product, quantity: qty, purchasePrice: cost),
+      );
     }
     state = state.copyWith(cart: updatedCart);
   }
 
   void removeFromCart(String productId) {
-    final updatedCart = state.cart.where((item) => item.product.productId != productId).toList();
+    final updatedCart = state.cart
+        .where((item) => item.product.productId != productId)
+        .toList();
     state = state.copyWith(cart: updatedCart);
   }
 
@@ -126,7 +133,7 @@ class TransactionsController extends StateNotifier<TransactionsState> {
     state = state.copyWith(paidAmount: paid);
   }
 
-  Future<void> savePurchase() async {
+  Future<void> savePurchase(String? customInvoiceNumber) async {
     if (state.cart.isEmpty || state.selectedSupplier == null) {
       throw Exception('Cart or Supplier is empty');
     }
@@ -134,15 +141,22 @@ class TransactionsController extends StateNotifier<TransactionsState> {
     state = state.copyWith(isLoading: true);
     try {
       final timestamp = DateTime.now();
-      final invoice = 'PUR-${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}-${timestamp.millisecondsSinceEpoch.toString().substring(8)}';
+      final invoice =
+          (customInvoiceNumber != null && customInvoiceNumber.isNotEmpty)
+          ? customInvoiceNumber
+          : 'PUR-${timestamp.year}${timestamp.month.toString().padLeft(2, '0')}${timestamp.day.toString().padLeft(2, '0')}-${timestamp.millisecondsSinceEpoch.toString().substring(8)}';
 
-      final itemsJsonList = state.cart.map((item) => {
-        'productId': item.product.productId,
-        'name': item.product.name,
-        'quantity': item.quantity,
-        'purchasePrice': item.purchasePrice,
-        'total': item.total,
-      }).toList();
+      final itemsJsonList = state.cart
+          .map(
+            (item) => {
+              'productId': item.product.productId,
+              'name': item.product.name,
+              'quantity': item.quantity,
+              'purchasePrice': item.purchasePrice,
+              'total': item.total,
+            },
+          )
+          .toList();
 
       final purchase = PurchaseModel()
         ..purchaseId = const Uuid().v4()
@@ -182,6 +196,6 @@ class TransactionsController extends StateNotifier<TransactionsState> {
 
 final transactionsControllerProvider =
     StateNotifierProvider<TransactionsController, TransactionsState>((ref) {
-  final repo = ref.watch(transactionsRepositoryProvider);
-  return TransactionsController(repo, ref);
-});
+      final repo = ref.watch(transactionsRepositoryProvider);
+      return TransactionsController(repo, ref);
+    });

@@ -33,7 +33,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> adminRegister(String email, String password) async {
-    await _auth.createUserWithEmailAndPassword(email: email, password: password);
+    await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
   }
 
   @override
@@ -41,7 +44,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser == null) return null;
-      
+
       final query = await _firestore
           .collection('stores')
           .doc(currentUser.uid)
@@ -120,7 +123,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<UserModel?> verifyPhoneCode(String verificationId, String smsCode) async {
+  Future<UserModel?> verifyPhoneCode(
+    String verificationId,
+    String smsCode,
+  ) async {
     final credential = PhoneAuthProvider.credential(
       verificationId: verificationId,
       smsCode: smsCode,
@@ -140,10 +146,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<void> syncUsers(List<UserModel> localUsers) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
-    
+
     final batch = _firestore.batch();
     for (final user in localUsers) {
-      final docRef = _firestore.collection('stores').doc(currentUser.uid).collection('users').doc(user.userId);
+      final docRef = _firestore
+          .collection('stores')
+          .doc(currentUser.uid)
+          .collection('users')
+          .doc(user.userId);
       batch.set(docRef, {
         'userId': user.userId,
         'username': user.username,
@@ -161,7 +171,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   UserModel? _buildFirebaseUser(User? firebaseUser) {
     if (firebaseUser == null) return null;
 
-    final username = firebaseUser.email ?? firebaseUser.phoneNumber ?? firebaseUser.uid;
+    final username =
+        firebaseUser.email ?? firebaseUser.phoneNumber ?? firebaseUser.uid;
     final fullName = firebaseUser.displayName ?? username;
 
     return UserModel()

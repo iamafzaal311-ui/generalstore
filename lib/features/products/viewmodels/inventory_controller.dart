@@ -63,7 +63,7 @@ class InventoryController extends StateNotifier<InventoryState> {
       final categories = await _repo.getCategories();
       final brands = await _repo.getBrands();
       final suppliers = await _repo.getSuppliers();
-      
+
       state = state.copyWith(
         products: products,
         categories: categories,
@@ -119,7 +119,7 @@ class InventoryController extends StateNotifier<InventoryState> {
     await _repo.deleteProduct(productId);
     await refreshAll();
   }
-  
+
   Future<ProductModel?> getProductByBarcode(String barcode) async {
     return await _repo.getProductByBarcode(barcode);
   }
@@ -127,6 +127,6 @@ class InventoryController extends StateNotifier<InventoryState> {
 
 final inventoryControllerProvider =
     StateNotifierProvider<InventoryController, InventoryState>((ref) {
-  final repo = ref.watch(inventoryRepositoryProvider);
-  return InventoryController(repo);
-});
+      final repo = ref.watch(inventoryRepositoryProvider);
+      return InventoryController(repo);
+    });

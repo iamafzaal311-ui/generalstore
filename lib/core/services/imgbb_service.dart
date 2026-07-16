@@ -40,9 +40,7 @@ class ImgBBService {
       // Use standard http.post with base64 string to avoid Multipart/Web CORS issues
       final response = await http.post(
         Uri.parse('$_apiUrl?key=$_apiKey'),
-        body: {
-          'image': base64Image,
-        },
+        body: {'image': base64Image},
       );
 
       final jsonResponse = jsonDecode(response.body);
@@ -51,7 +49,9 @@ class ImgBBService {
         // Return the direct URL to the image
         return jsonResponse['data']['url'];
       } else {
-        print('ImgBB Upload Failed: ${jsonResponse['error']?['message'] ?? 'Unknown Error'}');
+        print(
+          'ImgBB Upload Failed: ${jsonResponse['error']?['message'] ?? 'Unknown Error'}',
+        );
         return null;
       }
     } catch (e) {

@@ -38,7 +38,10 @@ class PdfHelper {
                 ),
                 pw.Text(
                   'Generated: ${DateFormat('dd MMM yyyy HH:mm').format(now)}',
-                  style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
                 ),
               ],
             ),
@@ -132,12 +135,18 @@ class PdfHelper {
                 ),
                 pw.Text(
                   'Generated: ${DateFormat('dd MMM yyyy HH:mm').format(now)}',
-                  style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
                 ),
               ],
             ),
             pw.SizedBox(height: 4),
-            pw.Text(title, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              title,
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
             pw.Divider(thickness: 1, color: PdfColors.grey300),
             pw.SizedBox(height: 8),
           ],
@@ -179,7 +188,10 @@ class PdfHelper {
             children: [
               pw.Text(
                 'Total Expenses: Rs. ${total.toStringAsFixed(2)}',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 13),
+                style: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  fontSize: 13,
+                ),
               ),
             ],
           ),
@@ -193,7 +205,10 @@ class PdfHelper {
   static pw.Widget _tableHeader(String text) {
     return pw.Padding(
       padding: const pw.EdgeInsets.all(6),
-      child: pw.Text(text, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9)),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
+      ),
     );
   }
 
