@@ -87,33 +87,34 @@ class PrintHelper {
                     ),
                     pw.SizedBox(height: 2),
                     if (profile?.tagline.isNotEmpty ?? false)
-                      pw.RichText(
-                        text: pw.TextSpan(
-                          children: [
-                            pw.TextSpan(
-                              text: 'Proprietor: ',
-                              style: _ts(
-                                urduFont,
-                                size: isThermal ? 8 : 10,
-                                color: PdfColors.blue800,
-                                weight: pw.FontWeight.bold,
-                              ),
+                      pw.Wrap(
+                        crossAxisAlignment: pw.WrapCrossAlignment.center,
+                        children: [
+                          pw.Text(
+                            'Proprietor: ',
+                            style: _ts(
+                              urduFont,
+                              size: isThermal ? 8 : 10,
+                              color: PdfColors.blue800,
+                              weight: pw.FontWeight.bold,
                             ),
-                            pw.TextSpan(
-                              text: profile!.tagline,
-                              style: _ts(
-                                urduFont,
-                                size: isThermal ? 8 : 10,
-                                color: PdfColors.blue800,
-                                weight: pw.FontWeight.normal,
-                              ),
+                          ),
+                          pw.Text(
+                            profile!.tagline,
+                            textDirection: pw.TextDirection.rtl,
+                            style: _ts(
+                              urduFont,
+                              size: isThermal ? 8 : 10,
+                              color: PdfColors.blue800,
+                              weight: pw.FontWeight.normal,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     if (profile?.phone.isNotEmpty ?? false)
                       pw.Text(
                         'Ph: ${profile!.phone.replaceAll(',', ' -')}',
+                        textDirection: pw.TextDirection.ltr,
                         style: _ts(
                           urduFont,
                           size: isThermal ? 8 : 10,
