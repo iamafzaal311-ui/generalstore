@@ -67,7 +67,21 @@ class AuthRepositoryImpl implements AuthRepository {
       } catch (_) {}
     }
 
-    await _remote.adminLogin(email, password);
+    try {
+      await _remote.adminLogin(email, password);
+    } catch (e) {
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('network') || 
+          errorStr.contains('failed host lookup') || 
+          errorStr.contains('offline')) {
+        // Fallback to local login if there is a network error
+        final localAdmin = await login(email, password);
+        if (localAdmin != null && localAdmin.role == 'Admin') {
+          return localAdmin;
+        }
+      }
+      rethrow;
+    }
 
     String? newUid;
     if (Firebase.apps.isNotEmpty) {
@@ -101,12 +115,15 @@ class AuthRepositoryImpl implements AuthRepository {
       } catch (_) {}
     }
 
+    final salt = HashHelper.generateSalt();
+    final hashedPassword = HashHelper.hashPassword(password.trim(), salt);
+
     final adminUser = UserModel()
       ..userId = newUid ?? 'admin_firebase_id'
       ..username = email
       ..fullName = storeName
-      ..passwordHash = ''
-      ..salt = ''
+      ..passwordHash = hashedPassword
+      ..salt = salt
       ..role = 'Admin'
       ..isActive = true
       ..isDirty = false
