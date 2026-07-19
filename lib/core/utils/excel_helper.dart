@@ -59,10 +59,8 @@ class ExcelHelper {
           CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1),
         );
         final val = rowData[col];
-        if (val is double) {
-          cell.value = DoubleCellValue(val);
-        } else if (val is int) {
-          cell.value = IntCellValue(val);
+        if (val is num) {
+          cell.value = DoubleCellValue(val.toDouble());
         } else {
           cell.value = TextCellValue(val.toString());
         }
@@ -109,8 +107,8 @@ class ExcelHelper {
           CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1),
         );
         final val = rowData[col];
-        if (val is double) {
-          cell.value = DoubleCellValue(val);
+        if (val is num) {
+          cell.value = DoubleCellValue(val.toDouble());
         } else {
           cell.value = TextCellValue(val.toString());
         }
@@ -165,8 +163,8 @@ class ExcelHelper {
           CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row + 1),
         );
         final val = rowData[col];
-        if (val is double) {
-          cell.value = DoubleCellValue(val);
+        if (val is num) {
+          cell.value = DoubleCellValue(val.toDouble());
         } else {
           cell.value = TextCellValue(val.toString());
         }
