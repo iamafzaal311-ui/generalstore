@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/supplier_model.dart';
+import '../../../data/models/purchase_model.dart';
 import '../viewmodels/transactions_controller.dart';
 import '../../products/viewmodels/inventory_controller.dart';
 
@@ -452,6 +453,377 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
     );
   }
 
+
+  void _showEditPurchaseDialog(PurchaseModel purchase) {
+    SupplierModel? selectedSupplier;
+    ProductModel? selectedProduct;
+
+    final invState = ref.read(inventoryControllerProvider);
+    selectedSupplier = invState.suppliers
+        .where((s) => s.supplierId == purchase.supplierId)
+        .firstOrNull;
+
+    final productSearchCtrl = TextEditingController();
+    final quantityCtrl = TextEditingController(text: '1');
+    final purchasePriceCtrl = TextEditingController(text: '0');
+    final invoiceCtrl = TextEditingController(text: purchase.invoiceNumber);
+    final paidCtrl = TextEditingController(text: purchase.paidAmount.toString());
+
+    final addFormKey = GlobalKey<FormState>();
+
+    List<Map<String, dynamic>> cart = [];
+    try {
+      final items = jsonDecode(purchase.itemsJson) as List;
+      for (var item in items) {
+        cart.add(Map<String, dynamic>.from(item));
+      }
+    } catch (_) {}
+
+    String productSearchQuery = '';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final invState = ref.watch(inventoryControllerProvider);
+            double cartTotal = cart.fold(0.0, (sum, i) => sum + i['total']);
+
+            return AlertDialog(
+              title: const Text('Edit Stock Purchase'),
+              content: SingleChildScrollView(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width > 800
+                      ? 700
+                      : double.maxFinite,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<SupplierModel>(
+                              initialValue: selectedSupplier,
+                              decoration: const InputDecoration(
+                                labelText: 'Select Supplier (Vendor)',
+                              ),
+                              items: invState.suppliers.map((s) {
+                                return DropdownMenuItem(
+                                  value: s,
+                                  child: Text(s.name),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                setStateDialog(() {
+                                  selectedSupplier = val;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: invoiceCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Custom Invoice Number (Optional)',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      Form(
+                        key: addFormKey,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: productSearchCtrl,
+                              decoration: InputDecoration(
+                                labelText: 'Search Product',
+                                prefixIcon: const Icon(Icons.search),
+                                isDense: true,
+                                suffixIcon: productSearchQuery.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () => setStateDialog(() {
+                                          productSearchCtrl.clear();
+                                          productSearchQuery = '';
+                                        }),
+                                      )
+                                    : null,
+                              ),
+                              onChanged: (val) => setStateDialog(() {
+                                productSearchQuery = val.toLowerCase();
+                              }),
+                            ),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<ProductModel>(
+                              isExpanded: true,
+                              initialValue: selectedProduct,
+                              decoration: const InputDecoration(
+                                labelText: 'Select Product',
+                                isDense: true,
+                              ),
+                              items: invState.products
+                                  .where(
+                                    (p) =>
+                                        productSearchQuery.isEmpty ||
+                                        p.name.toLowerCase().contains(
+                                          productSearchQuery,
+                                        ) ||
+                                        (p.sku ?? '').toLowerCase().contains(
+                                          productSearchQuery,
+                                        ) ||
+                                        (p.barcode ?? '')
+                                            .toLowerCase()
+                                            .contains(productSearchQuery),
+                                  )
+                                  .map((p) {
+                                return DropdownMenuItem(
+                                  value: p,
+                                  child: Text(
+                                    p.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setStateDialog(() {
+                                    selectedProduct = val;
+                                    purchasePriceCtrl.text =
+                                        val.purchasePrice.toString();
+                                    productSearchCtrl.clear();
+                                    productSearchQuery = '';
+                                  });
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: quantityCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Total Quantity',
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (val) => val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: purchasePriceCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Unit Purchase Price (Rs.)',
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (val) => val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton.icon(
+                                  icon: const Icon(Icons.add_box_rounded),
+                                  label: const Text("Add"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Theme.of(context).colorScheme.primary,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    if (addFormKey.currentState!.validate() &&
+                                        selectedProduct != null) {
+                                      final totalQty =
+                                          double.parse(quantityCtrl.text);
+                                      final unitPrice =
+                                          double.parse(purchasePriceCtrl.text);
+
+                                      if (totalQty > 0) {
+                                        final existingIndex = cart.indexWhere(
+                                          (i) =>
+                                              i['productId'] ==
+                                              selectedProduct!.productId,
+                                        );
+                                        if (existingIndex >= 0) {
+                                          cart[existingIndex]['quantity'] +=
+                                              totalQty;
+                                          cart[existingIndex]['purchasePrice'] =
+                                              unitPrice;
+                                          cart[existingIndex]['total'] =
+                                              cart[existingIndex]['quantity'] *
+                                              unitPrice;
+                                        } else {
+                                          cart.add({
+                                            'productId':
+                                                selectedProduct!.productId,
+                                            'name': selectedProduct!.name,
+                                            'quantity': totalQty,
+                                            'purchasePrice': unitPrice,
+                                            'total': totalQty * unitPrice,
+                                          });
+                                        }
+
+                                        setStateDialog(() {
+                                          selectedProduct = null;
+                                          quantityCtrl.text = '1';
+                                          purchasePriceCtrl.text = '0';
+                                        });
+                                      }
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (cart.isNotEmpty) ...[
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Purchase Invoice Items:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 180),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: cart.length,
+                            itemBuilder: (context, index) {
+                              final item = cart[index];
+                              return ListTile(
+                                dense: true,
+                                title: Text(item['name']),
+                                subtitle: Text(
+                                  '${item['quantity']} units x Rs.${item['purchasePrice']} = Rs.${item['total']}',
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(
+                                    Icons.remove_circle,
+                                    color: Colors.redAccent,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    setStateDialog(() {
+                                      cart.removeAt(index);
+                                    });
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const Divider(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Grand Total: Rs. ${cartTotal.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: paidCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Paid to Supplier (Rs.)',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: cart.isEmpty || selectedSupplier == null
+                      ? null
+                      : () async {
+                          try {
+                            final paidAmt =
+                                double.tryParse(paidCtrl.text) ?? 0.0;
+                            final invoice = invoiceCtrl.text.trim().isNotEmpty
+                                ? invoiceCtrl.text.trim()
+                                : purchase.invoiceNumber;
+                            
+                            final actualRepo = ref.read(transactionsRepositoryProvider);
+
+                            // 1. Delete old purchase
+                            await actualRepo.deletePurchase(purchase.purchaseId);
+
+                            // 2. Create updated purchase
+                            final updatedPurchase = PurchaseModel()
+                              ..purchaseId = purchase.purchaseId
+                              ..invoiceNumber = invoice
+                              ..supplierId = selectedSupplier!.supplierId
+                              ..totalAmount = cartTotal
+                              ..paidAmount = paidAmt
+                              ..timestamp = purchase.timestamp
+                              ..itemsJson = jsonEncode(cart)
+                              ..isDeleted = false;
+
+                            // 3. Save it
+                            await actualRepo.savePurchase(updatedPurchase);
+                            
+                            await ref
+                                .read(inventoryControllerProvider.notifier)
+                                .refreshAll();
+                            await ref
+                                .read(transactionsControllerProvider.notifier)
+                                .refreshPurchases();
+
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Stock purchase updated successfully!',
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')),
+                              );
+                            }
+                          }
+                        },
+                  child: const Text('Update Purchase'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final txState = ref.watch(transactionsControllerProvider);
@@ -539,16 +911,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                         purchase.totalAmount -
                                         purchase.paidAmount;
 
-                                    int totalUnits = 0;
-                                    try {
-                                      final items =
-                                          jsonDecode(purchase.itemsJson)
-                                              as List;
-                                      for (var item in items) {
-                                        totalUnits += (item['quantity'] as num)
-                                            .toInt();
-                                      }
-                                    } catch (_) {}
+
 
                                     List<dynamic> itemsList = [];
                                     try {
@@ -612,6 +975,13 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                             ],
                                           ),
                                           const SizedBox(width: 12),
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.edit,
+                                              color: Colors.blue,
+                                            ),
+                                            onPressed: () => _showEditPurchaseDialog(purchase),
+                                          ),
                                           IconButton(
                                             icon: const Icon(
                                               Icons.delete_outline,

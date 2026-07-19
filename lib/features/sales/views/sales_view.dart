@@ -572,6 +572,375 @@ class _SalesViewState extends ConsumerState<SalesView> {
     );
   }
 
+
+  void _showEditSaleDialog(SaleModel sale) {
+    CustomerModel? selectedCustomer;
+    ProductModel? selectedProduct;
+
+    if (sale.customerId != null) {
+      selectedCustomer = _customers.where((c) => c.customerId == sale.customerId).firstOrNull;
+    }
+
+    final qtyCtrl = TextEditingController(text: '1');
+    final priceCtrl = TextEditingController(text: '0');
+    final paidCtrl = TextEditingController(text: sale.paidAmount.toString());
+    final invoiceCtrl = TextEditingController(text: sale.invoiceNumber);
+    final addFormKey = GlobalKey<FormState>();
+
+    List<Map<String, dynamic>> cart = [];
+    try {
+      final items = jsonDecode(sale.itemsJson) as List;
+      for (var item in items) {
+        cart.add(Map<String, dynamic>.from(item));
+      }
+    } catch (_) {}
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final invState = ref.watch(inventoryControllerProvider);
+            double cartTotal = cart.fold(0.0, (sum, i) => sum + i['total']);
+
+            return AlertDialog(
+              title: const Text('Edit Sale Entry'),
+              content: SingleChildScrollView(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width > 800
+                      ? 700
+                      : double.maxFinite,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<CustomerModel>(
+                              initialValue: selectedCustomer,
+                              decoration: const InputDecoration(
+                                labelText:
+                                    'Select Customer (Optional for Walk-in)',
+                              ),
+                              items: _customers.map((c) {
+                                return DropdownMenuItem(
+                                  value: c,
+                                  child: Text(c.name),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                setStateDialog(() {
+                                  selectedCustomer = val;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline),
+                            tooltip: 'Add New Customer',
+                            onPressed: () {
+                              _showQuickAddCustomerDialog(setStateDialog);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: invoiceCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Custom Invoice Number (Optional)',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 8),
+                      Form(
+                        key: addFormKey,
+                        child: Column(
+                          children: [
+                            DropdownButtonFormField<ProductModel>(
+                              initialValue: selectedProduct,
+                              decoration: const InputDecoration(
+                                labelText: 'Product',
+                              ),
+                              items: invState.products.map((p) {
+                                return DropdownMenuItem(
+                                  value: p,
+                                  child: Text(
+                                    '${p.name} (Stock: ${p.stock.toStringAsFixed(1)})',
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setStateDialog(() {
+                                    selectedProduct = val;
+                                    priceCtrl.text = val.retailPrice.toString();
+                                    qtyCtrl.text = '1';
+                                  });
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: qtyCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Quantity',
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (val) =>
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: priceCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Unit Price',
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (val) =>
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton.icon(
+                                  icon: const Icon(Icons.add_box_rounded),
+                                  label: const Text("Add Item"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    if (addFormKey.currentState!.validate() &&
+                                        selectedProduct != null) {
+                                      final qty = double.parse(qtyCtrl.text);
+                                      final price = double.parse(
+                                        priceCtrl.text,
+                                      );
+
+                                      if (qty > 0) {
+                                        final existingIndex = cart.indexWhere(
+                                          (i) =>
+                                              i['productId'] ==
+                                              selectedProduct!.productId,
+                                        );
+                                        if (existingIndex >= 0) {
+                                          cart[existingIndex]['quantity'] +=
+                                              qty;
+                                          cart[existingIndex]['unitPrice'] =
+                                              price;
+                                          cart[existingIndex]['total'] =
+                                              cart[existingIndex]['quantity'] *
+                                              price;
+                                        } else {
+                                          cart.add({
+                                            'productId':
+                                                selectedProduct!.productId,
+                                            'name': selectedProduct!.name,
+                                            'quantity': qty,
+                                            'unitPrice': price,
+                                            'purchasePrice':
+                                                selectedProduct!.purchasePrice,
+                                            'discount': 0.0,
+                                            'total': qty * price,
+                                          });
+                                        }
+                                        setStateDialog(() {
+                                          selectedProduct = null;
+                                          qtyCtrl.text = '1';
+                                          priceCtrl.text = '0';
+                                        });
+                                      }
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (cart.isNotEmpty) ...[
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Cart Items:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: cart.length,
+                            separatorBuilder: (c, i) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, i) {
+                              final item = cart[i];
+                              return ListTile(
+                                dense: true,
+                                title: Text(item['name']),
+                                subtitle: Text(
+                                  'Qty: ${item['quantity']} @ Rs.${item['unitPrice']}',
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Rs. ${item['total'].toStringAsFixed(2)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        setStateDialog(() {
+                                          cart.removeAt(i);
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            const Text(
+                              'Grand Total:',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              'Rs. ${cartTotal.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: paidCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Amount Paid Now',
+                                ),
+                                keyboardType: TextInputType.number,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                if (cart.isNotEmpty)
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () async {
+                      try {
+                        final paidAmt = double.tryParse(paidCtrl.text) ?? 0.0;
+                        final invoice = invoiceCtrl.text.trim().isNotEmpty
+                            ? invoiceCtrl.text.trim()
+                            : sale.invoiceNumber;
+                        
+                        // 1. Delete old sale to revert stock/khata
+                        await ref.read(salesRepositoryProvider).deleteSale(sale.saleId);
+
+                        // 2. Create new sale object (reusing saleId and timestamp)
+                        final updatedSale = SaleModel()
+                          ..saleId = sale.saleId
+                          ..invoiceNumber = invoice
+                          ..cashierId = sale.cashierId
+                          ..customerId = selectedCustomer?.customerId
+                          ..subtotal = cartTotal
+                          ..discount = 0.0
+                          ..total = cartTotal
+                          ..paidAmount = paidAmt
+                          ..changeAmount = 0.0
+                          ..paymentMethod = paidAmt > 0
+                              ? 'Cash'
+                              : 'Credit (Khata)'
+                          ..timestamp = sale.timestamp
+                          ..itemsJson = jsonEncode(cart)
+                          ..isDeleted = false; // Important: un-delete it!
+
+                        // 3. Save it
+                        await ref.read(salesRepositoryProvider).saveSale(updatedSale);
+                        await ref
+                            .read(inventoryControllerProvider.notifier)
+                            .refreshAll();
+                        await _loadSales();
+
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Sale updated successfully!'),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                        }
+                      }
+                    },
+                    child: const Text('Update Sale'),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -748,7 +1117,21 @@ class _SalesViewState extends ConsumerState<SalesView> {
                                     onPressed: () =>
                                         _reprintReceipt(sale, false),
                                   ),
+
                                   if (isAdmin) ...[
+                                    const SizedBox(width: 8),
+                                    TextButton.icon(
+                                      icon: const Icon(
+                                        Icons.edit,
+                                        color: Colors.blue,
+                                        size: 18,
+                                      ),
+                                      label: const Text(
+                                        'Edit',
+                                        style: TextStyle(color: Colors.blue),
+                                      ),
+                                      onPressed: () => _showEditSaleDialog(sale),
+                                    ),
                                     const SizedBox(width: 8),
                                     TextButton.icon(
                                       icon: const Icon(

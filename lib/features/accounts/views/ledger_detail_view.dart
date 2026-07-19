@@ -336,6 +336,78 @@ class LedgerDetailView extends ConsumerWidget {
                 ),
               ],
             ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          final formKey = GlobalKey<FormState>();
+          final amountCtrl = TextEditingController();
+
+          showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: Text(
+                  isCustomer
+                      ? 'Receive Payment from $personName'
+                      : 'Pay to $personName',
+                ),
+                content: Form(
+                  key: formKey,
+                  child: TextFormField(
+                    controller: amountCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Payment Amount (Rs.)*',
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (val) =>
+                        val == null || double.tryParse(val) == null
+                            ? 'Invalid'
+                            : null,
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () async {
+                      if (formKey.currentState!.validate()) {
+                        final amt = double.parse(amountCtrl.text);
+                        if (isCustomer) {
+                          await ref
+                              .read(accountsControllerProvider.notifier)
+                              .receiveCustomerPayment(personId, amt);
+                        } else {
+                          await ref
+                              .read(accountsControllerProvider.notifier)
+                              .paySupplier(personId, amt);
+                        }
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Payment recorded successfully!'),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: const Text('Record Payment'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Add Payment'),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: Colors.white,
+      ),
     );
   }
 }
