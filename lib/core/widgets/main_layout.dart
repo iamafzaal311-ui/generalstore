@@ -77,10 +77,12 @@ class MainLayout extends ConsumerWidget {
               if (!snapshot.hasData) return const SizedBox.shrink();
 
               final results = snapshot.data!;
-              final isOffline = results.every((r) => r == ConnectivityResult.none);
-              
+              final isOffline = results.every(
+                (r) => r == ConnectivityResult.none,
+              );
+
               if (!isOffline) return const SizedBox.shrink();
-              
+
               return Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -91,11 +93,7 @@ class MainLayout extends ConsumerWidget {
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.wifi_off_rounded,
-                      size: 16,
-                      color: Colors.white,
-                    ),
+                    Icon(Icons.wifi_off_rounded, size: 16, color: Colors.white),
                     SizedBox(width: 8),
                     Flexible(
                       child: Text(
@@ -158,7 +156,8 @@ class _SidebarContent extends ConsumerWidget {
     final currentUser = ref.watch(currentUserProvider);
     final storeProfile = ref.watch(storeProfileProvider);
     final role = currentUser?.role ?? 'Cashier';
-    final name = (currentUser?.fullName != null && currentUser!.fullName.isNotEmpty)
+    final name =
+        (currentUser?.fullName != null && currentUser!.fullName.isNotEmpty)
         ? currentUser.fullName
         : currentUser?.username ?? 'User';
     final initials = name.isNotEmpty
@@ -476,7 +475,9 @@ class _SidebarMenuItem extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 0.0), // Removed vertical margin
+      padding: const EdgeInsets.symmetric(
+        vertical: 0.0,
+      ), // Removed vertical margin
       child: InkWell(
         onTap: () {
           if (Scaffold.of(context).isDrawerOpen) {
@@ -492,7 +493,10 @@ class _SidebarMenuItem extends StatelessWidget {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Reduced vertical padding from 12 to 8
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 8,
+          ), // Reduced vertical padding from 12 to 8
           child: Row(
             children: [
               Icon(

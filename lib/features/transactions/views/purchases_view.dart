@@ -211,9 +211,10 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                     ),
                                     keyboardType: TextInputType.number,
                                     validator: (val) =>
-                                        val == null || double.tryParse(val) == null
-                                            ? 'Invalid'
-                                            : null,
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -225,9 +226,10 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                     ),
                                     keyboardType: TextInputType.number,
                                     validator: (val) =>
-                                        val == null || double.tryParse(val) == null
-                                            ? 'Invalid'
-                                            : null,
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
                                   ),
                                 ),
                               ],
@@ -265,11 +267,14 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                   onPressed: () {
                                     if (addFormKey.currentState!.validate() &&
                                         selectedProduct != null) {
-                                      final totalQty = double.parse(quantityCtrl.text);
-                                      final unitPrice = double.parse(purchasePriceCtrl.text);
+                                      final totalQty = double.parse(
+                                        quantityCtrl.text,
+                                      );
+                                      final unitPrice = double.parse(
+                                        purchasePriceCtrl.text,
+                                      );
 
                                       if (totalQty > 0) {
-
                                         ref
                                             .read(
                                               transactionsControllerProvider
@@ -578,7 +583,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                         ),
                                       ),
                                       subtitle: Text(
-                                        'Inv #: ${purchase.invoiceNumber} | Items: ${itemsList.length} ($totalUnits units)\nDate: ${purchase.timestamp.toLocal().toString().split(' ')[0]} | Total: Rs. ${purchase.totalAmount.toStringAsFixed(0)}',
+                                        'Inv #: ${purchase.invoiceNumber} | Date: ${purchase.timestamp.toLocal().toString().split(' ')[0]} | Total: Rs. ${purchase.totalAmount.toStringAsFixed(0)}',
                                       ),
                                       trailing: Row(
                                         mainAxisSize: MainAxisSize.min,
