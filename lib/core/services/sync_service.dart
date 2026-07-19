@@ -280,6 +280,7 @@ class SyncService {
           'isActive': user.isActive,
           'passwordHash': user.passwordHash,
           'salt': user.salt,
+          'deactivationReason': user.deactivationReason,
           'lastUpdated': user.lastUpdated.toUtc().toIso8601String(),
         });
         user.isDirty = false;
@@ -312,9 +313,10 @@ class SyncService {
           ..username = data['username']
           ..fullName = data['fullName']
           ..role = data['role']
-          ..isActive = data['isActive']
+          ..isActive = data['isActive'] as bool? ?? true
           ..passwordHash = data['passwordHash'] ?? ''
           ..salt = data['salt'] ?? ''
+          ..deactivationReason = data['deactivationReason'] as String? ?? ''
           ..isDirty = false
           ..lastUpdated = DateTime.parse(data['lastUpdated']);
         await _db.usersBox.put(user.userId, user);

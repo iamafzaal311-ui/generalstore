@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../providers/global_providers.dart';
+import '../../data/models/user_model.dart';
 import '../../features/auth/viewmodels/auth_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -15,6 +17,12 @@ class MainLayout extends ConsumerWidget {
     final String currentRoute = GoRouterState.of(context).matchedLocation;
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
     final currentUser = ref.watch(currentUserProvider);
+
+    ref.listen<UserModel?>(currentUserProvider, (previous, next) {
+      if (next == null) {
+        context.go('/login');
+      }
+    });
 
     // If not logged in, we shouldn't show main layout
     if (currentUser == null) {
@@ -48,7 +56,9 @@ class MainLayout extends ConsumerWidget {
       appBar: !isDesktop
           ? AppBar(
               title: Text(
-                ref.watch(storeProfileProvider)?.storeName ?? 'HASNAIN TRADERS',
+                ref.watch(storeProfileProvider)?.storeName.isNotEmpty == true
+                    ? ref.watch(storeProfileProvider)!.storeName
+                    : 'General Store',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               elevation: 0,
@@ -57,28 +67,78 @@ class MainLayout extends ConsumerWidget {
       drawer: !isDesktop
           ? Drawer(child: _SidebarContent(currentRoute: currentRoute))
           : null,
-      body: Row(
+      body: Column(
         children: [
-          if (isDesktop)
-            SizedBox(
-              width: 260,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                    right: BorderSide(
-                      color: Theme.of(
-                        context,
-                      ).dividerColor.withValues(alpha: 0.1),
+          // Offline connectivity banner
+          StreamBuilder<List<ConnectivityResult>>(
+            stream: Connectivity().onConnectivityChanged,
+            builder: (context, snapshot) {
+              // Do not show the error banner while waiting for the first stream event
+              if (!snapshot.hasData) return const SizedBox.shrink();
+
+              final results = snapshot.data!;
+              final isOffline = results.every((r) => r == ConnectivityResult.none);
+              
+              if (!isOffline) return const SizedBox.shrink();
+              
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                color: const Color(0xFFF59E0B), // amber
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.wifi_off_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                    SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        '⚠️  No internet — Working in offline mode. Data will sync when connected.',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                if (isDesktop)
+                  SizedBox(
+                    width: 260,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border(
+                          right: BorderSide(
+                            color: Theme.of(
+                              context,
+                            ).dividerColor.withValues(alpha: 0.1),
+                          ),
+                        ),
+                      ),
+                      child: _SidebarContent(currentRoute: currentRoute),
                     ),
                   ),
+                Expanded(
+                  child: Container(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    child: child,
+                  ),
                 ),
-                child: _SidebarContent(currentRoute: currentRoute),
-              ),
-            ),
-          Expanded(
-            child: Container(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              child: child,
+              ],
             ),
           ),
         ],
@@ -98,11 +158,17 @@ class _SidebarContent extends ConsumerWidget {
     final currentUser = ref.watch(currentUserProvider);
     final storeProfile = ref.watch(storeProfileProvider);
     final role = currentUser?.role ?? 'Cashier';
-    var name = currentUser?.fullName ?? 'ALI ABBAS';
-    if (name.toLowerCase() == 'store admin') name = 'Ali Abbas';
+    final name = (currentUser?.fullName != null && currentUser!.fullName.isNotEmpty)
+        ? currentUser.fullName
+        : currentUser?.username ?? 'User';
     final initials = name.isNotEmpty
-        ? name.substring(0, name.length > 1 ? 2 : 1).toUpperCase()
-        : 'US';
+        ? name.trim().split(' ').take(2).map((w) => w[0]).join().toUpperCase()
+        : 'U';
+
+    // Store name from authenticated profile only
+    final storeName = storeProfile?.storeName.isNotEmpty == true
+        ? storeProfile!.storeName
+        : 'My Store';
 
     return Column(
       children: [
@@ -130,22 +196,15 @@ class _SidebarContent extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      (storeProfile?.storeName ?? 'HASNAIN TRADERS')
-                              .toUpperCase()
-                              .contains('HUSSNAIN')
-                          ? (storeProfile?.storeName ?? 'HASNAIN TRADERS')
-                                .replaceAll(
-                                  RegExp('HUSSNAIN', caseSensitive: false),
-                                  'HASNAIN',
-                                )
-                          : (storeProfile?.storeName ?? 'HASNAIN TRADERS'),
+                      storeName,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'HASNAIN TRADERS ERP',
+                      'General Store ERP',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.textTheme.bodySmall?.color?.withValues(
                           alpha: 0.6,
@@ -417,7 +476,7 @@ class _SidebarMenuItem extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: const EdgeInsets.symmetric(vertical: 0.0), // Removed vertical margin
       child: InkWell(
         onTap: () {
           if (Scaffold.of(context).isDrawerOpen) {
@@ -425,15 +484,15 @@ class _SidebarMenuItem extends StatelessWidget {
           }
           context.go(route);
         },
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         child: Container(
           decoration: BoxDecoration(
             color: isSelected
                 ? theme.colorScheme.primary.withValues(alpha: 0.08)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // Reduced vertical padding from 12 to 8
           child: Row(
             children: [
               Icon(
@@ -441,13 +500,14 @@ class _SidebarMenuItem extends StatelessWidget {
                 color: isSelected
                     ? theme.colorScheme.primary
                     : theme.iconTheme.color?.withValues(alpha: 0.7),
-                size: 22,
+                size: 20, // Reduced from 22
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12), // Reduced from 16
               Expanded(
                 child: Text(
                   label,
                   style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 13, // Explicitly smaller font size
                     fontWeight: isSelected
                         ? FontWeight.bold
                         : FontWeight.normal,

@@ -817,8 +817,9 @@ class _ProductsViewState extends ConsumerState<ProductsView>
       final cPrice = double.tryParse(cartonPriceCtrl.text) ?? 0;
       final pcs = double.tryParse(piecesPerCartonCtrl.text) ?? 1;
       final ctns = double.tryParse(cartonsCtrl.text) ?? 0;
-      if (cPrice > 0 && pcs > 0)
+      if (cPrice > 0 && pcs > 0) {
         purchasePriceCtrl.text = (cPrice / pcs).toStringAsFixed(2);
+      }
 
       final existingStock = product?.stock ?? 0;
       if (ctns > 0 && pcs > 0) {
@@ -973,7 +974,7 @@ class _ProductsViewState extends ConsumerState<ProductsView>
                               Expanded(
                                 child: DropdownButtonFormField<String>(
                                   isExpanded: true,
-                                  value: selectedBrand,
+                                  initialValue: selectedBrand,
                                   decoration: const InputDecoration(
                                     labelText: 'Brand',
                                   ),
@@ -1002,7 +1003,7 @@ class _ProductsViewState extends ConsumerState<ProductsView>
                               Expanded(
                                 child: DropdownButtonFormField<String>(
                                   isExpanded: true,
-                                  value: selectedCategory,
+                                  initialValue: selectedCategory,
                                   decoration: const InputDecoration(
                                     labelText: 'Category',
                                   ),

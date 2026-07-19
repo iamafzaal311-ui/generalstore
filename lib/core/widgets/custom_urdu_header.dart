@@ -42,16 +42,16 @@ class CustomUrduHeader extends ConsumerWidget {
 
     final storeName = (profile?.storeName ?? '').isNotEmpty
         ? profile!.storeName
-        : 'حسنین ٹریڈرز';
+        : '';
     final tagline = (profile?.tagline ?? '').isNotEmpty
         ? profile!.tagline
-        : 'علی عباس';
+        : '';
     final phone = (profile?.phone ?? '').isNotEmpty
         ? profile!.phone
-        : '0307-4217267';
+        : '';
     final address = (profile?.address ?? '').isNotEmpty
         ? profile!.address
-        : 'ایڈریس: غوثیہ مارکیٹ سکندر چوک پاک پتن';
+        : '';
 
     return Container(
       width: double.infinity,
@@ -81,36 +81,43 @@ class CustomUrduHeader extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      tagline,
-                      style: _getStyle(
-                        tagline,
-                        fontSize: 24,
-                        color: Colors.blue.shade800,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textDirection: _getDirection(tagline),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.phone,
-                          size: 16,
-                          color: Colors.grey.shade700,
+                    if (tagline.isNotEmpty)
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Proprietor: ',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                color: Colors.blue.shade800,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(
+                              text: tagline,
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                color: Colors.blue.shade800,
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          phone,
+                      ),
+                    if (tagline.isNotEmpty && phone.isNotEmpty)
+                      const SizedBox(height: 2),
+                    if (phone.isNotEmpty)
+                      SizedBox(
+                        width: 250,
+                        child: Text(
+                          'Ph: ${phone.replaceAll(',', ' -')}',
                           style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
                             color: Colors.grey.shade800,
-                            letterSpacing: 1,
+                            fontWeight: FontWeight.normal,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
                   ],
                 ),
                 // Right Side: Store Name

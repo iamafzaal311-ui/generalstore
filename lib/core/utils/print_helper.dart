@@ -87,22 +87,37 @@ class PrintHelper {
                     ),
                     pw.SizedBox(height: 2),
                     if (profile?.tagline.isNotEmpty ?? false)
-                      pw.Text(
-                        'Proprietor: ${profile!.tagline}',
-                        style: _ts(
-                          urduFont,
-                          size: isThermal ? 9 : 11,
-                          color: PdfColors.blue800,
-                          weight: pw.FontWeight.bold,
+                      pw.RichText(
+                        text: pw.TextSpan(
+                          children: [
+                            pw.TextSpan(
+                              text: 'Proprietor: ',
+                              style: _ts(
+                                urduFont,
+                                size: isThermal ? 8 : 10,
+                                color: PdfColors.blue800,
+                                weight: pw.FontWeight.bold,
+                              ),
+                            ),
+                            pw.TextSpan(
+                              text: profile!.tagline,
+                              style: _ts(
+                                urduFont,
+                                size: isThermal ? 8 : 10,
+                                color: PdfColors.blue800,
+                                weight: pw.FontWeight.normal,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     if (profile?.phone.isNotEmpty ?? false)
                       pw.Text(
-                        profile!.phone,
+                        'Ph: ${profile!.phone.replaceAll(',', ' -')}',
                         style: _ts(
                           urduFont,
-                          size: isThermal ? 9 : 11,
-                          weight: pw.FontWeight.bold,
+                          size: isThermal ? 8 : 10,
+                          weight: pw.FontWeight.normal,
                           color: PdfColors.grey800,
                         ),
                       ),

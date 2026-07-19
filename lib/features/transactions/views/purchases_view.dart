@@ -157,7 +157,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                             const SizedBox(height: 8),
                             DropdownButtonFormField<ProductModel>(
                               isExpanded: true,
-                              value: selectedProduct,
+                              initialValue: selectedProduct,
                               decoration: const InputDecoration(
                                 labelText: 'Select Product',
                                 isDense: true,
@@ -292,8 +292,9 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                         final minS = double.tryParse(
                                           minStockCtrl.text,
                                         );
-                                        if (minS != null)
+                                        if (minS != null) {
                                           selectedProduct!.minimumStock = minS;
+                                        }
 
                                         if (expiryCtrl.text.trim().isNotEmpty) {
                                           try {
@@ -577,7 +578,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                         ),
                                       ),
                                       subtitle: Text(
-                                        'Inv #: ${purchase.invoiceNumber} | Date: ${purchase.timestamp.toLocal().toString().split(' ')[0]} | Total: Rs. ${purchase.totalAmount.toStringAsFixed(0)}',
+                                        'Inv #: ${purchase.invoiceNumber} | Items: ${itemsList.length} ($totalUnits units)\nDate: ${purchase.timestamp.toLocal().toString().split(' ')[0]} | Total: Rs. ${purchase.totalAmount.toStringAsFixed(0)}',
                                       ),
                                       trailing: Row(
                                         mainAxisSize: MainAxisSize.min,

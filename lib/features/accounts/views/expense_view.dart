@@ -9,7 +9,6 @@ class ExpenseView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(accountsControllerProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(

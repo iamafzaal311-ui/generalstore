@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/transactions_repository.dart';
 import '../datasources/local_db_service.dart';
 import '../models/purchase_model.dart';

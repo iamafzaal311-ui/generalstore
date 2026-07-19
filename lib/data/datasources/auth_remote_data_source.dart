@@ -78,7 +78,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<UserModel?> loginWithGoogle() async {
     if (_googleSignIn == null) return null;
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null;
 
       final GoogleSignInAuthentication googleAuth =
@@ -105,7 +105,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     await _auth?.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
-        await _auth?.signInWithCredential(credential);
+        await _auth.signInWithCredential(credential);
         if (!completer.isCompleted) {
           completer.complete('');
         }
@@ -151,7 +151,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> logout() async {
     await _auth?.signOut();
-    if (_googleSignIn != null) await _googleSignIn!.signOut();
+    if (_googleSignIn != null) await _googleSignIn.signOut();
   }
 
   @override
@@ -159,8 +159,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     final currentUser = _auth?.currentUser;
     if (currentUser == null || _firestore == null) return;
 
-    final batch = _firestore!.batch();
-    final usersRef = _firestore!
+    final batch = _firestore.batch();
+    final usersRef = _firestore
         .collection('stores')
         .doc(currentUser.uid)
         .collection('users');

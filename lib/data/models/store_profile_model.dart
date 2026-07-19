@@ -7,6 +7,8 @@ class StoreProfileModel {
   final String tagline;
   final bool isActive;
   final String? logoUrl;
+  final String? deactivationReason;
+  final DateTime? deactivatedAt;
 
   StoreProfileModel({
     required this.storeName,
@@ -15,35 +17,36 @@ class StoreProfileModel {
     this.tagline = '',
     this.isActive = true,
     this.logoUrl,
+    this.deactivationReason,
+    this.deactivatedAt,
   });
 
   factory StoreProfileModel.fromMap(Map<String, dynamic> map) {
-    String name = map['storeName'] ?? 'HASNAIN TRADERS';
-    if (name.isEmpty) name = 'HASNAIN TRADERS';
-    // Automatically correct spelling based on user feedback
-    if (name.toUpperCase().contains('HUSSNAIN')) {
-      name = name.replaceAll(
-        RegExp('HUSSNAIN', caseSensitive: false),
-        'HASNAIN',
-      );
+    final String name = (map['storeName'] as String? ?? '').trim();
+    final String p = (map['phone'] as String? ?? '').trim();
+    final String a = (map['address'] as String? ?? '').trim();
+    final String t = (map['tagline'] as String? ?? '').trim();
+
+    DateTime? deactivatedAt;
+    if (map['deactivatedAt'] != null) {
+      try {
+        if (map['deactivatedAt'] is String) {
+          deactivatedAt = DateTime.parse(map['deactivatedAt'] as String);
+        } else if (map['deactivatedAt'] is Timestamp) {
+          deactivatedAt = (map['deactivatedAt'] as Timestamp).toDate();
+        }
+      } catch (_) {}
     }
-
-    String p = map['phone'] ?? '';
-    if (p.isEmpty) p = '0307-4217267';
-
-    String a = map['address'] ?? '';
-    if (a.isEmpty) a = 'Ghosia Market Sikandar Chowk Pakkpattan';
-
-    String t = map['tagline'] ?? '';
-    if (t.isEmpty) t = 'Ali Abbas';
 
     return StoreProfileModel(
       storeName: name,
       phone: p,
       address: a,
       tagline: t,
-      isActive: map['isActive'] ?? true,
-      logoUrl: map['logoUrl'],
+      isActive: map['isActive'] as bool? ?? true,
+      logoUrl: map['logoUrl'] as String?,
+      deactivationReason: map['deactivationReason'] as String?,
+      deactivatedAt: deactivatedAt,
     );
   }
 
@@ -55,17 +58,15 @@ class StoreProfileModel {
       'tagline': tagline,
       'isActive': isActive,
       'logoUrl': logoUrl,
+      if (deactivationReason != null) 'deactivationReason': deactivationReason,
+      if (deactivatedAt != null)
+        'deactivatedAt': deactivatedAt!.toUtc().toIso8601String(),
     };
   }
 
   factory StoreProfileModel.fromFirestore(DocumentSnapshot doc) {
     if (!doc.exists || doc.data() == null) {
-      return StoreProfileModel(
-        storeName: 'HASNAIN TRADERS',
-        phone: '0307-4217267',
-        address: 'Ghosia Market Sikandar Chowk Pakkpattan',
-        tagline: 'Ali Abbas',
-      );
+      return StoreProfileModel(storeName: '');
     }
     return StoreProfileModel.fromMap(doc.data() as Map<String, dynamic>);
   }

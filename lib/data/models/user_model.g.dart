@@ -25,13 +25,15 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       ..role = fields[5] as String
       ..isActive = fields[6] as bool
       ..isDirty = fields[7] as bool
-      ..lastUpdated = fields[8] as DateTime;
+      ..lastUpdated = fields[8] as DateTime
+      // Field 9 may not exist in older records — default to ''
+      ..deactivationReason = (fields[9] as String?) ?? '';
   }
 
   @override
   void write(BinaryWriter writer, UserModel obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.userId)
       ..writeByte(1)
@@ -49,7 +51,9 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       ..writeByte(7)
       ..write(obj.isDirty)
       ..writeByte(8)
-      ..write(obj.lastUpdated);
+      ..write(obj.lastUpdated)
+      ..writeByte(9)
+      ..write(obj.deactivationReason);
   }
 
   @override

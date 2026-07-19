@@ -15,6 +15,7 @@ abstract class AuthRepository {
   Future<void> resetPassword(String userId, String newPassword);
   Future<void> toggleUserStatus(String userId, bool isActive);
   Future<void> deleteUser(String userId);
+  Future<void> updateUser(String userId, Map<String, dynamic> data);
   Future<List<UserModel>> getAllUsers();
   Future<UserModel?> getCurrentUser();
   Future<void> logout();

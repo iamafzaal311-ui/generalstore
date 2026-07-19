@@ -251,7 +251,7 @@ class _SalesViewState extends ConsumerState<SalesView> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<CustomerModel>(
-                              value: selectedCustomer,
+                              initialValue: selectedCustomer,
                               decoration: const InputDecoration(
                                 labelText:
                                     'Select Customer (Optional for Walk-in)',
@@ -294,7 +294,7 @@ class _SalesViewState extends ConsumerState<SalesView> {
                         child: Column(
                           children: [
                             DropdownButtonFormField<ProductModel>(
-                              value: selectedProduct,
+                              initialValue: selectedProduct,
                               decoration: const InputDecoration(
                                 labelText: 'Product',
                               ),

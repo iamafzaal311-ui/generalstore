@@ -10,7 +10,6 @@ import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
 import '../datasources/local_db_service.dart';
 import '../models/user_model.dart';
-import '../../core/utils/default_data_helper.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final LocalDbService _db;
@@ -83,16 +82,38 @@ class AuthRepositoryImpl implements AuthRepository {
 
     await _sync.restoreAllFromCloud();
 
+    String storeName = 'Store Owner';
+    if (newUid != null && Firebase.apps.isNotEmpty) {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('stores')
+            .doc(newUid)
+            .collection('profile')
+            .doc('info')
+            .get()
+            .timeout(const Duration(seconds: 5));
+        if (doc.exists && doc.data() != null) {
+          final data = doc.data()!;
+          if (data['storeName'] != null && data['storeName'].toString().isNotEmpty) {
+            storeName = data['storeName'];
+          }
+        }
+      } catch (_) {}
+    }
+
     final adminUser = UserModel()
       ..userId = newUid ?? 'admin_firebase_id'
       ..username = email
-      ..fullName = 'Ali Abbas'
+      ..fullName = storeName
+      ..passwordHash = ''
+      ..salt = ''
       ..role = 'Admin'
       ..isActive = true
       ..isDirty = false
       ..lastUpdated = DateTime.now();
 
     _currentUser = adminUser;
+    await _db.usersBox.put(adminUser.userId, adminUser); // Cache locally for dev dashboard
     await _db.settingsBox.put('last_logged_in_user_id', adminUser.userId);
     return adminUser;
   }
@@ -118,6 +139,22 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     return null;
+  }
+
+
+  @override
+  Future<void> updateUser(String uid, Map<String, dynamic> data) async {
+    await initialize();
+    final user = _db.usersBox.get(uid);
+    if (user != null) {
+      if (data.containsKey('fullName')) user.fullName = data['fullName'];
+      if (data.containsKey('username')) user.username = data['username'];
+      if (data.containsKey('role')) user.role = data['role'];
+      if (data.containsKey('isActive')) user.isActive = data['isActive'];
+      user.isDirty = true;
+      user.lastUpdated = DateTime.now();
+      await user.save();
+    }
   }
 
   @override

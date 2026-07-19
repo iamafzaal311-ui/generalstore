@@ -201,6 +201,75 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
     );
   }
 
+  /// Shows a reason picker when deactivating a user.
+  Future<String?> _showDeactivationReasonDialog() async {
+    const reasons = [
+      'Unauthorized Access',
+      'Terminated Employee',
+      'Account Suspended',
+      'Policy Violation',
+      'Custom Reason...',
+    ];
+    String selected = reasons[0];
+    final customCtrl = TextEditingController();
+    bool isCustom = false;
+
+    return await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setStateD) => AlertDialog(
+          title: const Text('Deactivation Reason'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ...reasons.map(
+                (r) => RadioListTile<String>(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(r, style: const TextStyle(fontSize: 14)),
+                  value: r,
+                  groupValue: selected,
+                  onChanged: (v) {
+                    if (v != null) {
+                      setStateD(() {
+                        selected = v;
+                        isCustom = v == 'Custom Reason...';
+                      });
+                    }
+                  },
+                ),
+              ),
+              if (isCustom)
+                TextField(
+                  controller: customCtrl,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Enter reason',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final reason = isCustom ? customCtrl.text.trim() : selected;
+                if (reason.isEmpty) return;
+                Navigator.pop(ctx, reason);
+              },
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentSessionUser = ref.watch(currentUserProvider);
@@ -329,30 +398,51 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                               children: [
                                 Switch(
                                   value: user.isActive,
-                                  onChanged:
-                                      user.username ==
-                                          'admin' // Protect default super admin
-                                      ? null
-                                      : (value) {
-                                          ref
-                                              .read(
-                                                authControllerProvider.notifier,
-                                              )
-                                              .toggleUserStatus(
-                                                user.userId,
-                                                value,
-                                              );
-                                        },
+                                  onChanged: (value) async {
+                                    String reason = '';
+                                    if (!value) {
+                                      // Deactivating — ask for reason
+                                      final r =
+                                          await _showDeactivationReasonDialog();
+                                      if (r == null) return; // Cancelled
+                                      reason = r;
+                                    }
+                                    ref
+                                        .read(
+                                          authControllerProvider.notifier,
+                                        )
+                                        .toggleUserStatus(
+                                          user.userId,
+                                          value,
+                                          reason: reason,
+                                        );
+                                  },
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  user.isActive ? 'Active' : 'Inactive',
-                                  style: TextStyle(
-                                    color: user.isActive
-                                        ? Colors.green
-                                        : Colors.grey,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      user.isActive ? 'Active' : 'Inactive',
+                                      style: TextStyle(
+                                        color: user.isActive
+                                            ? Colors.green
+                                            : Colors.grey,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    if (!user.isActive &&
+                                        user.deactivationReason.isNotEmpty)
+                                      Text(
+                                        user.deactivationReason,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.red,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ],
                             ),

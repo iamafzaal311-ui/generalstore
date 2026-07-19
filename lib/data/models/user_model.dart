@@ -20,7 +20,7 @@ class UserModel extends HiveObject {
   late String salt;
 
   @HiveField(5)
-  late String role; // 'Super Admin', 'Manager', 'Cashier', 'Inventory Manager', 'Accountant'
+  late String role; // 'Admin', 'Staff', 'Cashier', 'Stock Manager'
 
   @HiveField(6)
   late bool isActive;
@@ -30,4 +30,7 @@ class UserModel extends HiveObject {
 
   @HiveField(8)
   late DateTime lastUpdated;
+
+  @HiveField(9)
+  String deactivationReason = '';
 }

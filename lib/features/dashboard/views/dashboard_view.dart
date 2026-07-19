@@ -417,7 +417,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: category,
+                        initialValue: category,
                         decoration: const InputDecoration(
                           labelText: 'Category',
                         ),

@@ -1,53 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Added missing import
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
 import 'core/providers/global_providers.dart';
 import 'data/datasources/local_db_service.dart';
-import 'core/services/seed_data_service.dart';
 import 'core/services/sync_service.dart';
 
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
 
+    // 1. Initialize local Hive database first (always works offline)
     final dbService = LocalDbService();
     await dbService.init();
 
-    // await SeedDataService.seedIfEmpty(dbService); // Disabled for client delivery
+    // 2. Try to initialize Firebase
+    SyncService? syncService;
+    bool firebaseReady = false;
 
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      final syncService = SyncService(dbService);
-      
-      // Wait a moment for auth state to resolve so we have the user UID to delete Firestore data
-      try {
-        await FirebaseAuth.instance.authStateChanges().first;
-      } catch (_) {}
-      
-      // One-time wipe for fresh client handover (includes Cloud & Local)
-      if (dbService.settingsBox.get('handover_wiped_v6') != 'true') {
-        // Wait until we actually have the user UID from FirebaseAuth, with timeout
-        try {
-          await FirebaseAuth.instance.authStateChanges().firstWhere((user) => user != null).timeout(const Duration(seconds: 3));
-        } catch (_) {} // If it times out or errors, it means they might not be logged in yet.
-        await syncService.clearAllBusinessData();
-        await dbService.settingsBox.put('handover_wiped_v6', 'true');
-      } else {
-        await syncService.restoreAllFromCloud();
-        await syncService.syncDirtyRecords();
-      }
+      firebaseReady = true;
+
+      // Enable Firestore offline persistence — app loads fast even without internet
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+      );
+
+      syncService = SyncService(dbService);
     } catch (e) {
       debugPrint('Firebase init error: $e');
-      // Initialize with dummy options to prevent [core/no-app] crashes
-      // when accessing FirebaseAuth.instance or FirebaseFirestore.instance offline
+      // Try dummy init so FirebaseAuth/Firestore references don't crash offline
       try {
         await Firebase.initializeApp(
           options: const FirebaseOptions(
@@ -57,20 +48,43 @@ void main() async {
             projectId: 'dummy_project_id',
           ),
         );
-      } catch (dummyError) {
-        debugPrint('Dummy Firebase init error: $dummyError');
-      }
+      } catch (_) {}
+      syncService = SyncService(dbService);
     }
 
+    final finalSyncService = syncService;
+
+    // 3. Launch UI immediately — user sees app at once, no network waiting
     runApp(
       ProviderScope(
         overrides: [
           localDbServiceProvider.overrideWithValue(dbService),
-          syncServiceProvider.overrideWithValue(SyncService(dbService)),
+          syncServiceProvider.overrideWithValue(finalSyncService),
         ],
         child: const MyApp(),
       ),
     );
+
+    // 4. Sync with cloud in background AFTER UI is visible
+    //    When a new device logs in with the same account, this restores all data
+    if (firebaseReady) {
+      Future.microtask(() async {
+        try {
+          // Wait for auth state (up to 5s), then sync
+          await FirebaseAuth.instance
+              .authStateChanges()
+              .first
+              .timeout(const Duration(seconds: 5));
+
+          // Pull latest data from Firebase → local Hive
+          await finalSyncService.restoreAllFromCloud();
+          // Push any locally-changed records → Firebase
+          await finalSyncService.syncDirtyRecords();
+        } catch (e) {
+          debugPrint('Background sync skipped: $e');
+        }
+      });
+    }
   } catch (e, stackTrace) {
     runApp(
       MaterialApp(
@@ -102,6 +116,16 @@ class MyApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       routerConfig: goRouter,
+      builder: (context, child) {
+        final data = MediaQuery.of(context);
+        // Globally scale down text and text-dependent widget sizes by 15%
+        return MediaQuery(
+          data: data.copyWith(
+            textScaler: const TextScaler.linear(0.85),
+          ),
+          child: child!,
+        );
+      },
     );
   }
 }
