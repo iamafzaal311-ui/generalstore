@@ -70,6 +70,98 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     );
   }
 
+  Widget _buildDangerZoneSection(BuildContext context, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Danger Zone',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            color: Colors.red.shade50,
+            child: ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Colors.red,
+                child: Icon(Icons.delete_forever, color: Colors.white),
+              ),
+              title: const Text(
+                'Factory Reset (Wipe All Data)',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text('Deletes all products, ledgers, and transactions.'),
+              trailing: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => _confirmWipeData(context),
+                child: const Text('Wipe Data'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmWipeData(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Wipe All Data?', style: TextStyle(color: Colors.red)),
+          ],
+        ),
+        content: const Text(
+          'This will permanently DELETE all products, categories, brands, '
+          'suppliers, customers, sales, purchases and expenses from BOTH '
+          'local storage and Firebase.\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('YES, DELETE EVERYTHING'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    try {
+      final syncService = ref.read(syncServiceProvider);
+      await syncService.clearAllBusinessData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ All business data wiped successfully!'), backgroundColor: Colors.green),
+        );
+        // Refresh the app by pushing named route or pop to start
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error wiping data: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   Widget _buildStoreProfileSection(BuildContext context, ThemeData theme) {
     final profile = ref.watch(storeProfileProvider) ?? StoreProfileModel(storeName: 'General Store');
 
