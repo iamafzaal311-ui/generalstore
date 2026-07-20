@@ -835,6 +835,7 @@ class _ProductsViewState extends ConsumerState<ProductsView>
 
     String? selectedCategory = product?.categoryId;
     String? selectedBrand = product?.brandId;
+    String? selectedSupplier = product?.supplierId;
     String? uploadedImageUrl = product?.imagePath;
     bool isUploadingImage = false;
 
@@ -969,64 +970,108 @@ class _ProductsViewState extends ConsumerState<ProductsView>
                             selectedCategory = null;
                           }
 
-                          return Row(
+                          if (selectedSupplier != null &&
+                              !invState.suppliers.any(
+                                (s) => s.supplierId == selectedSupplier,
+                              )) {
+                            selectedSupplier = null;
+                          }
+
+                          return Column(
                             children: [
-                              Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  isExpanded: true,
-                                  initialValue: selectedBrand,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Brand',
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: DropdownButtonFormField<String>(
+                                      isExpanded: true,
+                                      initialValue: selectedBrand,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Brand',
+                                      ),
+                                      items: invState.brands
+                                          .map(
+                                            (b) => DropdownMenuItem(
+                                              value: b.brandId,
+                                              child: Text(
+                                                b.name,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
+                                      onChanged: (v) => selectedBrand = v,
+                                    ),
                                   ),
-                                  items: invState.brands
-                                      .map(
-                                        (b) => DropdownMenuItem(
-                                          value: b.brandId,
-                                          child: Text(
-                                            b.name,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: (v) => selectedBrand = v,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.add_circle,
-                                  color: Colors.teal,
-                                ),
-                                onPressed: _showBrandFormDialog,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  isExpanded: true,
-                                  initialValue: selectedCategory,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Category',
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.add_circle,
+                                      color: Colors.teal,
+                                    ),
+                                    onPressed: _showBrandFormDialog,
                                   ),
-                                  items: invState.categories
-                                      .map(
-                                        (c) => DropdownMenuItem(
-                                          value: c.categoryId,
-                                          child: Text(
-                                            c.name,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: (v) => selectedCategory = v,
-                                ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: DropdownButtonFormField<String>(
+                                      isExpanded: true,
+                                      initialValue: selectedCategory,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Category',
+                                      ),
+                                      items: invState.categories
+                                          .map(
+                                            (c) => DropdownMenuItem(
+                                              value: c.categoryId,
+                                              child: Text(
+                                                c.name,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
+                                      onChanged: (v) => selectedCategory = v,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.add_circle,
+                                      color: Colors.teal,
+                                    ),
+                                    onPressed: _showCategoryFormDialog,
+                                  ),
+                                ],
                               ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.add_circle,
-                                  color: Colors.teal,
-                                ),
-                                onPressed: _showCategoryFormDialog,
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: DropdownButtonFormField<String>(
+                                      isExpanded: true,
+                                      initialValue: selectedSupplier,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Company / Supplier',
+                                      ),
+                                      items: invState.suppliers
+                                          .map(
+                                            (s) => DropdownMenuItem(
+                                              value: s.supplierId,
+                                              child: Text(
+                                                s.name,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          )
+                                          .toList(),
+                                      onChanged: (v) => selectedSupplier = v,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.add_circle,
+                                      color: Colors.teal,
+                                    ),
+                                    onPressed: _showSupplierFormDialog,
+                                  ),
+                                ],
                               ),
                             ],
                           );
@@ -1203,6 +1248,7 @@ class _ProductsViewState extends ConsumerState<ProductsView>
                     p.barcode = barcodeCtrl.text;
                     p.categoryId = selectedCategory;
                     p.brandId = selectedBrand;
+                    p.supplierId = selectedSupplier;
                     p.purchasePrice =
                         double.tryParse(purchasePriceCtrl.text) ?? 0;
                     p.retailPrice = double.tryParse(retailPriceCtrl.text) ?? 0;

@@ -76,7 +76,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                             child: DropdownButtonFormField<SupplierModel>(
                               initialValue: txState.selectedSupplier,
                               decoration: const InputDecoration(
-                                labelText: 'Select Supplier',
+                                labelText: 'Select Company',
                               ),
                               items: invState.suppliers.map((s) {
                                 return DropdownMenuItem(
@@ -96,7 +96,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                           const SizedBox(width: 8),
                           IconButton(
                             icon: const Icon(Icons.add_circle_outline),
-                            tooltip: 'Add New Supplier',
+                            tooltip: 'Add New Company',
                             onPressed: () {
                               Navigator.pop(
                                 context,
@@ -112,7 +112,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                       TextFormField(
                         controller: invoiceCtrl,
                         decoration: const InputDecoration(
-                          labelText: 'Supplier Invoice Number (Optional)',
+                          labelText: 'Company Invoice Number (Optional)',
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -392,7 +392,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                         TextFormField(
                           controller: paidCtrl,
                           decoration: const InputDecoration(
-                            labelText: 'Paid to Supplier (Rs.)',
+                            labelText: 'Paid to Company (Rs.)',
                           ),
                           keyboardType: TextInputType.number,
                           onChanged: (val) {
@@ -505,7 +505,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                             child: DropdownButtonFormField<SupplierModel>(
                               initialValue: selectedSupplier,
                               decoration: const InputDecoration(
-                                labelText: 'Select Supplier (Vendor)',
+                                labelText: 'Select Company',
                               ),
                               items: invState.suppliers.map((s) {
                                 return DropdownMenuItem(
@@ -554,6 +554,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                               ),
                               onChanged: (val) => setStateDialog(() {
                                 productSearchQuery = val.toLowerCase();
+                                selectedProduct = null;
                               }),
                             ),
                             const SizedBox(height: 8),
@@ -741,7 +742,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                         TextFormField(
                           controller: paidCtrl,
                           decoration: const InputDecoration(
-                            labelText: 'Paid to Supplier (Rs.)',
+                            labelText: 'Paid to Company (Rs.)',
                           ),
                           keyboardType: TextInputType.number,
                         ),
@@ -858,7 +859,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                   child: TextField(
                     controller: _searchCtrl,
                     decoration: const InputDecoration(
-                      hintText: 'Search by Invoice # or Supplier Name...',
+                      hintText: 'Search by Invoice # or Company Name...',
                       prefixIcon: Icon(Icons.search_rounded),
                     ),
                   ),
@@ -928,7 +929,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                         )
                                         .firstOrNull;
                                     final supplierName =
-                                        supplier?.name ?? 'Unknown Supplier';
+                                        supplier?.name ?? 'Unknown Company';
 
                                     return ExpansionTile(
                                       leading: CircleAvatar(
@@ -940,7 +941,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                         ),
                                       ),
                                       title: Text(
-                                        'Supplier: $supplierName',
+                                        'Company: $supplierName',
                                         style: const TextStyle(
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -996,7 +997,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                                         'Delete Purchase?',
                                                       ),
                                                       content: Text(
-                                                        'Are you sure you want to completely delete Invoice ${purchase.invoiceNumber}?\n\nWARNING: This will subtract the stock of these items back to what they were before, and revert the supplier balance.',
+                                                        'Are you sure you want to completely delete Invoice ${purchase.invoiceNumber}?\n\nWARNING: This will subtract the stock of these items back to what they were before, and revert the company balance.',
                                                       ),
                                                       actions: [
                                                         TextButton(
@@ -1184,7 +1185,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
       context: context,
       builder: (c) {
         return AlertDialog(
-          title: const Text('Add Quick Supplier'),
+          title: const Text('Add Quick Company'),
           content: Form(
             key: formKey,
             child: Column(
@@ -1193,7 +1194,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                 TextFormField(
                   controller: nameCtrl,
                   decoration: const InputDecoration(
-                    labelText: 'Supplier Name*',
+                    labelText: 'Company Name*',
                   ),
                   validator: (val) =>
                       val == null || val.isEmpty ? 'Required' : null,

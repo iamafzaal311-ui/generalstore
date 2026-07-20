@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodels/accounts_controller.dart';
-import 'ledger_detail_view.dart';
 
 class AccountsView extends ConsumerStatefulWidget {
   const AccountsView({super.key});
@@ -24,7 +23,10 @@ class _AccountsViewState extends ConsumerState<AccountsView>
         ref.read(accountsControllerProvider.notifier).refreshAccounts();
       }
     });
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _searchCtrl.addListener(() {
       setState(() {
         _searchQuery = _searchCtrl.text.toLowerCase();
@@ -81,7 +83,7 @@ class _AccountsViewState extends ConsumerState<AccountsView>
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      initialValue: category,
+                      value: category,
                       decoration: const InputDecoration(labelText: 'Category'),
                       items:
                           [
@@ -149,64 +151,6 @@ class _AccountsViewState extends ConsumerState<AccountsView>
     );
   }
 
-  void _showRecordPaymentDialog(String personId, String name, bool isCustomer) {
-    final theme = Theme.of(context);
-    final formKey = GlobalKey<FormState>();
-    final amountCtrl = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(
-            isCustomer ? 'Receive Payment from $name' : 'Pay to $name',
-          ),
-          content: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: amountCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Payment Amount (Rs.)*',
-              ),
-              keyboardType: TextInputType.number,
-              validator: (val) => val == null || double.tryParse(val) == null
-                  ? 'Invalid'
-                  : null,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  final amt = double.parse(amountCtrl.text);
-                  if (isCustomer) {
-                    await ref
-                        .read(accountsControllerProvider.notifier)
-                        .receiveCustomerPayment(personId, amt);
-                  } else {
-                    await ref
-                        .read(accountsControllerProvider.notifier)
-                        .paySupplier(personId, amt);
-                  }
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
-              child: const Text('Record Payment'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(accountsControllerProvider);
@@ -214,23 +158,22 @@ class _AccountsViewState extends ConsumerState<AccountsView>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Accounts & Financial Ledgers'),
+        title: const Text(
+          'Accounts & Financial Ledgers',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        backgroundColor: const Color(0xFF1E3A8A), // Deep blue
+        iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: theme.colorScheme.primary,
-          labelColor: theme.colorScheme.primary,
-          unselectedLabelColor: theme.textTheme.bodyMedium?.color?.withValues(
-            alpha: 0.6,
-          ),
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white60,
           tabs: const [
             Tab(
               icon: Icon(Icons.account_balance_rounded),
               text: 'Cashbook Summary',
-            ),
-            Tab(icon: Icon(Icons.people_rounded), text: 'Customer Ledgers'),
-            Tab(
-              icon: Icon(Icons.local_shipping_rounded),
-              text: 'Supplier Ledgers',
             ),
             Tab(icon: Icon(Icons.receipt_long_rounded), text: 'Expenses'),
           ],
@@ -254,7 +197,7 @@ class _AccountsViewState extends ConsumerState<AccountsView>
                           ),
                         ),
                       ),
-                      if (_tabController.index == 3) ...[
+                      if (_tabController.index == 1) ...[
                         const SizedBox(width: 16),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
@@ -281,8 +224,6 @@ class _AccountsViewState extends ConsumerState<AccountsView>
                     controller: _tabController,
                     children: [
                       _buildCashbookSummary(state),
-                      _buildCustomerLedger(state),
-                      _buildSupplierLedger(state),
                       _buildExpenses(state),
                     ],
                   ),
@@ -417,140 +358,6 @@ class _AccountsViewState extends ConsumerState<AccountsView>
           ],
         ),
       ),
-    );
-  }
-
-  // --- CUSTOMER LEDGER TAB ---
-  Widget _buildCustomerLedger(AccountsState state) {
-    final filtered = state.customers
-        .where((c) => c.name.toLowerCase().contains(_searchQuery))
-        .toList();
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        final cust = filtered[index];
-        return Card(
-          child: ListTile(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => LedgerDetailView(customer: cust),
-                ),
-              );
-            },
-            leading: const CircleAvatar(child: Icon(Icons.person)),
-            title: Text(
-              cust.name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              'Phone: ${cust.phone ?? "-"} | Address: ${cust.address ?? "-"}',
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'Due Balance:',
-                      style: TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                    Text(
-                      'Rs. ${cust.balance.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: cust.balance > 0 ? Colors.red : Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: () => _showRecordPaymentDialog(
-                    cust.customerId,
-                    cust.name,
-                    true,
-                  ),
-                  child: const Text('Pay Off'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // --- SUPPLIER LEDGER TAB ---
-  Widget _buildSupplierLedger(AccountsState state) {
-    final filtered = state.suppliers
-        .where((s) => s.name.toLowerCase().contains(_searchQuery))
-        .toList();
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        final supplier = filtered[index];
-        return Card(
-          child: ListTile(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => LedgerDetailView(supplier: supplier),
-                ),
-              );
-            },
-            leading: const CircleAvatar(child: Icon(Icons.local_shipping)),
-            title: Text(
-              supplier.name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              'Contact: ${supplier.contactName ?? "-"} | Phone: ${supplier.phone ?? "-"}',
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    const Text(
-                      'We Owe:',
-                      style: TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                    Text(
-                      'Rs. ${supplier.balance.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: supplier.balance > 0
-                            ? Colors.orange[800]
-                            : Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: () => _showRecordPaymentDialog(
-                    supplier.supplierId,
-                    supplier.name,
-                    false,
-                  ),
-                  child: const Text('Settle'),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 

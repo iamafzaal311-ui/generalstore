@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../viewmodels/accounts_controller.dart';
 import '../../../data/models/supplier_model.dart';
-import '../../../data/models/purchase_model.dart';
+import 'ledger_detail_view.dart';
 
 class SupplierAccountsView extends ConsumerStatefulWidget {
   const SupplierAccountsView({super.key});
@@ -88,129 +88,12 @@ class _SupplierAccountsViewState extends ConsumerState<SupplierAccountsView> {
     );
   }
 
-  void _showSupplierDetails(
-    SupplierModel supplier,
-    List<PurchaseModel> allPurchases,
-  ) {
-    final supplierPurchases = allPurchases
-        .where((p) => p.supplierId == supplier.supplierId)
-        .toList();
-    supplierPurchases.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (context, scrollController) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${supplier.name} - Purchase History',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Total Pending Balance: Rs. ${supplier.balance.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  Expanded(
-                    child: supplierPurchases.isEmpty
-                        ? const Center(child: Text('No purchase bills found.'))
-                        : ListView.builder(
-                            controller: scrollController,
-                            itemCount: supplierPurchases.length,
-                            itemBuilder: (context, index) {
-                              final p = supplierPurchases[index];
-                              final pending = p.totalAmount - p.paidAmount;
-                              return Card(
-                                margin: const EdgeInsets.symmetric(vertical: 6),
-                                child: ListTile(
-                                  title: Text(
-                                    'Purchase #${p.purchaseId}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        DateFormat(
-                                          'dd MMM yyyy HH:mm',
-                                        ).format(p.timestamp),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Wrap(
-                                        spacing: 8,
-                                        children: [
-                                          Text(
-                                            'Total: Rs. ${p.totalAmount.toStringAsFixed(0)}',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                          Text(
-                                            'Paid: Rs. ${p.paidAmount.toStringAsFixed(0)}',
-                                            style: const TextStyle(
-                                              color: Colors.green,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                          if (pending > 0)
-                                            Text(
-                                              'Pending: Rs. ${pending.toStringAsFixed(0)}',
-                                              style: const TextStyle(
-                                                color: Colors.red,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: Text(
-                                    pending > 0
-                                        ? 'Due:\nRs. ${pending.toStringAsFixed(0)}'
-                                        : 'Cleared',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: pending > 0
-                                          ? Colors.red
-                                          : Colors.green,
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    // Navigate to purchase details
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+  void _showSupplierDetails(SupplierModel supplier) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LedgerDetailView(supplier: supplier),
+      ),
     );
   }
 
@@ -219,7 +102,7 @@ class _SupplierAccountsViewState extends ConsumerState<SupplierAccountsView> {
     final state = ref.watch(accountsControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Supplier Khata (Purchases)')),
+      appBar: AppBar(title: const Text('Company Khata (Purchases)')),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -237,6 +120,78 @@ class _SupplierAccountsViewState extends ConsumerState<SupplierAccountsView> {
                 Expanded(child: _buildSupplierLedger(state)),
               ],
             ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddSupplierDialog,
+        icon: const Icon(Icons.domain_add_rounded),
+        label: const Text('Add Company'),
+      ),
+    );
+  }
+
+  void _showAddSupplierDialog() {
+    final nameCtrl = TextEditingController();
+    final contactCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final addressCtrl = TextEditingController();
+    final balCtrl = TextEditingController(text: '0');
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add New Company'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Company Name*'),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                ),
+                TextFormField(
+                  controller: contactCtrl,
+                  decoration: const InputDecoration(labelText: 'Contact Person'),
+                ),
+                TextFormField(
+                  controller: phoneCtrl,
+                  decoration: const InputDecoration(labelText: 'Phone'),
+                ),
+                TextFormField(
+                  controller: addressCtrl,
+                  decoration: const InputDecoration(labelText: 'Address'),
+                ),
+                TextFormField(
+                  controller: balCtrl,
+                  decoration: const InputDecoration(labelText: 'Opening Balance (Rs.)'),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                final bal = double.tryParse(balCtrl.text) ?? 0;
+                await ref.read(accountsControllerProvider.notifier).addSupplier(
+                      nameCtrl.text.trim(),
+                      contactCtrl.text.trim(),
+                      phoneCtrl.text.trim(),
+                      addressCtrl.text.trim(),
+                      bal,
+                    );
+                if (mounted) Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Add Company'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -257,7 +212,7 @@ class _SupplierAccountsViewState extends ConsumerState<SupplierAccountsView> {
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 6),
           child: InkWell(
-            onTap: () => _showSupplierDetails(supplier, state.purchases),
+            onTap: () => _showSupplierDetails(supplier),
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: const EdgeInsets.all(12.0),

@@ -262,13 +262,13 @@ class _SidebarContent extends ConsumerWidget {
                 ),
                 _SidebarMenuItem(
                   icon: Icons.people_rounded,
-                  label: 'Customer Khata',
+                  label: 'Salesman Khata',
                   route: '/customer-accounts',
                   isSelected: currentRoute == '/customer-accounts',
                 ),
                 _SidebarMenuItem(
                   icon: Icons.local_shipping_rounded,
-                  label: 'Supplier Khata',
+                  label: 'Company Khata',
                   route: '/supplier-accounts',
                   isSelected: currentRoute == '/supplier-accounts',
                 ),

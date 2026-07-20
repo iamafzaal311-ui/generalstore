@@ -213,6 +213,66 @@ class AccountsController extends StateNotifier<AccountsState> {
     }
     await refreshAccounts();
   }
+
+  Future<void> addCustomer(String name, String phone, String address, double initialBalance) async {
+    final db = _ref.read(localDbServiceProvider);
+    final customer = CustomerModel()
+      ..customerId = const Uuid().v4()
+      ..name = name
+      ..phone = phone
+      ..address = address
+      ..balance = initialBalance
+      ..isDeleted = false
+      ..isDirty = true
+      ..lastUpdated = DateTime.now();
+    await db.customersBox.put(customer.customerId, customer);
+    await refreshAccounts();
+  }
+
+  Future<void> addSupplier(String name, String contactName, String phone, String address, double initialBalance) async {
+    final db = _ref.read(localDbServiceProvider);
+    final supplier = SupplierModel()
+      ..supplierId = const Uuid().v4()
+      ..name = name
+      ..contactName = contactName
+      ..phone = phone
+      ..address = address
+      ..balance = initialBalance
+      ..isDeleted = false
+      ..isDirty = true
+      ..lastUpdated = DateTime.now();
+    await db.suppliersBox.put(supplier.supplierId, supplier);
+    await refreshAccounts();
+  }
+
+  Future<void> editCustomer(String id, String name, String phone, String address) async {
+    final db = _ref.read(localDbServiceProvider);
+    final customer = db.customersBox.get(id);
+    if (customer != null) {
+      customer.name = name;
+      customer.phone = phone;
+      customer.address = address;
+      customer.isDirty = true;
+      customer.lastUpdated = DateTime.now();
+      await db.customersBox.put(id, customer);
+      await refreshAccounts();
+    }
+  }
+
+  Future<void> editSupplier(String id, String name, String contactName, String phone, String address) async {
+    final db = _ref.read(localDbServiceProvider);
+    final supplier = db.suppliersBox.get(id);
+    if (supplier != null) {
+      supplier.name = name;
+      supplier.contactName = contactName;
+      supplier.phone = phone;
+      supplier.address = address;
+      supplier.isDirty = true;
+      supplier.lastUpdated = DateTime.now();
+      await db.suppliersBox.put(id, supplier);
+      await refreshAccounts();
+    }
+  }
 }
 
 final accountsControllerProvider =

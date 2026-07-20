@@ -98,7 +98,7 @@ class _POSViewState extends ConsumerState<POSView> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Add New Customer (Khata)'),
+          title: const Text('Add New Salesman'),
           content: Form(
             key: formKey,
             child: Column(
@@ -740,7 +740,7 @@ class _POSViewState extends ConsumerState<POSView> {
                           initialValue: posState.selectedCustomer,
                           isExpanded: true,
                           decoration: const InputDecoration(
-                            labelText: 'Select Customer (Khata)',
+                            labelText: 'Select Salesman',
                             isDense: true,
                             contentPadding: EdgeInsets.symmetric(
                               horizontal: 8,

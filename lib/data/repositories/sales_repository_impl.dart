@@ -62,6 +62,74 @@ class SalesRepositoryImpl implements SalesRepository {
   }
 
   @override
+  Future<void> updateSale(SaleModel oldSale, SaleModel newSale) async {
+    // 1. REVERT old sale effects
+    // Put back stock levels
+    final oldItems = jsonDecode(oldSale.itemsJson) as List;
+    for (final item in oldItems) {
+      final productId = item['productId'] as String;
+      final qty = (item['quantity'] as num).toDouble();
+      final product = _db.productsBox.get(productId);
+      if (product != null) {
+        product.stock += qty;
+        product.isDirty = true;
+        product.lastUpdated = DateTime.now();
+        await product.save();
+      }
+    }
+
+    // Revert customer balance
+    if (oldSale.customerId != null) {
+      final customer = _db.customersBox.get(oldSale.customerId);
+      if (customer != null) {
+        final unpaidAmount = oldSale.total - oldSale.paidAmount;
+        if (unpaidAmount != 0) {
+          customer.balance -= unpaidAmount;
+          customer.isDirty = true;
+          customer.lastUpdated = DateTime.now();
+          await customer.save();
+        }
+      }
+    }
+
+    // 2. APPLY new sale effects
+    // Deduct stock levels
+    final newItems = jsonDecode(newSale.itemsJson) as List;
+    for (final item in newItems) {
+      final productId = item['productId'] as String;
+      final qty = (item['quantity'] as num).toDouble();
+      final product = _db.productsBox.get(productId);
+      if (product != null) {
+        product.stock -= qty;
+        product.isDirty = true;
+        product.lastUpdated = DateTime.now();
+        await product.save();
+      }
+    }
+
+    // Apply new customer balance
+    if (newSale.customerId != null) {
+      final customer = _db.customersBox.get(newSale.customerId);
+      if (customer != null) {
+        final unpaidAmount = newSale.total - newSale.paidAmount;
+        if (unpaidAmount != 0) {
+          customer.balance += unpaidAmount;
+          customer.isDirty = true;
+          customer.lastUpdated = DateTime.now();
+          await customer.save();
+        }
+      }
+    }
+
+    // 3. Update the sale record
+    newSale.isDirty = true;
+    newSale.lastUpdated = DateTime.now();
+    await _db.salesBox.put(newSale.saleId, newSale);
+
+    unawaited(_sync.syncDirtyRecords());
+  }
+
+  @override
   Future<void> deleteSale(String saleId) async {
     final sale = _db.salesBox.get(saleId);
     if (sale != null) {

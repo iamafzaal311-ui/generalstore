@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../viewmodels/accounts_controller.dart';
 import '../../../data/models/customer_model.dart';
-import '../../../data/models/sale_model.dart';
+import 'ledger_detail_view.dart';
 
 class CustomerAccountsView extends ConsumerStatefulWidget {
   const CustomerAccountsView({super.key});
@@ -88,123 +88,12 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
     );
   }
 
-  void _showCustomerDetails(CustomerModel customer, List<SaleModel> allSales) {
-    final customerSales = allSales
-        .where((s) => s.customerId == customer.customerId)
-        .toList();
-    customerSales.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (context, scrollController) {
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${customer.name} - Sales History',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Total Pending Balance: Rs. ${customer.balance.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  Expanded(
-                    child: customerSales.isEmpty
-                        ? const Center(child: Text('No sales bills found.'))
-                        : ListView.builder(
-                            controller: scrollController,
-                            itemCount: customerSales.length,
-                            itemBuilder: (context, index) {
-                              final s = customerSales[index];
-                              final pending = s.total - s.paidAmount;
-                              return Card(
-                                margin: const EdgeInsets.symmetric(vertical: 6),
-                                child: ListTile(
-                                  title: Text(
-                                    'Bill #${s.invoiceNumber}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        DateFormat(
-                                          'dd MMM yyyy HH:mm',
-                                        ).format(s.timestamp),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Wrap(
-                                        spacing: 8,
-                                        children: [
-                                          Text(
-                                            'Total: Rs. ${s.total.toStringAsFixed(0)}',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                          Text(
-                                            'Paid: Rs. ${s.paidAmount.toStringAsFixed(0)}',
-                                            style: const TextStyle(
-                                              color: Colors.green,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                          if (pending > 0)
-                                            Text(
-                                              'Pending: Rs. ${pending.toStringAsFixed(0)}',
-                                              style: const TextStyle(
-                                                color: Colors.red,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                  trailing: Text(
-                                    pending > 0
-                                        ? 'Due:\nRs. ${pending.toStringAsFixed(0)}'
-                                        : 'Cleared',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: pending > 0
-                                          ? Colors.red
-                                          : Colors.green,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+  void _showCustomerDetails(CustomerModel customer) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LedgerDetailView(customer: customer),
+      ),
     );
   }
 
@@ -213,7 +102,7 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
     final state = ref.watch(accountsControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Customer Khata (Accounts)')),
+      appBar: AppBar(title: const Text('Salesman Khata (Accounts)')),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -231,6 +120,72 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
                 Expanded(child: _buildCustomerLedger(state)),
               ],
             ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddCustomerDialog,
+        icon: const Icon(Icons.person_add_rounded),
+        label: const Text('Add Salesman'),
+      ),
+    );
+  }
+
+  void _showAddCustomerDialog() {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final addressCtrl = TextEditingController();
+    final balCtrl = TextEditingController(text: '0');
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add New Salesman'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Name*'),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                ),
+                TextFormField(
+                  controller: phoneCtrl,
+                  decoration: const InputDecoration(labelText: 'Phone'),
+                ),
+                TextFormField(
+                  controller: addressCtrl,
+                  decoration: const InputDecoration(labelText: 'Address'),
+                ),
+                TextFormField(
+                  controller: balCtrl,
+                  decoration: const InputDecoration(labelText: 'Opening Balance (Rs.)'),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                final bal = double.tryParse(balCtrl.text) ?? 0;
+                await ref.read(accountsControllerProvider.notifier).addCustomer(
+                      nameCtrl.text.trim(),
+                      phoneCtrl.text.trim(),
+                      addressCtrl.text.trim(),
+                      bal,
+                    );
+                if (mounted) Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Add Salesman'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -251,7 +206,7 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 6),
           child: InkWell(
-            onTap: () => _showCustomerDetails(cust, state.sales),
+            onTap: () => _showCustomerDetails(cust),
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: const EdgeInsets.all(12.0),

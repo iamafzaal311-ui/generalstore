@@ -64,6 +64,68 @@ class TransactionsRepositoryImpl implements TransactionsRepository {
   }
 
   @override
+  Future<void> updatePurchase(PurchaseModel oldPurchase, PurchaseModel newPurchase) async {
+    // 1. REVERT old purchase effects
+    final oldItems = jsonDecode(oldPurchase.itemsJson) as List;
+    for (final item in oldItems) {
+      final productId = item['productId'] as String;
+      final qty = (item['quantity'] as num).toDouble();
+      final product = _db.productsBox.get(productId);
+      if (product != null) {
+        product.stock -= qty;
+        product.isDirty = true;
+        product.lastUpdated = DateTime.now();
+        await product.save();
+      }
+    }
+    
+    if (oldPurchase.totalAmount > oldPurchase.paidAmount) {
+      final supplier = _db.suppliersBox.get(oldPurchase.supplierId);
+      if (supplier != null) {
+        final unpaid = oldPurchase.totalAmount - oldPurchase.paidAmount;
+        supplier.balance -= unpaid;
+        supplier.isDirty = true;
+        supplier.lastUpdated = DateTime.now();
+        await supplier.save();
+      }
+    }
+
+    // 2. APPLY new purchase effects
+    final newItems = jsonDecode(newPurchase.itemsJson) as List;
+    for (final item in newItems) {
+      final productId = item['productId'] as String;
+      final qty = (item['quantity'] as num).toDouble();
+      final cost = (item['purchasePrice'] as num).toDouble();
+      final product = _db.productsBox.get(productId);
+      if (product != null) {
+        product.stock += qty;
+        product.purchasePrice = cost;
+        product.isDirty = true;
+        product.lastUpdated = DateTime.now();
+        await product.save();
+      }
+    }
+
+    if (newPurchase.totalAmount > newPurchase.paidAmount) {
+      final supplier = _db.suppliersBox.get(newPurchase.supplierId);
+      if (supplier != null) {
+        final unpaid = newPurchase.totalAmount - newPurchase.paidAmount;
+        supplier.balance += unpaid;
+        supplier.isDirty = true;
+        supplier.lastUpdated = DateTime.now();
+        await supplier.save();
+      }
+    }
+
+    // 3. Update the purchase record
+    newPurchase.isDirty = true;
+    newPurchase.lastUpdated = DateTime.now();
+    await _db.purchasesBox.put(newPurchase.purchaseId, newPurchase);
+
+    unawaited(_sync.syncDirtyRecords());
+  }
+
+  @override
   Future<void> deletePurchase(String purchaseId) async {
     final purchase = _db.purchasesBox.get(purchaseId);
 

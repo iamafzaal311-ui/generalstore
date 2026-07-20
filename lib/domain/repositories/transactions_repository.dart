@@ -5,6 +5,7 @@ abstract class TransactionsRepository {
   // Purchases
   Future<List<PurchaseModel>> getPurchases();
   Future<void> savePurchase(PurchaseModel purchase);
+  Future<void> updatePurchase(PurchaseModel oldPurchase, PurchaseModel newPurchase);
   Future<void> deletePurchase(String purchaseId);
 
   // Sales (additional logs access)
