@@ -29,20 +29,30 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard Analytics'),
+        title: Text(
+          isWide ? 'Dashboard Analytics' : 'Dashboard',
+          style: isWide ? null : const TextStyle(fontSize: 18),
+        ),
         actions: [
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          if (isWide)
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('Add Expense'),
+              onPressed: () => _showAddExpenseDialog(context, ref),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              tooltip: 'Add Expense',
+              onPressed: () => _showAddExpenseDialog(context, ref),
             ),
-            icon: const Icon(Icons.add_circle_outline),
-            label: const Text('Add Expense'),
-            onPressed: () => _showAddExpenseDialog(context, ref),
-          ),
           const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),

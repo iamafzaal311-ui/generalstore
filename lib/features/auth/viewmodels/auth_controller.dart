@@ -492,6 +492,24 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  /// Update current store profile
+  Future<bool> updateCurrentStoreProfile(Map<String, dynamic> data) async {
+    final adminUid = FirebaseAuth.instance.currentUser?.uid;
+    if (adminUid == null) return false;
+    final success = await updateStore(adminUid, data);
+    if (success) {
+      final currentProfile = _ref.read(storeProfileProvider);
+      if (currentProfile != null) {
+        final updatedProfile = StoreProfileModel.fromMap({
+          ...currentProfile.toMap(),
+          ...data,
+        });
+        _ref.read(storeProfileProvider.notifier).state = updatedProfile;
+      }
+    }
+    return success;
+  }
+
   /// Delete a specific user within a store
   Future<bool> deleteStoreUser(String storeUid, String userUid) async {
     if (Firebase.apps.isEmpty) return false;

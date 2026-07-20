@@ -36,9 +36,24 @@ class CustomUrduHeader extends ConsumerWidget {
     return TextHelper.isUrdu(text) ? TextDirection.rtl : TextDirection.ltr;
   }
 
+  Color? _hexToColor(String? hexString) {
+    if (hexString == null || hexString.isEmpty) return null;
+    final hex = hexString.replaceFirst('#', '');
+    if (hex.length == 6) {
+      return Color(int.parse('FF$hex', radix: 16));
+    } else if (hex.length == 8) {
+      return Color(int.parse(hex, radix: 16));
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(storeProfileProvider);
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    
+    final mainColor = _hexToColor(profile?.headerColor) ?? Colors.blue.shade800;
+    final titleColor = _hexToColor(profile?.headerTextColor) ?? Colors.red.shade700;
 
     final storeName = (profile?.storeName ?? '').isNotEmpty
         ? profile!.storeName
@@ -73,9 +88,11 @@ class CustomUrduHeader extends ConsumerWidget {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 16,
               children: [
                 // Left Side: Name and Phone
                 Column(
@@ -89,7 +106,7 @@ class CustomUrduHeader extends ConsumerWidget {
                               text: 'Proprietor: ',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
-                                color: Colors.blue.shade800,
+                                color: mainColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -97,7 +114,7 @@ class CustomUrduHeader extends ConsumerWidget {
                               text: tagline,
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
-                                color: Colors.blue.shade800,
+                                color: mainColor,
                                 fontWeight: FontWeight.normal,
                               ),
                             ),
@@ -121,14 +138,15 @@ class CustomUrduHeader extends ConsumerWidget {
                   ],
                 ),
                 // Right Side: Store Name
-                Expanded(
+                SizedBox(
+                  width: isMobile ? double.infinity : null,
                   child: Text(
                     storeName,
-                    textAlign: TextAlign.right,
+                    textAlign: isMobile ? TextAlign.center : TextAlign.right,
                     style: _getStyle(
                       storeName,
-                      fontSize: 48,
-                      color: Colors.red.shade700,
+                      fontSize: isMobile ? 32 : 48,
+                      color: titleColor,
                       fontWeight: FontWeight.bold,
                     ),
                     textDirection: _getDirection(storeName),
@@ -142,7 +160,7 @@ class CustomUrduHeader extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
             decoration: BoxDecoration(
-              color: Colors.blue.shade800,
+              color: mainColor,
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),

@@ -9,6 +9,8 @@ class StoreProfileModel {
   final String? logoUrl;
   final String? deactivationReason;
   final DateTime? deactivatedAt;
+  final String? headerColor;
+  final String? headerTextColor;
 
   StoreProfileModel({
     required this.storeName,
@@ -19,6 +21,8 @@ class StoreProfileModel {
     this.logoUrl,
     this.deactivationReason,
     this.deactivatedAt,
+    this.headerColor,
+    this.headerTextColor,
   });
 
   factory StoreProfileModel.fromMap(Map<String, dynamic> map) {
@@ -47,6 +51,8 @@ class StoreProfileModel {
       logoUrl: map['logoUrl'] as String?,
       deactivationReason: map['deactivationReason'] as String?,
       deactivatedAt: deactivatedAt,
+      headerColor: map['headerColor'] as String?,
+      headerTextColor: map['headerTextColor'] as String?,
     );
   }
 
@@ -61,6 +67,8 @@ class StoreProfileModel {
       if (deactivationReason != null) 'deactivationReason': deactivationReason,
       if (deactivatedAt != null)
         'deactivatedAt': deactivatedAt!.toUtc().toIso8601String(),
+      if (headerColor != null) 'headerColor': headerColor,
+      if (headerTextColor != null) 'headerTextColor': headerTextColor,
     };
   }
 

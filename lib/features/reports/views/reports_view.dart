@@ -50,6 +50,8 @@ class ReportsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final isMobile = MediaQuery.of(context).size.width < 800;
+    final cardWidth = isMobile ? double.infinity : 320.0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Reports Center')),
@@ -72,10 +74,12 @@ class ReportsView extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 32),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Wrap(
+              spacing: 24,
+              runSpacing: 24,
               children: [
-                Expanded(
+                SizedBox(
+                  width: cardWidth,
                   child: _buildReportCard(
                     context: context,
                     title: 'Monthly Sales Report',
@@ -129,8 +133,8 @@ class ReportsView extends ConsumerWidget {
                     },
                   ),
                 ),
-                const SizedBox(width: 24),
-                Expanded(
+                SizedBox(
+                  width: cardWidth,
                   child: _buildReportCard(
                     context: context,
                     title: 'All Sales & Revenue',
@@ -166,8 +170,8 @@ class ReportsView extends ConsumerWidget {
                     },
                   ),
                 ),
-                const SizedBox(width: 24),
-                Expanded(
+                SizedBox(
+                  width: cardWidth,
                   child: _buildReportCard(
                     context: context,
                     title: 'Current Inventory',
@@ -203,13 +207,8 @@ class ReportsView extends ConsumerWidget {
                     },
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
+                SizedBox(
+                  width: cardWidth,
                   child: _buildReportCard(
                     context: context,
                     title: 'Business Profit & Loss Report',
@@ -266,8 +265,6 @@ class ReportsView extends ConsumerWidget {
                     },
                   ),
                 ),
-                const Spacer(),
-                const Spacer(),
               ],
             ),
           ],
