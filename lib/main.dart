@@ -29,11 +29,7 @@ void main() async {
       );
       firebaseReady = true;
 
-      // Enable Firestore offline persistence — app loads fast even without internet
-      FirebaseFirestore.instance.settings = const Settings(
-        persistenceEnabled: true,
-        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-      );
+      // Custom Firestore settings removed due to Web SDK long polling timeout bug
 
       syncService = SyncService(dbService);
     } catch (e) {

@@ -79,7 +79,7 @@ class AuthController extends StateNotifier<AuthState> {
     } else if (msg.contains('weak-password')) {
       return 'The password provided is too weak (min 6 chars).';
     }
-    return 'An unexpected error occurred. Please try again.';
+    return 'Error details: $e';
   }
 
   Future<void> _init() async {
