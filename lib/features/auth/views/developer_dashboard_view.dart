@@ -523,6 +523,8 @@ class _DeveloperDashboardViewState
           ],
         ),
         bottom: TabBar(
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           controller: _tabController,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,

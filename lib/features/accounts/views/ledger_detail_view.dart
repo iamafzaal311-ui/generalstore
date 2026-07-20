@@ -135,6 +135,8 @@ class LedgerDetailView extends ConsumerWidget {
           ),
         ],
         bottom: const TabBar(
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white70,

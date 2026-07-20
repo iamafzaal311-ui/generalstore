@@ -1084,6 +1084,8 @@ class _POSViewState extends ConsumerState<POSView> {
               child: Column(
                 children: [
                   TabBar(
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
                     labelColor: theme.colorScheme.primary,
                     unselectedLabelColor: Colors.grey,
                     indicatorColor: theme.colorScheme.primary,
