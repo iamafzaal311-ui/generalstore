@@ -65,6 +65,8 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
               ],
             ),
           ),
+          const SizedBox(height: 32),
+          _buildDangerZoneSection(context, theme),
         ],
       ),
     );
