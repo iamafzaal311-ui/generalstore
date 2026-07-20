@@ -74,6 +74,10 @@ class AuthController extends StateNotifier<AuthState> {
       return 'The email address is badly formatted.';
     } else if (msg.contains('user-disabled')) {
       return 'This account has been disabled.';
+    } else if (msg.contains('email-already-in-use')) {
+      return 'An account already exists for that email.';
+    } else if (msg.contains('weak-password')) {
+      return 'The password provided is too weak (min 6 chars).';
     }
     return 'An unexpected error occurred. Please try again.';
   }
