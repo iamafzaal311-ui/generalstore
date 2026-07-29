@@ -25,6 +25,8 @@ final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'shell',
 );
 
+bool _isInitialStart = true;
+
 final goRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/login',
@@ -37,14 +39,20 @@ final goRouter = GoRouter(
     try {
       final path = state.uri.path;
       if (path == '/developer-dashboard') {
+        _isInitialStart = false;
         return null;
       }
 
       final lastUserId = db.settingsBox.get('last_logged_in_user_id');
       final isLoggedIn = lastUserId != null && db.usersBox.get(lastUserId) != null;
-      final isAuthRoute = path == '/login' || path == '/register-store';
 
-      if (!isLoggedIn && !isAuthRoute) {
+      // Force initial launch/refresh to start on /login
+      if (_isInitialStart) {
+        _isInitialStart = false;
+        return '/login';
+      }
+
+      if (!isLoggedIn && path != '/login' && path != '/register-store') {
         return '/login';
       }
     } catch (_) {}
