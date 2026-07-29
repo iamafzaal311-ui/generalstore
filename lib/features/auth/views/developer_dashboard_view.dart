@@ -34,6 +34,8 @@ class _DeveloperDashboardViewState
     'Custom Reason...',
   ];
 
+  bool _isAuthorized = false;
+
   @override
   void initState() {
     super.initState();
@@ -41,8 +43,84 @@ class _DeveloperDashboardViewState
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
-    _loadStores();
-    _loadAllUsers();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isAuthorized) {
+        _checkPinAccess();
+      }
+    });
+  }
+
+  void _checkPinAccess() {
+    if (_isAuthorized) return;
+    final pinCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFFE8ECEF),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.amber.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.lock_rounded, color: Colors.amber, size: 20),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'Developer Authentication',
+              style: TextStyle(color: Color(0xFF2D3748), fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: TextField(
+          controller: pinCtrl,
+          obscureText: true,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Enter Secret PIN (vivid123)',
+            hintStyle: const TextStyle(color: Colors.black38),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            prefixIcon: const Icon(Icons.lock_outline, color: Colors.black38),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.go('/');
+            },
+            child: const Text('Cancel', style: TextStyle(color: Colors.black54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black),
+            onPressed: () {
+              if (pinCtrl.text.trim() == 'vivid123') {
+                Navigator.pop(ctx);
+                setState(() {
+                  _isAuthorized = true;
+                });
+                _loadStores();
+                _loadAllUsers();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Invalid PIN. Access Denied.'),
+                    backgroundColor: Colors.red.shade700,
+                  ),
+                );
+              }
+            },
+            child: const Text('Unlock Panel', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -487,6 +565,30 @@ class _DeveloperDashboardViewState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    if (!_isAuthorized) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Developer Access Required')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_rounded, size: 64, color: Colors.amber),
+              const SizedBox(height: 16),
+              const Text('Developer Panel Locked', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text('Please enter PIN vivid123 to access.'),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _checkPinAccess,
+                icon: const Icon(Icons.key_rounded),
+                label: const Text('Enter PIN'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
