@@ -5,6 +5,7 @@
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Vivid Digital Nexus Inventory & POS System">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -13,181 +14,85 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <title>VDN POS</title>
   <link rel="manifest" href="manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
-    body {
-      font-family: 'Nunito', 'Segoe UI', sans-serif;
-      background: #1e3a8a;
-      background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: #f8fafc;
+      font-family: 'Nunito', sans-serif;
       overflow: hidden;
     }
 
-    /* ── Heavy Claymorphism Card ── */
-    .card {
-      position: relative;
-      z-index: 10;
+    #loading-indicator {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 56px 64px;
-      border-radius: 48px;
-      background: #1e3a8a;
-      box-shadow:
-        24px 24px 48px rgba(8, 15, 40, 0.6),
-        -24px -24px 48px rgba(59, 130, 246, 0.1),
-        inset 12px 12px 24px rgba(59, 130, 246, 0.3),
-        inset -12px -12px 24px rgba(8, 15, 40, 0.5);
-      max-width: 460px;
-      width: 92vw;
-      text-align: center;
-      animation: cardIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    }
-
-    @keyframes cardIn {
-      from {
-        opacity: 0;
-        transform: translateY(50px) scale(0.9);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    /* ── Claymorphism Logo Container ── */
-    .logo-container {
-      width: 140px;
-      height: 140px;
-      border-radius: 50%;
-      background: #1e3a8a;
-      display: flex;
-      align-items: center;
       justify-content: center;
-      margin-bottom: 24px;
-      box-shadow:
-        16px 16px 32px rgba(8, 15, 40, 0.6),
-        -16px -16px 32px rgba(59, 130, 246, 0.1),
-        inset 8px 8px 16px rgba(59, 130, 246, 0.3),
-        inset -8px -8px 16px rgba(8, 15, 40, 0.5);
-      animation: floatLogo 4s ease-in-out infinite;
+      z-index: 999999;
+      transition: opacity 0.5s ease;
     }
 
-    @keyframes floatLogo {
-
-      0%,
-      100% {
-        transform: translateY(0);
-      }
-
-      50% {
-        transform: translateY(-12px);
-      }
-    }
-
-    .logo-container img {
-      width: 110px;
-      height: 110px;
-      object-fit: contain;
-      /* Inner image drop shadow to pop from the clay */
-      filter: drop-shadow(4px 8px 8px rgba(17, 34, 100, 0.5));
-    }
-
-    /* ── Text Styling with Clay/Embossed feel ── */
-    .brand {
-      font-size: 2rem;
-      font-weight: 900;
-      color: #ffffff;
-      letter-spacing: -0.5px;
-      text-shadow: 2px 4px 6px rgba(17, 34, 100, 0.4);
-    }
-
-    .tagline {
-      margin-top: 8px;
-      font-size: 0.9rem;
-      color: #bfdbfe;
-      font-weight: 600;
-    }
-
-    /* ── Claymorphism Progress Bar ── */
-    .progress-wrap {
-      width: 100%;
-      margin-top: 40px;
-      height: 24px;
-      border-radius: 24px;
-      background: #1e3a8a;
-      box-shadow:
-        inset 6px 6px 12px rgba(8, 15, 40, 0.6),
-        inset -6px -6px 12px rgba(59, 130, 246, 0.3);
-      overflow: hidden;
-      padding: 4px;
-    }
-
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      border-radius: 20px;
-      background: #ffffff;
-      /* Outset shadow to make the moving bar pop out */
-      box-shadow:
-        4px 0px 8px rgba(17, 34, 100, 0.3),
-        inset 2px 2px 4px rgba(255, 255, 255, 1),
-        inset -2px -2px 4px rgba(226, 232, 240, 1);
-      transition: width 0.4s ease;
-    }
-
-    /* ── Rotating tips ── */
-    .tips-wrap {
-      margin-top: 24px;
-      min-height: 46px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .tip {
-      font-size: 0.85rem;
-      color: #dbeafe;
-      font-weight: 600;
-      line-height: 1.5;
-      animation: tipFade 0.5s ease;
-    }
-
-    @keyframes tipFade {
-      from {
-        opacity: 0;
-        transform: translateY(6px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Hide once Flutter loads */
     #loading-indicator.hidden {
-      animation: fadeOut 0.5s ease forwards;
+      opacity: 0;
+      pointer-events: none;
     }
 
-    @keyframes fadeOut {
+    .loader-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .logo-img {
+      width: 84px;
+      height: 84px;
+      object-fit: contain;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
+    }
+
+    .brand-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .brand-sub {
+      font-size: 14px;
+      color: #93c5fd;
+      margin-bottom: 28px;
+    }
+
+    .spinner {
+      width: 42px;
+      height: 42px;
+      border: 4px solid rgba(255, 255, 255, 0.15);
+      border-left-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
       to {
-        opacity: 0;
-        transform: scale(1.05);
-        pointer-events: none;
+        transform: rotate(360deg);
       }
     }
   </style>
@@ -195,78 +100,36 @@
 
 <body>
   <div id="loading-indicator">
-    <div class="card">
-      <div class="logo-container">
-        <!-- Exact white logo, enlarged and sharp -->
-        <img src="vdn_logo.png" alt="VDN Logo">
-      </div>
-
-      <div class="brand">Vivid Digital Nexus</div>
-      <div class="tagline">Inventory &amp; POS Management System</div>
-
-      <div class="progress-wrap">
-        <div class="progress-bar" id="progress-bar"></div>
-      </div>
-
-      <div class="tips-wrap">
-        <div class="tip" id="tip-text">Loading your robust system...</div>
-      </div>
+    <div class="loader-card">
+      <img src="vdn_logo.png" alt="VDN Logo" class="logo-img">
+      <div class="brand-title">Vivid Digital Nexus</div>
+      <div class="brand-sub">Inventory &amp; POS Management System</div>
+      <div class="spinner"></div>
     </div>
   </div>
 
   <script>
-    // ── Progress bar simulation ───────────────────────────────
-    const bar = document.getElementById('progress-bar');
-    let prog = 0;
-    const ticks = [
-      { target: 20, delay: 200 },
-      { target: 45, delay: 600 },
-      { target: 70, delay: 1200 },
-      { target: 85, delay: 2000 },
-      { target: 95, delay: 3500 },
-    ];
-    ticks.forEach(({ target, delay }) => {
-      setTimeout(() => { bar.style.width = target + '%'; }, delay);
-    });
-
-    // ── Rotating tips ─────────────────────────────────────────
-    const tips = [
-      '📦 Setting up your inventory workspace...',
-      '🧾 Preparing the high-speed POS system...',
-      '📊 Establishing secure connections...',
-      '🔄 Synchronizing cloud data...',
-      '🏪 Built specifically for premium retail experiences.',
-    ];
-    let tipIdx = 0;
-    const tipEl = document.getElementById('tip-text');
-    setInterval(() => {
-      tipIdx = (tipIdx + 1) % tips.length;
-      tipEl.style.animation = 'none';
-      void tipEl.offsetWidth; // reflow
-      tipEl.style.animation = '';
-      tipEl.textContent = tips[tipIdx];
-    }, 2500);
-
-    // ── Hide once Flutter view is ready ───────────────────────
-    function hideLoader() {
-      const bar = document.getElementById('progress-bar');
-      if (bar) bar.style.width = '100%';
-      setTimeout(() => {
-        const loader = document.getElementById('loading-indicator');
-        if (loader) {
-          loader.classList.add('hidden');
-          setTimeout(() => loader.remove(), 500);
-        }
-      }, 300);
+    function removeLoader() {
+      const loader = document.getElementById('loading-indicator');
+      if (loader) {
+        loader.classList.add('hidden');
+        setTimeout(function() {
+          if (loader.parentNode) {
+            loader.parentNode.removeChild(loader);
+          }
+        }, 500);
+      }
     }
 
-    const observer = new MutationObserver((mutations, obs) => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (node.tagName) {
-            const tag = node.tagName.toLowerCase();
+    // Hide loader once Flutter mounts or on window load with fallback
+    const observer = new MutationObserver(function(mutations, obs) {
+      for (let i = 0; i < mutations.length; i++) {
+        const added = mutations[i].addedNodes;
+        for (let j = 0; j < added.length; j++) {
+          if (added[j].tagName) {
+            const tag = added[j].tagName.toLowerCase();
             if (tag === 'flutter-view' || tag === 'flt-glass-pane' || tag === 'flt-scene-host' || tag === 'canvas') {
-              hideLoader();
+              removeLoader();
               obs.disconnect();
               return;
             }
@@ -274,9 +137,12 @@
         }
       }
     });
+
     observer.observe(document.body, { childList: true, subtree: true });
-    // Safety fallback: Hide loader after max 5s regardless
-    setTimeout(hideLoader, 5000);
+    window.addEventListener('load', function() {
+      setTimeout(removeLoader, 2000);
+    });
+    setTimeout(removeLoader, 4000);
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
