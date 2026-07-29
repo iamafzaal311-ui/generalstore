@@ -139,10 +139,6 @@
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
-    window.addEventListener('load', function() {
-      setTimeout(removeLoader, 2000);
-    });
-    setTimeout(removeLoader, 4000);
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
