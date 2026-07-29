@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/customer_model.dart';
+import '../../../core/providers/global_providers.dart';
 import '../viewmodels/pos_controller.dart';
 import '../../products/viewmodels/inventory_controller.dart';
 
@@ -476,12 +477,31 @@ class _POSViewState extends ConsumerState<POSView> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Cart Items (${posState.cart.length})',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Cart Items (${posState.cart.length})',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              Icon(Icons.person_outline_rounded, size: 14, color: theme.colorScheme.primary),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Cashier: ${ref.watch(currentUserProvider)?.fullName.isNotEmpty == true ? ref.watch(currentUserProvider)!.fullName : (ref.watch(currentUserProvider)?.username ?? 'Cashier')}',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                       Row(
                         children: [

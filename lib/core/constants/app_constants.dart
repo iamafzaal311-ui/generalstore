@@ -9,7 +9,7 @@ library app_constants;
 // APPLICATION METADATA & BRANDING
 // ============================================================================
 
-const String appName = 'HASNAIN TRADERS';
+const String appName = 'VDN POS';
 
 /// Application version
 const String appVersion = '1.0.0';
@@ -21,12 +21,12 @@ const AppEnvironment appEnvironment = AppEnvironment.production;
 
 /// Store Branding
 abstract class StoreDetails {
-  static const String name = 'حسنین ٹریڈرز';
-  static const String nameEnglish = 'HASNAIN TRADERS';
-  static const String proprietor = 'علی عباس';
-  static const String proprietorEnglish = 'Ali Abbas';
-  static const String contact = '0307-4217267';
-  static const String address = 'غوثیہ مارکیٹ سکندر چوک پاک پتن';
+  static const String name = 'VDN POS';
+  static const String nameEnglish = 'VDN POS';
+  static const String proprietor = '';
+  static const String proprietorEnglish = '';
+  static const String contact = '';
+  static const String address = '';
 }
 
 // ============================================================================
@@ -55,7 +55,7 @@ abstract class FirestoreCollections {
 // ============================================================================
 
 abstract class AppConstants {
-  static const String appName = 'HASNAIN TRADERS';
+  static const String appName = 'VDN POS';
   static const String appNameOld = 'Al-Makkah General Store';
   static const String appVersionOld = '1.0.0';
   static const String themeKey = 'app_theme_mode';

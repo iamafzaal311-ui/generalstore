@@ -1,11 +1,11 @@
 {
-    "name": "Hussnain Traders POS",
-    "short_name": "Hussnain POS",
+    "name": "VDN POS",
+    "short_name": "VDN POS",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "Inventory & POS System for Hussnain Traders",
+    "description": "VDN POS - Inventory & POS Management System",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

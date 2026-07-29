@@ -26,8 +26,7 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       ..isActive = fields[6] as bool
       ..isDirty = fields[7] as bool
       ..lastUpdated = fields[8] as DateTime
-      // Field 9 may not exist in older records — default to ''
-      ..deactivationReason = (fields[9] as String?) ?? '';
+      ..deactivationReason = fields[9] as String;
   }
 
   @override

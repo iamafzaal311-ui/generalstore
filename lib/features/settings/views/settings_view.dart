@@ -22,6 +22,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       body: ListView(
         padding: const EdgeInsets.all(24.0),
         children: [
+          _buildUserProfileSection(context, theme),
           _buildStoreProfileSection(context, theme),
           const SizedBox(height: 32),
           Text(
@@ -160,6 +161,87 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error wiping data: $e'), backgroundColor: Colors.red),
         );
+      }
+    }
+  }
+
+  Widget _buildUserProfileSection(BuildContext context, ThemeData theme) {
+    final currentUser = ref.watch(currentUserProvider);
+    if (currentUser == null) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'User Profile & Account',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Column(
+            children: [
+              ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.person_rounded)),
+                title: const Text('Full Name / Display Name'),
+                subtitle: Text(currentUser.fullName.isNotEmpty ? currentUser.fullName : 'Not set'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => _editUserProfileName(context, currentUser.fullName),
+                ),
+              ),
+              const Divider(),
+              ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.account_circle_rounded)),
+                title: const Text('Username'),
+                subtitle: Text(currentUser.username),
+              ),
+              const Divider(),
+              ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.badge_rounded)),
+                title: const Text('Role'),
+                subtitle: Text(currentUser.role),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 32),
+      ],
+    );
+  }
+
+  Future<void> _editUserProfileName(BuildContext context, String currentName) async {
+    final ctrl = TextEditingController(text: currentName);
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Full Name'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(
+            labelText: 'Full Name',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
+        ],
+      ),
+    );
+
+    if (result == true && ctrl.text.trim().isNotEmpty && ctrl.text.trim() != currentName) {
+      final currentUser = ref.read(currentUserProvider);
+      if (currentUser != null) {
+        await ref.read(authControllerProvider.notifier).updateUser(currentUser.userId, {
+          'fullName': ctrl.text.trim(),
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Name updated successfully!')),
+          );
+        }
       }
     }
   }

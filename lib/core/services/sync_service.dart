@@ -326,152 +326,184 @@ class SyncService {
       final catsSnapshot = await storeRef.collection('categories').get();
       for (final doc in catsSnapshot.docs) {
         final data = doc.data();
-        final cat = CategoryModel()
-          ..categoryId = data['categoryId']
-          ..name = data['name']
-          ..description = data['description']
-          ..isDirty = false
-          ..lastUpdated = DateTime.parse(data['lastUpdated'])
-          ..isDeleted = data['isDeleted'] ?? false;
-        await _db.categoriesBox.put(cat.categoryId, cat);
+        if (data['isDeleted'] == true) {
+          await _db.categoriesBox.delete(data['categoryId']);
+        } else {
+          final cat = CategoryModel()
+            ..categoryId = data['categoryId']
+            ..name = data['name']
+            ..description = data['description']
+            ..isDirty = false
+            ..lastUpdated = DateTime.parse(data['lastUpdated'])
+            ..isDeleted = false;
+          await _db.categoriesBox.put(cat.categoryId, cat);
+        }
       }
 
       // 3. Restore Brands
       final brandsSnapshot = await storeRef.collection('brands').get();
       for (final doc in brandsSnapshot.docs) {
         final data = doc.data();
-        final brand = BrandModel()
-          ..brandId = data['brandId']
-          ..name = data['name']
-          ..description = data['description']
-          ..isDirty = false
-          ..lastUpdated = DateTime.parse(data['lastUpdated'])
-          ..isDeleted = data['isDeleted'] ?? false;
-        await _db.brandsBox.put(brand.brandId, brand);
+        if (data['isDeleted'] == true) {
+          await _db.brandsBox.delete(data['brandId']);
+        } else {
+          final brand = BrandModel()
+            ..brandId = data['brandId']
+            ..name = data['name']
+            ..description = data['description']
+            ..isDirty = false
+            ..lastUpdated = DateTime.parse(data['lastUpdated'])
+            ..isDeleted = false;
+          await _db.brandsBox.put(brand.brandId, brand);
+        }
       }
 
       // 4. Restore Suppliers
       final supsSnapshot = await storeRef.collection('suppliers').get();
       for (final doc in supsSnapshot.docs) {
         final data = doc.data();
-        final sup = SupplierModel()
-          ..supplierId = data['supplierId']
-          ..name = data['name']
-          ..contactName = data['contactName']
-          ..phone = data['phone']
-          ..email = data['email']
-          ..address = data['address']
-          ..balance = (data['balance'] as num).toDouble()
-          ..isDirty = false
-          ..lastUpdated = DateTime.parse(data['lastUpdated'])
-          ..isDeleted = data['isDeleted'] ?? false;
-        await _db.suppliersBox.put(sup.supplierId, sup);
+        if (data['isDeleted'] == true) {
+          await _db.suppliersBox.delete(data['supplierId']);
+        } else {
+          final sup = SupplierModel()
+            ..supplierId = data['supplierId']
+            ..name = data['name']
+            ..contactName = data['contactName']
+            ..phone = data['phone']
+            ..email = data['email']
+            ..address = data['address']
+            ..balance = (data['balance'] as num).toDouble()
+            ..isDirty = false
+            ..lastUpdated = DateTime.parse(data['lastUpdated'])
+            ..isDeleted = false;
+          await _db.suppliersBox.put(sup.supplierId, sup);
+        }
       }
 
       // 5. Restore Customers
       final custsSnapshot = await storeRef.collection('customers').get();
       for (final doc in custsSnapshot.docs) {
         final data = doc.data();
-        final cust = CustomerModel()
-          ..customerId = data['customerId']
-          ..name = data['name']
-          ..phone = data['phone']
-          ..email = data['email']
-          ..address = data['address']
-          ..balance = (data['balance'] as num).toDouble()
-          ..isDirty = false
-          ..lastUpdated = DateTime.parse(data['lastUpdated'])
-          ..isDeleted = data['isDeleted'] ?? false;
-        await _db.customersBox.put(cust.customerId, cust);
+        if (data['isDeleted'] == true) {
+          await _db.customersBox.delete(data['customerId']);
+        } else {
+          final cust = CustomerModel()
+            ..customerId = data['customerId']
+            ..name = data['name']
+            ..phone = data['phone']
+            ..email = data['email']
+            ..address = data['address']
+            ..balance = (data['balance'] as num).toDouble()
+            ..isDirty = false
+            ..lastUpdated = DateTime.parse(data['lastUpdated'])
+            ..isDeleted = false;
+          await _db.customersBox.put(cust.customerId, cust);
+        }
       }
 
       // 6. Restore Products
       final prodsSnapshot = await storeRef.collection('products').get();
       for (final doc in prodsSnapshot.docs) {
         final data = doc.data();
-        final prod = ProductModel()
-          ..productId = data['productId']
-          ..name = data['name']
-          ..sku = data['sku']
-          ..barcode = data['barcode']
-          ..categoryId = data['categoryId']
-          ..brandId = data['brandId']
-          ..supplierId = data['supplierId']
-          ..purchasePrice = (data['purchasePrice'] as num).toDouble()
-          ..wholesalePrice = (data['wholesalePrice'] as num).toDouble()
-          ..retailPrice = (data['retailPrice'] as num).toDouble()
-          ..minimumPrice = (data['minimumPrice'] as num).toDouble()
-          ..stock = (data['stock'] as num).toDouble()
-          ..unit = data['unit']
-          ..openingStock = (data['openingStock'] as num).toDouble()
-          ..minimumStock = (data['minimumStock'] as num).toDouble()
-          ..maximumStock = (data['maximumStock'] as num).toDouble()
-          ..expiryDate = data['expiryDate'] != null
-              ? DateTime.parse(data['expiryDate'])
-              : null
-          ..description = data['description']
-          ..isDirty = false
-          ..lastUpdated = DateTime.parse(data['lastUpdated'])
-          ..isDeleted = data['isDeleted'] ?? false;
-        await _db.productsBox.put(prod.productId, prod);
+        if (data['isDeleted'] == true) {
+          await _db.productsBox.delete(data['productId']);
+        } else {
+          final prod = ProductModel()
+            ..productId = data['productId']
+            ..name = data['name']
+            ..sku = data['sku']
+            ..barcode = data['barcode']
+            ..categoryId = data['categoryId']
+            ..brandId = data['brandId']
+            ..supplierId = data['supplierId']
+            ..purchasePrice = (data['purchasePrice'] as num).toDouble()
+            ..wholesalePrice = (data['wholesalePrice'] as num).toDouble()
+            ..retailPrice = (data['retailPrice'] as num).toDouble()
+            ..minimumPrice = (data['minimumPrice'] as num).toDouble()
+            ..stock = (data['stock'] as num).toDouble()
+            ..unit = data['unit']
+            ..openingStock = (data['openingStock'] as num).toDouble()
+            ..minimumStock = (data['minimumStock'] as num).toDouble()
+            ..maximumStock = (data['maximumStock'] as num).toDouble()
+            ..expiryDate = data['expiryDate'] != null
+                ? DateTime.parse(data['expiryDate'])
+                : null
+            ..description = data['description']
+            ..isDirty = false
+            ..lastUpdated = DateTime.parse(data['lastUpdated'])
+            ..isDeleted = false;
+          await _db.productsBox.put(prod.productId, prod);
+        }
       }
 
       // 7. Restore Sales
       final salesSnapshot = await storeRef.collection('sales').get();
       for (final doc in salesSnapshot.docs) {
         final data = doc.data();
-        final sale = SaleModel()
-          ..saleId = data['saleId']
-          ..invoiceNumber = data['invoiceNumber']
-          ..cashierId = data['cashierId']
-          ..customerId = data['customerId']
-          ..subtotal = (data['subtotal'] as num).toDouble()
-          ..discount = (data['discount'] as num).toDouble()
-          ..total = (data['total'] as num).toDouble()
-          ..paidAmount = (data['paidAmount'] as num).toDouble()
-          ..changeAmount = (data['changeAmount'] as num).toDouble()
-          ..paymentMethod = data['paymentMethod']
-          ..timestamp = DateTime.parse(data['timestamp'])
-          ..itemsJson = data['itemsJson']
-          ..isDirty = false
-          ..lastUpdated = DateTime.parse(data['lastUpdated'])
-          ..isDeleted = data['isDeleted'] ?? false;
-        await _db.salesBox.put(sale.saleId, sale);
+        if (data['isDeleted'] == true) {
+          await _db.salesBox.delete(data['saleId']);
+        } else {
+          final sale = SaleModel()
+            ..saleId = data['saleId']
+            ..invoiceNumber = data['invoiceNumber']
+            ..cashierId = data['cashierId']
+            ..customerId = data['customerId']
+            ..subtotal = (data['subtotal'] as num).toDouble()
+            ..discount = (data['discount'] as num).toDouble()
+            ..total = (data['total'] as num).toDouble()
+            ..paidAmount = (data['paidAmount'] as num).toDouble()
+            ..changeAmount = (data['changeAmount'] as num).toDouble()
+            ..paymentMethod = data['paymentMethod']
+            ..timestamp = DateTime.parse(data['timestamp'])
+            ..itemsJson = data['itemsJson']
+            ..isDirty = false
+            ..lastUpdated = DateTime.parse(data['lastUpdated'])
+            ..isDeleted = false;
+          await _db.salesBox.put(sale.saleId, sale);
+        }
       }
 
       // 8. Restore Purchases
       final purchasesSnapshot = await storeRef.collection('purchases').get();
       for (final doc in purchasesSnapshot.docs) {
         final data = doc.data();
-        final purchase = PurchaseModel()
-          ..purchaseId = data['purchaseId']
-          ..invoiceNumber = data['invoiceNumber']
-          ..supplierId = data['supplierId']
-          ..totalAmount = (data['totalAmount'] as num).toDouble()
-          ..paidAmount = (data['paidAmount'] as num).toDouble()
-          ..timestamp = DateTime.parse(data['timestamp'])
-          ..itemsJson = data['itemsJson']
-          ..isDirty = false
-          ..lastUpdated = DateTime.parse(data['lastUpdated'])
-          ..isDeleted = data['isDeleted'] ?? false;
-        await _db.purchasesBox.put(purchase.purchaseId, purchase);
+        if (data['isDeleted'] == true) {
+          await _db.purchasesBox.delete(data['purchaseId']);
+        } else {
+          final purchase = PurchaseModel()
+            ..purchaseId = data['purchaseId']
+            ..invoiceNumber = data['invoiceNumber']
+            ..supplierId = data['supplierId']
+            ..totalAmount = (data['totalAmount'] as num).toDouble()
+            ..paidAmount = (data['paidAmount'] as num).toDouble()
+            ..timestamp = DateTime.parse(data['timestamp'])
+            ..itemsJson = data['itemsJson']
+            ..isDirty = false
+            ..lastUpdated = DateTime.parse(data['lastUpdated'])
+            ..isDeleted = false;
+          await _db.purchasesBox.put(purchase.purchaseId, purchase);
+        }
       }
 
       // 9. Restore Expenses
       final expensesSnapshot = await storeRef.collection('expenses').get();
       for (final doc in expensesSnapshot.docs) {
         final data = doc.data();
-        final expense = ExpenseModel()
-          ..expenseId = data['expenseId']
-          ..title = data['title']
-          ..category = data['category']
-          ..amount = (data['amount'] as num).toDouble()
-          ..description = data['description']
-          ..timestamp = DateTime.parse(data['timestamp'])
-          ..isDirty = false
-          ..lastUpdated = DateTime.parse(data['lastUpdated'])
-          ..isDeleted = data['isDeleted'] ?? false;
-        await _db.expensesBox.put(expense.expenseId, expense);
+        if (data['isDeleted'] == true) {
+          await _db.expensesBox.delete(data['expenseId']);
+        } else {
+          final expense = ExpenseModel()
+            ..expenseId = data['expenseId']
+            ..title = data['title']
+            ..category = data['category']
+            ..amount = (data['amount'] as num).toDouble()
+            ..description = data['description']
+            ..timestamp = DateTime.parse(data['timestamp'])
+            ..isDirty = false
+            ..lastUpdated = DateTime.parse(data['lastUpdated'])
+            ..isDeleted = false;
+          await _db.expensesBox.put(expense.expenseId, expense);
+        }
       }
     } catch (_) {}
   }

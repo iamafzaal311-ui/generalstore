@@ -201,6 +201,116 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
     );
   }
 
+  void _showEditUserDialog(user) {
+    final theme = Theme.of(context);
+    final formKey = GlobalKey<FormState>();
+    final fullNameCtrl = TextEditingController(text: user.fullName);
+    final usernameCtrl = TextEditingController(text: user.username);
+    String selectedRole = ['Staff', 'Cashier', 'Stock Manager', 'Admin'].contains(user.role)
+        ? user.role
+        : 'Staff';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Text('Edit User: ${user.fullName}'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: fullNameCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Full Name',
+                        ),
+                        validator: (val) => val == null || val.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: usernameCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Username',
+                        ),
+                        validator: (val) => val == null || val.trim().isEmpty
+                            ? 'Required'
+                            : null,
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        value: selectedRole,
+                        decoration: const InputDecoration(labelText: 'Role'),
+                        items: ['Staff', 'Cashier', 'Stock Manager', 'Admin']
+                            .map(
+                              (role) => DropdownMenuItem(
+                                value: role,
+                                child: Text(role),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setStateDialog(() => selectedRole = val);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      try {
+                        await ref
+                            .read(authControllerProvider.notifier)
+                            .updateUser(user.userId, {
+                          'fullName': fullNameCtrl.text.trim(),
+                          'username': usernameCtrl.text.trim(),
+                          'role': selectedRole,
+                        });
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('User updated successfully'),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: ${e.toString()}')),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: const Text('Save Changes'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   /// Shows a reason picker when deactivating a user.
   Future<String?> _showDeactivationReasonDialog() async {
     const reasons = [
@@ -451,6 +561,11 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit_rounded, size: 20),
+                                  onPressed: () => _showEditUserDialog(user),
+                                  tooltip: 'Edit User',
+                                ),
                                 IconButton(
                                   icon: const Icon(Icons.key_rounded, size: 20),
                                   onPressed: () => _showResetPasswordDialog(

@@ -36,11 +36,14 @@ class AuthRepositoryImpl implements AuthRepository {
         try {
           final fbUser = FirebaseAuth.instance.currentUser;
           if (fbUser != null && lastUserId == fbUser.uid) {
+            final localUser = _db.usersBox.get(lastUserId);
             _currentUser = UserModel()
               ..userId = fbUser.uid
-              ..username = fbUser.email ?? 'Admin'
-              ..fullName = 'Ali Abbas'
-              ..role = 'Admin'
+              ..username = localUser?.username ?? fbUser.email ?? 'Admin'
+              ..fullName = (localUser?.fullName != null && localUser!.fullName.trim().isNotEmpty)
+                  ? localUser.fullName.trim()
+                  : (fbUser.displayName ?? fbUser.email?.split('@').first ?? 'Admin')
+              ..role = localUser?.role ?? 'Admin'
               ..isActive = true
               ..isDirty = false
               ..lastUpdated = DateTime.now();
@@ -60,12 +63,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<UserModel?> adminLogin(String email, String password) async {
     await initialize();
 
-    String? oldUid;
-    if (Firebase.apps.isNotEmpty) {
-      try {
-        oldUid = FirebaseAuth.instance.currentUser?.uid;
-      } catch (_) {}
-    }
+
 
     try {
       await _remote.adminLogin(email, password);
@@ -90,10 +88,23 @@ class AuthRepositoryImpl implements AuthRepository {
       } catch (_) {}
     }
 
-    if (oldUid != null && newUid != null && oldUid != newUid) {
-      await _db.cleanDb(); // Wipe local DB if a DIFFERENT store admin logs in
+    final targetStoreUid = newUid ?? email.trim().toLowerCase();
+    final lastActiveStoreUid = _db.settingsBox.get('last_active_store_uid');
+
+    if (lastActiveStoreUid != null && lastActiveStoreUid.isNotEmpty && lastActiveStoreUid != targetStoreUid) {
+      // A DIFFERENT store admin is logging in!
+      // 1. Sync any un-synced local changes for the previous store to cloud so NO DATA IS LOST!
+      try {
+        await _sync.syncDirtyRecords();
+      } catch (_) {}
+      // 2. Clear local Hive boxes so previous store's data is isolated and removed locally
+      await _db.cleanDb();
     }
 
+    await _db.settingsBox.put('last_active_store_uid', targetStoreUid);
+
+    // Sync & restore data for the active store
+    await _sync.syncDirtyRecords();
     await _sync.restoreAllFromCloud();
 
     String storeName = 'Store Owner';
@@ -171,6 +182,9 @@ class AuthRepositoryImpl implements AuthRepository {
       user.isDirty = true;
       user.lastUpdated = DateTime.now();
       await user.save();
+      if (_currentUser != null && _currentUser!.userId == uid) {
+        _currentUser = user;
+      }
     }
   }
 

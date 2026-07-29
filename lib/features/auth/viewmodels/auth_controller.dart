@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -83,6 +84,15 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   Future<void> _init() async {
+    final db = _ref.read(localDbServiceProvider);
+    final cachedProfileStr = db.settingsBox.get('cached_store_profile');
+    if (cachedProfileStr != null && cachedProfileStr.isNotEmpty) {
+      try {
+        final map = jsonDecode(cachedProfileStr) as Map<String, dynamic>;
+        _ref.read(storeProfileProvider.notifier).state = StoreProfileModel.fromMap(map);
+      } catch (_) {}
+    }
+
     final user = await _repository.getCurrentUser();
     if (user != null) {
       _ref.read(currentUserProvider.notifier).state = user;
@@ -98,8 +108,11 @@ class AuthController extends StateNotifier<AuthState> {
                 .doc('info')
                 .get()
                 .timeout(const Duration(seconds: 8));
-            _ref.read(storeProfileProvider.notifier).state =
-                StoreProfileModel.fromFirestore(doc);
+            if (doc.exists && doc.data() != null) {
+              final profile = StoreProfileModel.fromFirestore(doc);
+              _ref.read(storeProfileProvider.notifier).state = profile;
+              await db.settingsBox.put('cached_store_profile', jsonEncode(profile.toMap()));
+            }
           }
         } catch (_) {}
       }
@@ -140,19 +153,23 @@ class AuthController extends StateNotifier<AuthState> {
       } catch (_) {}
     }
 
-    // 2. Listen to local User deactivation (Hive)
+    // 2. Listen to local User updates and deactivation (Hive)
     final db = _ref.read(localDbServiceProvider);
     _userSubscription = db.usersBox.watch(key: currentUser.userId).listen((event) async {
       final user = db.usersBox.get(currentUser.userId);
-      if (user != null && !user.isActive) {
-        state = state.copyWith(
-          isDeactivated: true,
-          deactivationTarget: 'user',
-          deactivationReason: user.deactivationReason.isNotEmpty
-              ? user.deactivationReason
-              : 'Your account has been deactivated.',
-        );
-        await logout();
+      if (user != null) {
+        if (!user.isActive) {
+          state = state.copyWith(
+            isDeactivated: true,
+            deactivationTarget: 'user',
+            deactivationReason: user.deactivationReason.isNotEmpty
+                ? user.deactivationReason
+                : 'Your account has been deactivated.',
+          );
+          await logout();
+        } else {
+          _ref.read(currentUserProvider.notifier).state = user;
+        }
       }
     });
   }
@@ -494,31 +511,39 @@ class AuthController extends StateNotifier<AuthState> {
 
   /// Update current store profile
   Future<bool> updateCurrentStoreProfile(Map<String, dynamic> data) async {
-    final adminUid = FirebaseAuth.instance.currentUser?.uid;
-    if (adminUid == null) return false;
-    final success = await updateStore(adminUid, data);
-    if (success) {
-      final currentProfile = _ref.read(storeProfileProvider);
-      if (currentProfile != null) {
-        final updatedProfile = StoreProfileModel.fromMap({
-          ...currentProfile.toMap(),
-          ...data,
-        });
-        _ref.read(storeProfileProvider.notifier).state = updatedProfile;
-      }
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        final adminUid = FirebaseAuth.instance.currentUser?.uid;
+        if (adminUid != null) {
+          await updateStore(adminUid, data);
+        }
+      } catch (_) {}
     }
-    return success;
+    final currentProfile = _ref.read(storeProfileProvider) ?? StoreProfileModel(storeName: '');
+    final updatedProfile = StoreProfileModel.fromMap({
+      ...currentProfile.toMap(),
+      ...data,
+    });
+    _ref.read(storeProfileProvider.notifier).state = updatedProfile;
+
+    try {
+      final db = _ref.read(localDbServiceProvider);
+      await db.settingsBox.put('cached_store_profile', jsonEncode(updatedProfile.toMap()));
+    } catch (_) {}
+
+    return true;
   }
 
   /// Delete a specific user within a store
   Future<bool> deleteStoreUser(String storeUid, String userUid) async {
-    if (Firebase.apps.isEmpty) return false;
     try {
-      if (storeUid == 'local') {
-        await _repository.deleteUser(userUid);
-      } else {
-        await FirebaseFirestore.instance.collection('stores').doc(storeUid).collection('users').doc(userUid).delete();
+      if (Firebase.apps.isNotEmpty && storeUid != 'local') {
+        try {
+          await FirebaseFirestore.instance.collection('stores').doc(storeUid).collection('users').doc(userUid).delete();
+        } catch (_) {}
       }
+      await _repository.deleteUser(userUid);
+      await loadUsers();
       return true;
     } catch (e) {
       print('DEBUG deleteStoreUser Error: $e');
@@ -528,18 +553,39 @@ class AuthController extends StateNotifier<AuthState> {
 
   /// Update a specific user within a store
   Future<bool> updateStoreUser(String storeUid, String userUid, Map<String, dynamic> data) async {
-    if (Firebase.apps.isEmpty) return false;
     try {
-      if (storeUid == 'local') {
-        await _repository.updateUser(userUid, data);
-      } else {
-        await FirebaseFirestore.instance.collection('stores').doc(storeUid).collection('users').doc(userUid).update(data);
+      if (Firebase.apps.isNotEmpty && storeUid != 'local') {
+        try {
+          await FirebaseFirestore.instance.collection('stores').doc(storeUid).collection('users').doc(userUid).update(data);
+        } catch (_) {}
       }
+      await _repository.updateUser(userUid, data);
+
+      final currentUser = _ref.read(currentUserProvider);
+      if (currentUser != null && currentUser.userId == userUid) {
+        final db = _ref.read(localDbServiceProvider);
+        final freshUser = db.usersBox.get(userUid);
+        if (freshUser != null) {
+          _ref.read(currentUserProvider.notifier).state = freshUser;
+        }
+      }
+      await loadUsers();
       return true;
     } catch (e) {
       print('DEBUG updateStoreUser Error: $e');
       return false;
     }
+  }
+
+  /// Helper to update a user (auto-detects storeUid or local)
+  Future<bool> updateUser(String userUid, Map<String, dynamic> data) async {
+    String storeUid = 'local';
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        storeUid = FirebaseAuth.instance.currentUser?.uid ?? 'local';
+      } catch (_) {}
+    }
+    return await updateStoreUser(storeUid, userUid, data);
   }
 
 
