@@ -43,16 +43,10 @@ final goRouter = GoRouter(
     // On browser refresh / app restart, force initial navigation to land clean on Dashboard ('/')
     if (_isFirstLaunch && isLoggedIn) {
       _isFirstLaunch = false;
-      final role = db.usersBox.get(lastUserId)?.role ?? 'Admin';
-      if (role == 'Cashier') return '/pos';
-      if (role == 'Stock Manager') return '/products';
       return '/';
     }
 
     if (isLoggedIn && isAuthRoute) {
-      final role = db.usersBox.get(lastUserId)?.role ?? 'Admin';
-      if (role == 'Cashier') return '/pos';
-      if (role == 'Stock Manager') return '/products';
       return '/';
     }
 

@@ -47,35 +47,13 @@ class MainLayout extends ConsumerWidget {
       }
     }
 
-    final role = currentUser?.role ?? 'Cashier';
-    
-    // Direct role-based path protection
-    if (role == 'Cashier') {
-      if (currentRoute != '/pos') {
-        final router = GoRouter.of(context);
-        Future.microtask(() => router.go('/pos'));
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
-      }
-    } else if (role == 'Stock Manager') {
-      if (currentRoute != '/products' && currentRoute != '/purchases') {
-        final router = GoRouter.of(context);
-        Future.microtask(() => router.go('/products'));
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
-      }
-    } else if (role == 'Staff') {
-      final allowed = ['/', '/pos', '/sales', '/products', '/purchases'];
-      if (!allowed.contains(currentRoute)) {
-        final router = GoRouter.of(context);
-        Future.microtask(() => router.go('/pos'));
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
-      }
-    }
+    final role = currentUser?.role ?? 'Admin';
 
     final storeTitle = ref.watch(storeProfileProvider)?.storeName.isNotEmpty == true
         ? ref.watch(storeProfileProvider)!.storeName
         : 'VDN POS';
 
-    final isDashboard = currentRoute == '/' || (role == 'Cashier' && currentRoute == '/pos');
+    final isDashboard = currentRoute == '/';
 
     return Title(
       title: storeTitle,
