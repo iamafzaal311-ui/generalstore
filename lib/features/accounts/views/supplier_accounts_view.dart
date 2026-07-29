@@ -15,6 +15,7 @@ class SupplierAccountsView extends ConsumerStatefulWidget {
 class _SupplierAccountsViewState extends ConsumerState<SupplierAccountsView> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  SupplierModel? _selectedSupplier;
 
   @override
   void initState() {
@@ -88,16 +89,20 @@ class _SupplierAccountsViewState extends ConsumerState<SupplierAccountsView> {
   }
 
   void _showSupplierDetails(SupplierModel supplier) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LedgerDetailView(supplier: supplier),
-      ),
-    );
+    setState(() {
+      _selectedSupplier = supplier;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedSupplier != null) {
+      return LedgerDetailView(
+        supplier: _selectedSupplier,
+        onBack: () => setState(() => _selectedSupplier = null),
+      );
+    }
+
     final state = ref.watch(accountsControllerProvider);
 
     return Scaffold(

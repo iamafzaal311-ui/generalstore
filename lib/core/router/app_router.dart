@@ -15,6 +15,7 @@ import '../../features/accounts/views/expense_view.dart';
 import '../../features/reports/views/reports_view.dart';
 import '../../features/sales/views/sales_view.dart';
 import '../../features/settings/views/settings_view.dart';
+import '../../data/datasources/local_db_service.dart';
 import '../widgets/main_layout.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
@@ -24,9 +25,39 @@ final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'shell',
 );
 
+bool _isFirstLaunch = true;
+
 final goRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/login',
+  initialLocation: '/',
+  redirect: (context, state) {
+    final db = LocalDbService();
+    final lastUserId = db.settingsBox.get('last_logged_in_user_id');
+    final isLoggedIn = lastUserId != null && db.usersBox.get(lastUserId) != null;
+    final isAuthRoute = state.uri.path == '/login' || state.uri.path == '/register-store';
+
+    if (!isLoggedIn) {
+      return isAuthRoute ? null : '/login';
+    }
+
+    // On browser refresh / app restart, force initial navigation to land clean on Dashboard ('/')
+    if (_isFirstLaunch && isLoggedIn) {
+      _isFirstLaunch = false;
+      final role = db.usersBox.get(lastUserId)?.role ?? 'Admin';
+      if (role == 'Cashier') return '/pos';
+      if (role == 'Stock Manager') return '/products';
+      return '/';
+    }
+
+    if (isLoggedIn && isAuthRoute) {
+      final role = db.usersBox.get(lastUserId)?.role ?? 'Admin';
+      if (role == 'Cashier') return '/pos';
+      if (role == 'Stock Manager') return '/products';
+      return '/';
+    }
+
+    return null;
+  },
   routes: [
     GoRoute(path: '/login', builder: (context, state) => const LoginView()),
     GoRoute(

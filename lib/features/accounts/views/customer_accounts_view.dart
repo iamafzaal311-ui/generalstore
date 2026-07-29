@@ -15,6 +15,7 @@ class CustomerAccountsView extends ConsumerStatefulWidget {
 class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  CustomerModel? _selectedCustomer;
 
   @override
   void initState() {
@@ -88,16 +89,20 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
   }
 
   void _showCustomerDetails(CustomerModel customer) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LedgerDetailView(customer: customer),
-      ),
-    );
+    setState(() {
+      _selectedCustomer = customer;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedCustomer != null) {
+      return LedgerDetailView(
+        customer: _selectedCustomer,
+        onBack: () => setState(() => _selectedCustomer = null),
+      );
+    }
+
     final state = ref.watch(accountsControllerProvider);
 
     return Scaffold(

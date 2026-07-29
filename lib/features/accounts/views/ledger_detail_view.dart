@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -38,8 +39,9 @@ class LedgerEntry {
 class LedgerDetailView extends ConsumerWidget {
   final CustomerModel? customer;
   final SupplierModel? supplier;
+  final VoidCallback? onBack;
 
-  const LedgerDetailView({super.key, this.customer, this.supplier})
+  const LedgerDetailView({super.key, this.customer, this.supplier, this.onBack})
     : assert(customer != null || supplier != null);
 
   @override
@@ -124,10 +126,35 @@ class LedgerDetailView extends ConsumerWidget {
 
     final scaffold = Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back to List',
+          onPressed: () {
+            if (onBack != null) {
+              onBack!();
+            } else if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              GoRouter.of(context).go('/');
+            }
+          },
+        ),
         title: Text('$personName - ${!isCustomer ? "Company " : ""}Ledger'),
         backgroundColor: theme.colorScheme.primary,
         foregroundColor: Colors.white,
         actions: [
+          ElevatedButton.icon(
+            onPressed: () => GoRouter.of(context).go('/'),
+            icon: const Icon(Icons.dashboard_rounded, size: 16),
+            label: const Text('← Dashboard'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            ),
+          ),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.print_rounded),
             tooltip: 'Print Ledger & Stock',
