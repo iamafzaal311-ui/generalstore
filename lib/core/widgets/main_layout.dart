@@ -425,6 +425,13 @@ class _SidebarContent extends ConsumerWidget {
                   isSelected: currentRoute == '/settings',
                   isExpanded: isExpanded,
                 ),
+                _SidebarMenuItem(
+                  icon: Icons.developer_mode_rounded,
+                  label: 'Developer Panel',
+                  route: '/developer-dashboard',
+                  isSelected: currentRoute == '/developer-dashboard',
+                  isExpanded: isExpanded,
+                ),
               ] else if (role == 'Stock Manager') ...[
                 _SidebarMenuItem(
                   icon: Icons.inventory_2_rounded,

@@ -37,20 +37,25 @@ final goRouter = GoRouter(
     }
 
     try {
+      final path = state.uri.path;
+      if (path == '/developer-dashboard') {
+        _isFirstLaunch = false;
+        return null;
+      }
+
       final settingsBox = Hive.box<String>('settings');
       final usersBox = Hive.box<UserModel>('users');
       final lastUserId = settingsBox.get('last_logged_in_user_id');
       final isLoggedIn = lastUserId != null && usersBox.get(lastUserId) != null;
-      final isAuthRoute = state.uri.path == '/login' || state.uri.path == '/register-store';
+      final isAuthRoute = path == '/login' || path == '/register-store';
 
       if (!isLoggedIn) {
         return isAuthRoute ? null : '/login';
       }
 
-      // On browser refresh / app restart, force initial navigation to land clean on Dashboard ('/')
       if (_isFirstLaunch && isLoggedIn) {
         _isFirstLaunch = false;
-        return '/';
+        return null;
       }
 
       if (isLoggedIn && isAuthRoute) {
