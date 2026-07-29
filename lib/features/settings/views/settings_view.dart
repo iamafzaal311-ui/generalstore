@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/global_providers.dart';
-import '../../../core/services/sync_service.dart';
 import '../../auth/viewmodels/auth_controller.dart';
 import '../../../data/models/store_profile_model.dart';
 
@@ -45,10 +44,8 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                   ),
                   trailing: ElevatedButton(
                     onPressed: () async {
-                      final db = ref.read(localDbServiceProvider);
-                      final syncService = SyncService(db);
+                      final syncService = ref.read(syncServiceProvider);
                       await syncService.syncDirtyRecords();
-                      syncService.dispose();
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -62,7 +59,38 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                     child: const Text('Sync Now'),
                   ),
                 ),
-                // Backup & Restore manual tabs have been removed as per request
+                const Divider(height: 1),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Colors.blue,
+                    child: Icon(Icons.cloud_download_rounded, color: Colors.white),
+                  ),
+                  title: const Text('Restore Cloud Backup'),
+                  subtitle: const Text(
+                    'Pull all products, ledgers, and transactions fresh from your Cloud Firestore backup.',
+                  ),
+                  trailing: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () async {
+                      final syncService = ref.read(syncServiceProvider);
+                      await syncService.restoreAllFromCloud();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              '☁️ Store backup successfully restored from Cloud Firestore!',
+                            ),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text('Restore Backup'),
+                  ),
+                ),
               ],
             ),
           ),
@@ -80,32 +108,32 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Danger Zone',
+            'Local Storage & Memory',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: Colors.red,
+              color: Colors.orange.shade800,
             ),
           ),
           const SizedBox(height: 16),
           Card(
-            color: Colors.red.shade50,
+            color: Colors.orange.shade50,
             child: ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Colors.red,
-                child: Icon(Icons.delete_forever, color: Colors.white),
+              leading: CircleAvatar(
+                backgroundColor: Colors.orange.shade800,
+                child: const Icon(Icons.cleaning_services_rounded, color: Colors.white),
               ),
-              title: const Text(
-                'Factory Reset (Wipe All Data)',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              title: Text(
+                'Clear Local Software Cache',
+                style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.bold),
               ),
-              subtitle: const Text('Deletes all products, ledgers, and transactions.'),
+              subtitle: const Text('Cleans local device memory cache. Cloud Firestore backup is 100% PRESERVED.'),
               trailing: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: Colors.orange.shade800,
                   foregroundColor: Colors.white,
                 ),
                 onPressed: () => _confirmWipeData(context),
-                child: const Text('Wipe Data'),
+                child: const Text('Clear Memory'),
               ),
             ),
           ),
@@ -118,17 +146,18 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_rounded, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Wipe All Data?', style: TextStyle(color: Colors.red)),
+            Icon(Icons.cleaning_services_rounded, color: Colors.orange.shade800),
+            const SizedBox(width: 8),
+            const Text('Clear Local Software Memory?'),
           ],
         ),
         content: const Text(
-          'This will permanently DELETE all products, categories, brands, '
-          'suppliers, customers, sales, purchases and expenses from BOTH '
-          'local storage and Firebase.\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?',
+          'This will safely back up any un-synced local changes to Cloud Firestore first, '
+          'and then reset your local software memory cache.\n\n'
+          '🔒 Your Cloud Firestore data is 100% SAFE and will NOT be deleted!\n'
+          'You can restore all store data anytime from cloud.',
         ),
         actions: [
           TextButton(
@@ -136,9 +165,9 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('YES, DELETE EVERYTHING'),
+            child: const Text('Clear Local Memory'),
           ),
         ],
       ),
@@ -148,18 +177,19 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
 
     try {
       final syncService = ref.read(syncServiceProvider);
-      await syncService.clearAllBusinessData();
+      await syncService.clearLocalMemorySafely();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ All business data wiped successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('✅ Local software memory cleaned safely! Cloud backup intact.'),
+            backgroundColor: Colors.green,
+          ),
         );
-        // Refresh the app by pushing named route or pop to start
-        Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error wiping data: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error clearing memory: $e'), backgroundColor: Colors.red),
         );
       }
     }

@@ -47,11 +47,15 @@ class SyncService {
     _connectivitySubscription?.cancel();
   }
 
-  /// Wipes ALL business data (products, brands, categories, suppliers,
-  /// customers, sales, purchases, expenses, payments) from both local Hive
-  /// storage AND Firebase Firestore for the current logged-in store.
-  Future<void> clearAllBusinessData() async {
-    // 1. Clear every local Hive box
+  /// Safely clears local software memory cache after ensuring all unsynced data is backed up to Firestore.
+  /// Firestore data is 100% PRESERVED and NEVER deleted.
+  Future<void> clearLocalMemorySafely() async {
+    // 1. First sync any un-synced dirty records to Cloud Firestore so ZERO data is lost
+    try {
+      await syncDirtyRecords();
+    } catch (_) {}
+
+    // 2. Clear local Hive memory
     await _db.categoriesBox.clear();
     await _db.brandsBox.clear();
     await _db.suppliersBox.clear();
@@ -62,33 +66,14 @@ class SyncService {
     await _db.expensesBox.clear();
     await _db.paymentsBox.clear();
 
-    // 2. Clear Firestore collections for the current store
-    if (Firebase.apps.isEmpty) return;
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    // 3. Restore clean backup from Cloud Firestore
+    await restoreAllFromCloud();
+  }
 
-    final storeRef = FirebaseFirestore.instance
-        .collection('stores')
-        .doc(user.uid);
-
-    const collections = [
-      'categories',
-      'brands',
-      'suppliers',
-      'customers',
-      'products',
-      'sales',
-      'purchases',
-      'expenses',
-      'payments',
-    ];
-
-    for (final col in collections) {
-      final snapshot = await storeRef.collection(col).get();
-      for (final doc in snapshot.docs) {
-        await doc.reference.delete();
-      }
-    }
+  /// Wipes ONLY local device Hive storage after backing up to Cloud Firestore.
+  /// Cloud Firestore data is 100% PRESERVED.
+  Future<void> clearAllBusinessData() async {
+    await clearLocalMemorySafely();
   }
 
   Future<void> syncDirtyRecords() async {

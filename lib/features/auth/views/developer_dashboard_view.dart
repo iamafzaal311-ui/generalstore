@@ -313,49 +313,24 @@ class _DeveloperDashboardViewState
     }
   }
 
-  Future<void> _wipeAllData() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning_rounded, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Wipe All Data?', style: TextStyle(color: Colors.red)),
-          ],
-        ),
-        content: const Text(
-          'This will permanently DELETE all products, categories, brands, '
-          'suppliers, customers, sales, purchases and expenses from BOTH '
-          'local storage and Firebase.\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('YES, DELETE EVERYTHING'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true || !mounted) return;
-
+  Future<void> _syncAndRestoreStoreBackup([String? targetStoreName]) async {
     try {
       final syncService = ref.read(syncServiceProvider);
-      await syncService.clearAllBusinessData();
+      await syncService.syncDirtyRecords();
+      await syncService.restoreAllFromCloud();
       if (mounted) {
+        final label = targetStoreName != null ? 'for "$targetStoreName"' : '';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✅ All business data wiped successfully!'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text('☁️ Cloud Backup $label successfully synced & restored from Firestore!'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error wiping data: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error syncing backup: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -545,9 +520,9 @@ class _DeveloperDashboardViewState
             },
           ),
           IconButton(
-            icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-            tooltip: 'Wipe All Data (Danger)',
-            onPressed: _wipeAllData,
+            icon: const Icon(Icons.cloud_download_rounded, color: Colors.blue),
+            tooltip: 'Sync & Restore Cloud Backup',
+            onPressed: () => _syncAndRestoreStoreBackup(),
           ),
         ],
       ),
@@ -560,6 +535,7 @@ class _DeveloperDashboardViewState
             onToggle: _toggleStoreStatus,
             onEdit: _editStore,
             onDelete: _deleteStore,
+            onRestoreBackup: (name) => _syncAndRestoreStoreBackup(name),
             theme: theme,
           ),
           _UsersTab(
@@ -597,6 +573,7 @@ class _StoresTab extends StatelessWidget {
   final Future<void> Function(String uid, bool currentStatus) onToggle;
   final void Function(Map<String, dynamic> storeData) onEdit;
   final void Function(String uid) onDelete;
+  final void Function(String storeName) onRestoreBackup;
   final ThemeData theme;
 
   const _StoresTab({
@@ -605,6 +582,7 @@ class _StoresTab extends StatelessWidget {
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
+    required this.onRestoreBackup,
     required this.theme,
   });
 
@@ -715,6 +693,11 @@ class _StoresTab extends StatelessWidget {
                         ),
                         Row(
                           children: [
+                            IconButton(
+                              icon: const Icon(Icons.cloud_download_rounded, color: Colors.green, size: 20),
+                              onPressed: () => onRestoreBackup(profile.storeName),
+                              tooltip: 'Restore Cloud Backup',
+                            ),
                             IconButton(
                               icon: const Icon(Icons.edit_rounded, color: Colors.blue, size: 20),
                               onPressed: () => onEdit(storeData),
