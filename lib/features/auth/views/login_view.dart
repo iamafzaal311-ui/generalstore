@@ -292,7 +292,7 @@ class _LoginViewState extends ConsumerState<LoginView>
         ),
         const SizedBox(height: 20),
         Text(
-          'General Store',
+          'VDN POS',
           style: GoogleFonts.playfairDisplay(
             fontSize: isLarge ? 40 : 32,
             fontWeight: FontWeight.w700,
@@ -302,13 +302,13 @@ class _LoginViewState extends ConsumerState<LoginView>
         ),
         const SizedBox(height: 4),
         Text(
-          'General Store POS',
+          'Inventory & Point of Sale System',
           textAlign: TextAlign.center,
           style: GoogleFonts.montserrat(
-            fontSize: isLarge ? 26 : 20,
-            fontWeight: FontWeight.w900,
+            fontSize: isLarge ? 20 : 16,
+            fontWeight: FontWeight.w800,
             color: Colors.amber.shade700,
-            letterSpacing: 2,
+            letterSpacing: 1.5,
           ),
         ),
         const SizedBox(height: 8),

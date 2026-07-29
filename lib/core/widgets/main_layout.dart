@@ -52,18 +52,23 @@ class MainLayout extends ConsumerWidget {
       }
     }
 
-    return Scaffold(
-      appBar: !isDesktop
-          ? AppBar(
-              title: Text(
-                ref.watch(storeProfileProvider)?.storeName.isNotEmpty == true
-                    ? ref.watch(storeProfileProvider)!.storeName
-                    : 'General Store',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              elevation: 0,
-            )
-          : null,
+    final storeTitle = ref.watch(storeProfileProvider)?.storeName.isNotEmpty == true
+        ? ref.watch(storeProfileProvider)!.storeName
+        : 'VDN POS';
+
+    return Title(
+      title: storeTitle,
+      color: Theme.of(context).primaryColor,
+      child: Scaffold(
+        appBar: !isDesktop
+            ? AppBar(
+                title: Text(
+                  storeTitle,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                elevation: 0,
+              )
+            : null,
       drawer: !isDesktop
           ? Drawer(child: _SidebarContent(currentRoute: currentRoute))
           : null,
@@ -141,8 +146,9 @@ class MainLayout extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _SidebarContent extends ConsumerWidget {
