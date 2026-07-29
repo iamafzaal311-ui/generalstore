@@ -248,24 +248,35 @@
     }, 2500);
 
     // ── Hide once Flutter view is ready ───────────────────────
+    function hideLoader() {
+      const bar = document.getElementById('progress-bar');
+      if (bar) bar.style.width = '100%';
+      setTimeout(() => {
+        const loader = document.getElementById('loading-indicator');
+        if (loader) {
+          loader.classList.add('hidden');
+          setTimeout(() => loader.remove(), 500);
+        }
+      }, 300);
+    }
+
     const observer = new MutationObserver((mutations, obs) => {
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
-          if (node.tagName && node.tagName.toLowerCase() === 'flutter-view') {
-            bar.style.width = '100%';
-            setTimeout(() => {
-              const loader = document.getElementById('loading-indicator');
-              if (loader) {
-                loader.classList.add('hidden');
-                setTimeout(() => loader.remove(), 500);
-              }
-            }, 400);
-            obs.disconnect();
+          if (node.tagName) {
+            const tag = node.tagName.toLowerCase();
+            if (tag === 'flutter-view' || tag === 'flt-glass-pane' || tag === 'flt-scene-host' || tag === 'canvas') {
+              hideLoader();
+              obs.disconnect();
+              return;
+            }
           }
         }
       }
     });
-    observer.observe(document.body, { childList: true });
+    observer.observe(document.body, { childList: true, subtree: true });
+    // Safety fallback: Hide loader after max 5s regardless
+    setTimeout(hideLoader, 5000);
   </script>
 
   <script src="flutter_bootstrap.js" async></script>

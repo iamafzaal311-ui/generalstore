@@ -257,7 +257,7 @@ class _SidebarContent extends ConsumerWidget {
     final theme = Theme.of(context);
     final currentUser = ref.watch(currentUserProvider);
     final storeProfile = ref.watch(storeProfileProvider);
-    final role = currentUser?.role ?? 'Cashier';
+    final role = currentUser?.role ?? 'Admin';
     final name =
         (currentUser?.fullName != null && currentUser!.fullName.isNotEmpty)
         ? currentUser.fullName
