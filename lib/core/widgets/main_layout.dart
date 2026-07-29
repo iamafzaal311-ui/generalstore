@@ -47,8 +47,6 @@ class MainLayout extends ConsumerWidget {
       }
     }
 
-    final role = currentUser?.role ?? 'Admin';
-
     final storeTitle = ref.watch(storeProfileProvider)?.storeName.isNotEmpty == true
         ? ref.watch(storeProfileProvider)!.storeName
         : 'VDN POS';
@@ -65,9 +63,20 @@ class MainLayout extends ConsumerWidget {
           title: Row(
             children: [
               if (!isDashboard) ...[
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  tooltip: 'Go Back',
+                  onPressed: () {
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    } else {
+                      context.go('/');
+                    }
+                  },
+                ),
                 ElevatedButton.icon(
-                  onPressed: () => context.go(role == 'Cashier' ? '/pos' : '/'),
-                  icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                  onPressed: () => context.go('/'),
+                  icon: const Icon(Icons.dashboard_rounded, size: 16),
                   label: const Text('Dashboard'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),

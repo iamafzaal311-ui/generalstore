@@ -15,7 +15,8 @@ import '../../features/accounts/views/expense_view.dart';
 import '../../features/reports/views/reports_view.dart';
 import '../../features/sales/views/sales_view.dart';
 import '../../features/settings/views/settings_view.dart';
-import '../../data/datasources/local_db_service.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../../data/models/user_model.dart';
 import '../widgets/main_layout.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
@@ -31,24 +32,31 @@ final goRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/',
   redirect: (context, state) {
-    final db = LocalDbService();
-    final lastUserId = db.settingsBox.get('last_logged_in_user_id');
-    final isLoggedIn = lastUserId != null && db.usersBox.get(lastUserId) != null;
-    final isAuthRoute = state.uri.path == '/login' || state.uri.path == '/register-store';
-
-    if (!isLoggedIn) {
-      return isAuthRoute ? null : '/login';
+    if (!Hive.isBoxOpen('settings') || !Hive.isBoxOpen('users')) {
+      return null;
     }
 
-    // On browser refresh / app restart, force initial navigation to land clean on Dashboard ('/')
-    if (_isFirstLaunch && isLoggedIn) {
-      _isFirstLaunch = false;
-      return '/';
-    }
+    try {
+      final settingsBox = Hive.box<String>('settings');
+      final usersBox = Hive.box<UserModel>('users');
+      final lastUserId = settingsBox.get('last_logged_in_user_id');
+      final isLoggedIn = lastUserId != null && usersBox.get(lastUserId) != null;
+      final isAuthRoute = state.uri.path == '/login' || state.uri.path == '/register-store';
 
-    if (isLoggedIn && isAuthRoute) {
-      return '/';
-    }
+      if (!isLoggedIn) {
+        return isAuthRoute ? null : '/login';
+      }
+
+      // On browser refresh / app restart, force initial navigation to land clean on Dashboard ('/')
+      if (_isFirstLaunch && isLoggedIn) {
+        _isFirstLaunch = false;
+        return '/';
+      }
+
+      if (isLoggedIn && isAuthRoute) {
+        return '/';
+      }
+    } catch (_) {}
 
     return null;
   },
