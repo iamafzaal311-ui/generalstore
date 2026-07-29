@@ -25,11 +25,9 @@ final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'shell',
 );
 
-bool _isFirstLaunch = true;
-
 final goRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/',
+  initialLocation: '/login',
   redirect: (context, state) {
     final db = LocalDbService();
     if (!db.isInitialized) {
@@ -39,7 +37,6 @@ final goRouter = GoRouter(
     try {
       final path = state.uri.path;
       if (path == '/developer-dashboard') {
-        _isFirstLaunch = false;
         return null;
       }
 
@@ -47,17 +44,8 @@ final goRouter = GoRouter(
       final isLoggedIn = lastUserId != null && db.usersBox.get(lastUserId) != null;
       final isAuthRoute = path == '/login' || path == '/register-store';
 
-      if (!isLoggedIn) {
-        return isAuthRoute ? null : '/login';
-      }
-
-      if (_isFirstLaunch && isLoggedIn) {
-        _isFirstLaunch = false;
-        return null;
-      }
-
-      if (isLoggedIn && isAuthRoute) {
-        return '/';
+      if (!isLoggedIn && !isAuthRoute) {
+        return '/login';
       }
     } catch (_) {}
 

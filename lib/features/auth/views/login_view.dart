@@ -202,13 +202,6 @@ class _LoginViewState extends ConsumerState<LoginView>
       }
     });
 
-    final currentUser = ref.read(currentUserProvider);
-    if (currentUser != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.go('/');
-      });
-    }
-
     return Scaffold(
       resizeToAvoidBottomInset: false, // Ensures completely clean, non-scrollable layout
       backgroundColor: const Color(0xFFE8ECEF), // Light Claymorphism base color
