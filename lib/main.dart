@@ -112,13 +112,46 @@ class MyApp extends ConsumerWidget {
       themeMode: ThemeMode.system,
       routerConfig: goRouter,
       builder: (context, child) {
+        ErrorWidget.builder = (FlutterErrorDetails details) {
+          return Scaffold(
+            body: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline_rounded, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Application Initializing...',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      details.exceptionAsString(),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () => goRouter.go('/'),
+                      icon: const Icon(Icons.dashboard_rounded),
+                      label: const Text('Go to Dashboard'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        };
+
         final data = MediaQuery.of(context);
         // Globally scale down text and text-dependent widget sizes by 15%
         return MediaQuery(
           data: data.copyWith(
             textScaler: const TextScaler.linear(0.85),
           ),
-          child: child!,
+          child: child ?? const SizedBox.shrink(),
         );
       },
     );
