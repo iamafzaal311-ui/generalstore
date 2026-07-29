@@ -158,50 +158,155 @@ class LedgerDetailView extends ConsumerWidget {
   }
 
   Widget _buildLedgerBody(BuildContext context, ThemeData theme, double runningBalance, bool isCustomer, String personName, String personId, WidgetRef ref, List<Map<String, dynamic>> rowData) {
+    final relevantProducts = _getRelevantProducts(ref, ref.read(accountsControllerProvider), personId, isCustomer);
+    final stockWorth = relevantProducts.fold<double>(
+      0,
+      (sum, p) => sum + (p.stock * (p.retailPrice > 0 ? p.retailPrice : (p.wholesalePrice > 0 ? p.wholesalePrice : p.purchasePrice))),
+    );
+    final totalPaid = rowData.fold<double>(0, (sum, row) => sum + (row['credit'] as num).toDouble());
+
     return Column(
-        children: [
-          // --- TOP SUMMARY CARD & ADD PAYMENT BUTTON ---
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-              border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isCustomer
-                          ? (runningBalance > 0 ? 'You have to Receive' : 'You have to Pay')
-                          : (runningBalance > 0 ? 'You have to Pay' : 'You have to Receive'),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey,
+      children: [
+        // --- 3 TOP SUMMARY CARDS (Company Net Worth, Total Paid, Pending Balance) ---
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
+            border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+          ),
+          child: Column(
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 600;
+                  return Flex(
+                    direction: isCompact ? Axis.vertical : Axis.horizontal,
+                    children: [
+                      // 1. Company Net Worth (Stock Sale Price Value)
+                      Expanded(
+                        flex: isCompact ? 0 : 1,
+                        child: Card(
+                          elevation: 1.5,
+                          color: Colors.blue.shade50,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.inventory_2_rounded, size: 16, color: Colors.blue.shade700),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Company Stock Net Worth',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blue.shade900),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Rs. ${stockWorth.toStringAsFixed(0)}',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Rs. ${runningBalance.abs().toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: runningBalance > 0
-                            ? Colors.red.shade800
-                            : Colors.green.shade800,
+                      SizedBox(width: isCompact ? 0 : 8, height: isCompact ? 8 : 0),
+                      // 2. Total Paid Amount
+                      Expanded(
+                        flex: isCompact ? 0 : 1,
+                        child: Card(
+                          elevation: 1.5,
+                          color: Colors.green.shade50,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.payments_rounded, size: 16, color: Colors.green.shade700),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Total Paid Amount',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green.shade900),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Rs. ${totalPaid.toStringAsFixed(0)}',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green.shade800),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
+                      SizedBox(width: isCompact ? 0 : 8, height: isCompact ? 8 : 0),
+                      // 3. Pending / Payable Balance
+                      Expanded(
+                        flex: isCompact ? 0 : 1,
+                        child: Card(
+                          elevation: 1.5,
+                          color: runningBalance > 0 ? Colors.red.shade50 : Colors.green.shade50,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.account_balance_wallet_rounded,
+                                      size: 16,
+                                      color: runningBalance > 0 ? Colors.red.shade700 : Colors.green.shade700,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      isCustomer ? 'Pending Receivable' : 'Pending Payable',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: runningBalance > 0 ? Colors.red.shade900 : Colors.green.shade900,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Rs. ${runningBalance.abs().toStringAsFixed(0)}',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: runningBalance > 0 ? Colors.red.shade800 : Colors.green.shade800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                  ],
-                ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
                   onPressed: () {
                     final formKey = GlobalKey<FormState>();
                     final amountCtrl = TextEditingController();
@@ -273,7 +378,9 @@ class LedgerDetailView extends ConsumerWidget {
                 ),
               ],
             ),
-          ),
+          ],
+        ),
+      ),
           
           // --- LEDGER TIMELINE ---
           Expanded(
@@ -565,16 +672,25 @@ class LedgerDetailView extends ConsumerWidget {
       return const Center(child: Text('No stock found for this company.'));
     }
 
+    final totalWorth = productsToShow.fold<double>(
+      0,
+      (sum, p) => sum + (p.stock * (p.retailPrice > 0 ? p.retailPrice : (p.wholesalePrice > 0 ? p.wholesalePrice : p.purchasePrice))),
+    );
+
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Text(
+                'Stock Net Worth (Sale Price): Rs. ${totalWorth.toStringAsFixed(0)}',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.blue.shade900),
+              ),
               ElevatedButton.icon(
                 onPressed: () => _printStockList(context, ref, personName, productsToShow),
-                icon: const Icon(Icons.print),
+                icon: const Icon(Icons.print_rounded, size: 18),
                 label: const Text('Print Stock List'),
               ),
             ],
@@ -586,7 +702,10 @@ class LedgerDetailView extends ConsumerWidget {
             itemCount: productsToShow.length,
             itemBuilder: (context, index) {
               final prod = productsToShow[index];
-              final totalWorth = prod.stock * prod.purchasePrice;
+              final unitPrice = prod.retailPrice > 0
+                  ? prod.retailPrice
+                  : (prod.wholesalePrice > 0 ? prod.wholesalePrice : prod.purchasePrice);
+              final itemTotalWorth = prod.stock * unitPrice;
               
               return Card(
                 elevation: 2,
@@ -597,8 +716,18 @@ class LedgerDetailView extends ConsumerWidget {
                     child: Icon(Icons.inventory_2_rounded, color: Colors.white),
                   ),
                   title: Text(prod.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Remaining Stock: ${prod.stock.toStringAsFixed(1)}'),
-                  trailing: Text('Total Worth:\nRs. ${totalWorth.toStringAsFixed(0)}', textAlign: TextAlign.right),
+                  subtitle: Text('Sale Price: Rs. ${unitPrice.toStringAsFixed(0)} | Stock: ${prod.stock.toStringAsFixed(1)} ${prod.unit}'),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text('Total Worth (Sale)', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      Text(
+                        'Rs. ${itemTotalWorth.toStringAsFixed(0)}',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.blue.shade800),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

@@ -32,29 +32,30 @@ class AuthRepositoryImpl implements AuthRepository {
     // Restore last logged in session
     final lastUserId = _db.settingsBox.get('last_logged_in_user_id');
     if (lastUserId != null) {
+      final localUser = _db.usersBox.get(lastUserId);
+      if (localUser != null && localUser.isActive) {
+        _currentUser = localUser;
+        return;
+      }
+
       if (Firebase.apps.isNotEmpty) {
         try {
           final fbUser = FirebaseAuth.instance.currentUser;
           if (fbUser != null && lastUserId == fbUser.uid) {
-            final localUser = _db.usersBox.get(lastUserId);
             _currentUser = UserModel()
               ..userId = fbUser.uid
-              ..username = localUser?.username ?? fbUser.email ?? 'Admin'
-              ..fullName = (localUser?.fullName != null && localUser!.fullName.trim().isNotEmpty)
-                  ? localUser.fullName.trim()
-                  : (fbUser.displayName ?? fbUser.email?.split('@').first ?? 'Admin')
-              ..role = localUser?.role ?? 'Admin'
+              ..username = fbUser.email ?? 'Admin'
+              ..fullName = (fbUser.displayName != null && fbUser.displayName!.trim().isNotEmpty)
+                  ? fbUser.displayName!.trim()
+                  : (fbUser.email?.split('@').first ?? 'Admin')
+              ..role = 'Admin'
               ..isActive = true
               ..isDirty = false
               ..lastUpdated = DateTime.now();
+            await _db.usersBox.put(_currentUser!.userId, _currentUser!);
             return;
           }
         } catch (_) {}
-      }
-
-      final localUser = _db.usersBox.get(lastUserId);
-      if (localUser != null && localUser.isActive) {
-        _currentUser = localUser;
       }
     }
   }
@@ -62,8 +63,6 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserModel?> adminLogin(String email, String password) async {
     await initialize();
-
-
 
     try {
       await _remote.adminLogin(email, password);
@@ -126,13 +125,18 @@ class AuthRepositoryImpl implements AuthRepository {
       } catch (_) {}
     }
 
+    final existingUser = newUid != null ? _db.usersBox.get(newUid) : null;
+    final fullNameToUse = (existingUser?.fullName != null && existingUser!.fullName.trim().isNotEmpty)
+        ? existingUser.fullName.trim()
+        : storeName;
+
     final salt = HashHelper.generateSalt();
     final hashedPassword = HashHelper.hashPassword(password.trim(), salt);
 
     final adminUser = UserModel()
       ..userId = newUid ?? 'admin_firebase_id'
       ..username = email
-      ..fullName = storeName
+      ..fullName = fullNameToUse
       ..passwordHash = hashedPassword
       ..salt = salt
       ..role = 'Admin'
@@ -141,7 +145,7 @@ class AuthRepositoryImpl implements AuthRepository {
       ..lastUpdated = DateTime.now();
 
     _currentUser = adminUser;
-    await _db.usersBox.put(adminUser.userId, adminUser); // Cache locally for dev dashboard
+    await _db.usersBox.put(adminUser.userId, adminUser); // Cache locally
     await _db.settingsBox.put('last_logged_in_user_id', adminUser.userId);
     return adminUser;
   }

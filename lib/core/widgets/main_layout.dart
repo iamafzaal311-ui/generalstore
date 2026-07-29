@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -278,9 +279,21 @@ class _SidebarContent extends ConsumerWidget {
         ? name.trim().split(' ').take(2).map((w) => w[0]).join().toUpperCase()
         : 'U';
 
-    final storeName = storeProfile?.storeName.isNotEmpty == true
-        ? storeProfile!.storeName
-        : 'My Store';
+    final db = ref.read(localDbServiceProvider);
+    String storeName = 'VDN POS';
+    if (storeProfile?.storeName.isNotEmpty == true) {
+      storeName = storeProfile!.storeName;
+    } else {
+      final cachedProfileStr = db.settingsBox.get('cached_store_profile');
+      if (cachedProfileStr != null && cachedProfileStr.isNotEmpty) {
+        try {
+          final map = jsonDecode(cachedProfileStr) as Map<String, dynamic>;
+          if (map['storeName'] != null && map['storeName'].toString().isNotEmpty) {
+            storeName = map['storeName'];
+          }
+        } catch (_) {}
+      }
+    }
 
     return Column(
       children: [
