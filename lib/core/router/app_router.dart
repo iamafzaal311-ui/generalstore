@@ -15,8 +15,7 @@ import '../../features/accounts/views/expense_view.dart';
 import '../../features/reports/views/reports_view.dart';
 import '../../features/sales/views/sales_view.dart';
 import '../../features/settings/views/settings_view.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import '../../data/models/user_model.dart';
+import '../../data/datasources/local_db_service.dart';
 import '../widgets/main_layout.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
@@ -32,7 +31,8 @@ final goRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/',
   redirect: (context, state) {
-    if (!Hive.isBoxOpen('settings') || !Hive.isBoxOpen('users')) {
+    final db = LocalDbService();
+    if (!db.isInitialized) {
       return null;
     }
 
@@ -43,10 +43,8 @@ final goRouter = GoRouter(
         return null;
       }
 
-      final settingsBox = Hive.box<String>('settings');
-      final usersBox = Hive.box<UserModel>('users');
-      final lastUserId = settingsBox.get('last_logged_in_user_id');
-      final isLoggedIn = lastUserId != null && usersBox.get(lastUserId) != null;
+      final lastUserId = db.settingsBox.get('last_logged_in_user_id');
+      final isLoggedIn = lastUserId != null && db.usersBox.get(lastUserId) != null;
       final isAuthRoute = path == '/login' || path == '/register-store';
 
       if (!isLoggedIn) {

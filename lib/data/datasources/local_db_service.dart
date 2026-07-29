@@ -12,7 +12,12 @@ import '../models/user_model.dart';
 import '../models/payment_model.dart';
 
 class LocalDbService {
+  static final LocalDbService _instance = LocalDbService._internal();
+  factory LocalDbService() => _instance;
+  LocalDbService._internal();
+
   bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
 
   late Box<UserModel> usersBox;
   late Box<CategoryModel> categoriesBox;
