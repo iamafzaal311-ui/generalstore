@@ -21,7 +21,7 @@ jobs:
       - name: Install Dependencies & Build Web
         run: |
           flutter pub get
-          flutter build web --release --no-wasm-dry-run
+          flutter build web --release --base-href "/" --no-wasm-dry-run
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
