@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/global_providers.dart';
 import '../../auth/viewmodels/auth_controller.dart';
 import '../../../data/models/store_profile_model.dart';
+import '../../products/viewmodels/inventory_controller.dart';
+import '../../accounts/viewmodels/accounts_controller.dart';
+import '../../transactions/viewmodels/transactions_controller.dart';
 
 class SettingsView extends ConsumerStatefulWidget {
   const SettingsView({super.key});
@@ -108,7 +111,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Local Storage & Memory',
+            'Local Storage & Cloud Backup',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: Colors.orange.shade800,
@@ -117,24 +120,48 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
           const SizedBox(height: 16),
           Card(
             color: Colors.orange.shade50,
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.orange.shade800,
-                child: const Icon(Icons.cleaning_services_rounded, color: Colors.white),
-              ),
-              title: Text(
-                'Clear Local Software Cache',
-                style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.bold),
-              ),
-              subtitle: const Text('Cleans local device memory cache. Cloud Firestore backup is 100% PRESERVED.'),
-              trailing: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange.shade800,
-                  foregroundColor: Colors.white,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.orange.shade800,
+                    child: const Icon(Icons.cleaning_services_rounded, color: Colors.white),
+                  ),
+                  title: Text(
+                    'Clear Local Device Memory',
+                    style: TextStyle(color: Colors.orange.shade900, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: const Text('Removes all local cached data from this device ONLY. Cloud Firestore data is 100% PRESERVED.'),
+                  trailing: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade800,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => _confirmWipeData(context),
+                    child: const Text('Clear Memory'),
+                  ),
                 ),
-                onPressed: () => _confirmWipeData(context),
-                child: const Text('Clear Memory'),
-              ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blue.shade700,
+                    child: const Icon(Icons.cloud_download_rounded, color: Colors.white),
+                  ),
+                  title: Text(
+                    'Restore Data from Cloud',
+                    style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: const Text('Downloads all store records, products, sales, and accounts from Cloud Firestore.'),
+                  trailing: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade700,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => _restoreFromCloud(context),
+                    child: const Text('Restore Cloud'),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -150,14 +177,13 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
           children: [
             Icon(Icons.cleaning_services_rounded, color: Colors.orange.shade800),
             const SizedBox(width: 8),
-            const Text('Clear Local Software Memory?'),
+            const Text('Clear Local Device Memory?'),
           ],
         ),
         content: const Text(
-          'This will safely back up any un-synced local changes to Cloud Firestore first, '
-          'and then reset your local software memory cache.\n\n'
-          '🔒 Your Cloud Firestore data is 100% SAFE and will NOT be deleted!\n'
-          'You can restore all store data anytime from cloud.',
+          'This will remove all local data from this device ONLY.\n\n'
+          '🔒 Your Cloud Firestore data is 100% SAFE and will NOT be deleted or touched!\n\n'
+          'You can tap "Restore Cloud" anytime to download your data back.',
         ),
         actions: [
           TextButton(
@@ -178,10 +204,18 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     try {
       final syncService = ref.read(syncServiceProvider);
       await syncService.clearLocalMemorySafely();
+
+      // Refresh local UI states
+      try {
+        await ref.read(inventoryControllerProvider.notifier).refreshAll();
+        await ref.read(accountsControllerProvider.notifier).refreshAccounts();
+        await ref.read(transactionsControllerProvider.notifier).refreshPurchases();
+      } catch (_) {}
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Local software memory cleaned safely! Cloud backup intact.'),
+            content: Text('✅ Local device memory cleared! Cloud Firestore remains 100% safe.'),
             backgroundColor: Colors.green,
           ),
         );
@@ -190,6 +224,41 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error clearing memory: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _restoreFromCloud(BuildContext context) async {
+    try {
+      final syncService = ref.read(syncServiceProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⏳ Restoring all store data from Cloud Firestore...'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      await syncService.restoreAllFromCloud();
+
+      // Refresh local UI states
+      try {
+        await ref.read(inventoryControllerProvider.notifier).refreshAll();
+        await ref.read(accountsControllerProvider.notifier).refreshAccounts();
+        await ref.read(transactionsControllerProvider.notifier).refreshPurchases();
+      } catch (_) {}
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Store data restored successfully from Cloud Firestore!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error restoring data: $e'), backgroundColor: Colors.red),
         );
       }
     }

@@ -265,6 +265,51 @@ class ReportsView extends ConsumerWidget {
                     },
                   ),
                 ),
+                SizedBox(
+                  width: cardWidth,
+                  child: _buildReportCard(
+                    context: context,
+                    title: 'Sales Returns & Restock Report',
+                    description:
+                        'Detailed logs of all return invoices, returned items, deduction fees, and net refunds.',
+                    icon: Icons.assignment_return_rounded,
+                    color: Colors.orange.shade800,
+                    onPdfPressed: () async {
+                      final allSales = await ref
+                          .read(salesRepositoryProvider)
+                          .getSales();
+                      final returnSales = allSales
+                          .where((s) => s.invoiceNumber.startsWith('RET-'))
+                          .toList();
+                      final pdfBytes =
+                          await ExcelPdfExportHelper.exportSalesToPdf(
+                            returnSales,
+                            reportTitle: 'SALES RETURNS & REFUNDS REPORT',
+                            storeProfile: ref.read(storeProfileProvider),
+                          );
+                      await Printing.layoutPdf(onLayout: (format) => pdfBytes);
+                    },
+                    onExcelPressed: () async {
+                      final allSales = await ref
+                          .read(salesRepositoryProvider)
+                          .getSales();
+                      final returnSales = allSales
+                          .where((s) => s.invoiceNumber.startsWith('RET-'))
+                          .toList();
+                      final bytes =
+                          await ExcelPdfExportHelper.exportSalesToExcel(
+                            returnSales,
+                          );
+                      if (context.mounted) {
+                        await _saveExcelFile(
+                          context,
+                          bytes,
+                          'Sales_Returns_Report_${DateTime.now().millisecondsSinceEpoch}',
+                        );
+                      }
+                    },
+                  ),
+                ),
               ],
             ),
           ],

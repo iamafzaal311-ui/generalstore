@@ -370,6 +370,13 @@ class _SidebarContent extends ConsumerWidget {
                   isExpanded: isExpanded,
                 ),
                 _SidebarMenuItem(
+                  icon: Icons.assignment_return_rounded,
+                  label: 'Sales Returns',
+                  route: '/returns',
+                  isSelected: currentRoute == '/returns',
+                  isExpanded: isExpanded,
+                ),
+                _SidebarMenuItem(
                   icon: Icons.inventory_2_rounded,
                   label: 'Products & Stock',
                   route: '/products',

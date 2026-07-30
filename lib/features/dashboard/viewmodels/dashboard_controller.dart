@@ -7,7 +7,7 @@ import '../../../data/models/sale_model.dart';
 class DashboardState {
   final double totalSales;
   final double totalExpenses;
-  final double totalProfit;
+  final int totalInvoices;
   final List<ProductModel> lowStockProducts;
   final List<ProductModel> nearExpiryProducts;
   final List<SaleModel> recentSales;
@@ -17,7 +17,7 @@ class DashboardState {
   DashboardState({
     this.totalSales = 0.0,
     this.totalExpenses = 0.0,
-    this.totalProfit = 0.0,
+    this.totalInvoices = 0,
     this.lowStockProducts = const [],
     this.nearExpiryProducts = const [],
     this.recentSales = const [],
@@ -28,7 +28,7 @@ class DashboardState {
   DashboardState copyWith({
     double? totalSales,
     double? totalExpenses,
-    double? totalProfit,
+    int? totalInvoices,
     List<ProductModel>? lowStockProducts,
     List<ProductModel>? nearExpiryProducts,
     List<SaleModel>? recentSales,
@@ -38,7 +38,7 @@ class DashboardState {
     return DashboardState(
       totalSales: totalSales ?? this.totalSales,
       totalExpenses: totalExpenses ?? this.totalExpenses,
-      totalProfit: totalProfit ?? this.totalProfit,
+      totalInvoices: totalInvoices ?? this.totalInvoices,
       lowStockProducts: lowStockProducts ?? this.lowStockProducts,
       nearExpiryProducts: nearExpiryProducts ?? this.nearExpiryProducts,
       recentSales: recentSales ?? this.recentSales,
@@ -86,23 +86,10 @@ class DashboardController extends StateNotifier<DashboardState> {
             p.expiryDate!.isBefore(limitDate);
       }).toList();
 
-      // Compute total profits (Retail Price - Purchase Cost)
-      double profitSum = 0.0;
-      for (final sale in sales) {
-        // Heuristic: estimate profit as total minus ~70% cost of goods
-        try {
-          profitSum += (sale.total - (sale.subtotal * 0.7));
-        } catch (_) {
-          profitSum += (sale.total * 0.25); // fallback profit margin 25%
-        }
-      }
-
       state = state.copyWith(
         totalSales: totalS,
         totalExpenses: totalE,
-        totalProfit: profitSum > 0
-            ? profitSum
-            : (totalS * 0.2), // Default 20% margin if zero
+        totalInvoices: sales.length,
         lowStockProducts: lowStockList,
         nearExpiryProducts: nearExpiryList,
         recentSales: sales.length > 5 ? sales.sublist(0, 5) : sales,

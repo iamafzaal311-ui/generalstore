@@ -14,6 +14,7 @@ import '../../features/accounts/views/supplier_accounts_view.dart';
 import '../../features/accounts/views/expense_view.dart';
 import '../../features/reports/views/reports_view.dart';
 import '../../features/sales/views/sales_view.dart';
+import '../../features/sales/views/returns_view.dart';
 import '../../features/settings/views/settings_view.dart';
 import '../../data/datasources/local_db_service.dart';
 import '../widgets/main_layout.dart';
@@ -86,6 +87,10 @@ final goRouter = GoRouter(
           builder: (context, state) => const PurchasesView(),
         ),
         GoRoute(path: '/sales', builder: (context, state) => const SalesView()),
+        GoRoute(
+          path: '/returns',
+          builder: (context, state) => const ReturnsView(),
+        ),
         GoRoute(
           path: '/accounts',
           builder: (context, state) => const AccountsView(),

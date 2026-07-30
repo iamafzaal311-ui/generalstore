@@ -48,14 +48,14 @@ class SyncService {
   }
 
   /// Safely clears local software memory cache after ensuring all unsynced data is backed up to Firestore.
-  /// Firestore data is 100% PRESERVED and NEVER deleted.
+  /// Cloud Firestore data is 100% PRESERVED and NEVER deleted.
   Future<void> clearLocalMemorySafely() async {
-    // 1. First sync any un-synced dirty records to Cloud Firestore so ZERO data is lost
+    // 1. First sync any un-synced dirty records to Cloud Firestore so ZERO data is lost in the cloud
     try {
       await syncDirtyRecords();
     } catch (_) {}
 
-    // 2. Clear local Hive memory
+    // 2. Clear all local Hive memory boxes on the device
     await _db.categoriesBox.clear();
     await _db.brandsBox.clear();
     await _db.suppliersBox.clear();
@@ -65,9 +65,6 @@ class SyncService {
     await _db.purchasesBox.clear();
     await _db.expensesBox.clear();
     await _db.paymentsBox.clear();
-
-    // 3. Restore clean backup from Cloud Firestore
-    await restoreAllFromCloud();
   }
 
   /// Wipes ONLY local device Hive storage after backing up to Cloud Firestore.
@@ -305,6 +302,21 @@ class SyncService {
           ..isDirty = false
           ..lastUpdated = DateTime.parse(data['lastUpdated']);
         await _db.usersBox.put(user.userId, user);
+
+        // Also auto-sync user into customersBox so Salesman Khata is available
+        if (user.isActive) {
+          final salesmanAsCust = CustomerModel()
+            ..customerId = user.userId
+            ..name = '[Salesman] ${user.fullName}'
+            ..phone = ''
+            ..address = 'Salesman Account (${user.role})'
+            ..balance = 0.0
+            ..isDeleted = false
+            ..isDirty = false
+            ..lastUpdated = DateTime.now();
+
+          await _db.customersBox.put(salesmanAsCust.customerId, salesmanAsCust);
+        }
       }
 
       // 2. Restore Categories

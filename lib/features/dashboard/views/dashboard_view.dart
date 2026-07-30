@@ -92,15 +92,27 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                             const SizedBox(width: 16),
                             Expanded(
                               child: _buildGradientStatCard(
-                                title: 'ESTIMATED PROFIT',
-                                value:
-                                    'Rs. ${state.totalProfit.toStringAsFixed(0)}',
-                                icon: Icons.trending_up_rounded,
+                                title: 'TOTAL INVOICES',
+                                value: '${state.totalInvoices}',
+                                icon: Icons.receipt_long_rounded,
                                 colors: [
                                   const Color(0xFF3B82F6),
                                   const Color(0xFF1E3A8A),
                                 ],
-                                onTap: () => context.go('/reports'),
+                                onTap: () => context.go('/sales'),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildGradientStatCard(
+                                title: 'SALES RETURNS',
+                                value: 'Process Return',
+                                icon: Icons.assignment_return_rounded,
+                                colors: [
+                                  const Color(0xFFF59E0B),
+                                  const Color(0xFFD97706),
+                                ],
+                                onTap: () => context.go('/returns'),
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -109,7 +121,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                                 title: 'TOTAL EXPENSES',
                                 value:
                                     'Rs. ${state.totalExpenses.toStringAsFixed(0)}',
-                                icon: Icons.receipt_long_rounded,
+                                icon: Icons.account_balance_wallet_rounded,
                                 colors: [
                                   const Color(0xFFEF4444),
                                   const Color(0xFFB91C1C),
@@ -125,7 +137,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                               title: 'TOTAL SALES (TODAY)',
                               value:
                                   'Rs. ${state.totalSales.toStringAsFixed(0)}',
-                              icon: Icons.account_balance_wallet_rounded,
+                              icon: Icons.monetization_on_rounded,
                               colors: [
                                 const Color(0xFF10B981),
                                 const Color(0xFF047857),
@@ -134,22 +146,32 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                             ),
                             const SizedBox(height: 16),
                             _buildGradientStatCard(
-                              title: 'ESTIMATED PROFIT',
-                              value:
-                                  'Rs. ${state.totalProfit.toStringAsFixed(0)}',
-                              icon: Icons.trending_up_rounded,
+                              title: 'TOTAL INVOICES',
+                              value: '${state.totalInvoices}',
+                              icon: Icons.receipt_long_rounded,
                               colors: [
                                 const Color(0xFF3B82F6),
                                 const Color(0xFF1E3A8A),
                               ],
-                              onTap: () => context.go('/reports'),
+                              onTap: () => context.go('/sales'),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildGradientStatCard(
+                              title: 'SALES RETURNS & RESTOCK',
+                              value: 'Process Return',
+                              icon: Icons.assignment_return_rounded,
+                              colors: [
+                                const Color(0xFFF59E0B),
+                                const Color(0xFFD97706),
+                              ],
+                              onTap: () => context.go('/returns'),
                             ),
                             const SizedBox(height: 16),
                             _buildGradientStatCard(
                               title: 'TOTAL EXPENSES',
                               value:
                                   'Rs. ${state.totalExpenses.toStringAsFixed(0)}',
-                              icon: Icons.receipt_long_rounded,
+                              icon: Icons.account_balance_wallet_rounded,
                               colors: [
                                 const Color(0xFFEF4444),
                                 const Color(0xFFB91C1C),
@@ -285,30 +307,38 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
+                    const SizedBox(height: 8),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              Icon(icon, color: Colors.white30, size: 48),
+              const SizedBox(width: 8),
+              Icon(icon, color: Colors.white30, size: 42),
             ],
           ),
         ),

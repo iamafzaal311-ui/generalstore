@@ -344,11 +344,13 @@ class PrintHelper {
               ),
               pw.SizedBox(height: 2),
               ...items.map((item) {
-                final name = (item['name'] as String);
-                final brand = (item['brand'] as String? ?? '');
-                final qty = (item['quantity'] as num).toDouble();
-                final price = (item['unitPrice'] as num).toDouble();
-                final total = (item['total'] as num).toDouble();
+                final Map<String, dynamic> map = item is Map ? Map<String, dynamic>.from(item) : {};
+                final name = map['name']?.toString() ?? 'Item';
+                final brand = map['brand']?.toString() ?? '';
+                final qty = (map['quantity'] as num?)?.toDouble() ?? (map['qty'] as num?)?.toDouble() ?? 1.0;
+                final price = (map['unitPrice'] as num?)?.toDouble() ?? (map['price'] as num?)?.toDouble() ?? 0.0;
+                final disc = (map['discount'] as num?)?.toDouble() ?? 0.0;
+                final total = (map['total'] as num?)?.toDouble() ?? (map['subtotal'] as num?)?.toDouble() ?? (qty * price - disc);
                 final displayName = brand.isNotEmpty ? '$name ($brand)' : name;
                 return pw.Padding(
                   padding: const pw.EdgeInsets.symmetric(vertical: 1.5),
@@ -655,9 +657,10 @@ class PrintHelper {
                     ],
                   ),
                   ...items.map((item) {
-                    final name = (item['name'] as String);
-                    final brand = (item['brand'] as String? ?? '');
-                    final category = (item['category'] as String? ?? '');
+                    final Map<String, dynamic> map = item is Map ? Map<String, dynamic>.from(item) : {};
+                    final name = map['name']?.toString() ?? 'Item';
+                    final brand = map['brand']?.toString() ?? '';
+                    final category = map['category']?.toString() ?? '';
                     String displayName = name;
                     if (brand.isNotEmpty || category.isNotEmpty) {
                       final parts = [
@@ -666,10 +669,10 @@ class PrintHelper {
                       ].join(' - ');
                       displayName = '$name ($parts)';
                     }
-                    final price = (item['unitPrice'] as num).toDouble();
-                    final qty = (item['quantity'] as num).toDouble();
-                    final disc = ((item['discount'] as num?) ?? 0.0).toDouble();
-                    final total = (item['total'] as num).toDouble();
+                    final price = (map['unitPrice'] as num?)?.toDouble() ?? (map['price'] as num?)?.toDouble() ?? 0.0;
+                    final qty = (map['quantity'] as num?)?.toDouble() ?? (map['qty'] as num?)?.toDouble() ?? 1.0;
+                    final disc = (map['discount'] as num?)?.toDouble() ?? 0.0;
+                    final total = (map['total'] as num?)?.toDouble() ?? (map['subtotal'] as num?)?.toDouble() ?? (qty * price - disc);
                     return pw.TableRow(
                       children: [
                         pw.Padding(
@@ -829,5 +832,117 @@ class PrintHelper {
         ),
       ],
     );
+  }
+
+  static Future<Uint8List> generateReturnSlipPdf({
+    StoreProfileModel? storeProfile,
+    required String returnInvoiceNumber,
+    required String originalInvoiceNumber,
+    required String customerName,
+    required List<Map<String, dynamic>> returnedItems,
+    required double grossTotal,
+    required double deductionPercentage,
+    required double deductionAmount,
+    required double netRefund,
+    required String refundMethod,
+    required String reason,
+  }) async {
+    final pdf = pw.Document();
+    final urduFont = await getUrduFont();
+    final dateStr = DateFormat('yyyy-MM-dd hh:mm a').format(DateTime.now());
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.roll80,
+        margin: const pw.EdgeInsets.all(10),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Center(
+                child: pw.Text(
+                  storeProfile?.storeName ?? 'General Store',
+                  style: pw.TextStyle(
+                    fontSize: 16,
+                    fontWeight: pw.FontWeight.bold,
+                    fontFallback: [urduFont],
+                  ),
+                ),
+              ),
+              pw.Center(
+                child: pw.Text(
+                  '*** OFFICIAL RETURN INVOICE ***',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    fontFallback: [urduFont],
+                  ),
+                ),
+              ),
+              pw.Divider(thickness: 1),
+              pw.Text('RETURN INVOICE #: $returnInvoiceNumber', style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold, fontFallback: [urduFont])),
+              pw.Text('Ref Original Bill: $originalInvoiceNumber', style: pw.TextStyle(fontSize: 9, fontFallback: [urduFont])),
+              pw.Text('Date: $dateStr', style: pw.TextStyle(fontSize: 9, fontFallback: [urduFont])),
+              pw.Text('Customer: $customerName', style: pw.TextStyle(fontSize: 9, fontFallback: [urduFont])),
+              if (reason.isNotEmpty)
+                pw.Text('Reason: $reason', style: pw.TextStyle(fontSize: 9, fontFallback: [urduFont])),
+              pw.Divider(thickness: 1),
+              pw.Text('Returned Items List:', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, fontFallback: [urduFont])),
+              pw.SizedBox(height: 4),
+              ...returnedItems.map((item) {
+                final name = item['name']?.toString() ?? 'Item';
+                final qty = (item['quantity'] as num?)?.toDouble() ?? 1.0;
+                final price = (item['unitPrice'] as num?)?.toDouble() ?? 0.0;
+                final sub = qty * price;
+                return pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Expanded(
+                      child: pw.Text(
+                        '$name (${qty.toStringAsFixed(0)}x @ ${price.toStringAsFixed(0)})',
+                        style: pw.TextStyle(fontSize: 8.5, fontFallback: [urduFont]),
+                      ),
+                    ),
+                    pw.Text('Rs. ${sub.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 8.5, fontFallback: [urduFont])),
+                  ],
+                );
+              }),
+              pw.Divider(thickness: 1),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Gross Items Total:', style: pw.TextStyle(fontSize: 9, fontFallback: [urduFont])),
+                  pw.Text('Rs. ${grossTotal.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 9, fontFallback: [urduFont])),
+                ],
+              ),
+              if (deductionAmount > 0) ...[
+                pw.SizedBox(height: 2),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Deduction Fee (${deductionPercentage.toStringAsFixed(0)}%):', style: pw.TextStyle(fontSize: 9, color: PdfColors.red700, fontFallback: [urduFont])),
+                    pw.Text('- Rs. ${deductionAmount.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 9, color: PdfColors.red700, fontFallback: [urduFont])),
+                  ],
+                ),
+              ],
+              pw.SizedBox(height: 4),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('NET REFUND PAID:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, fontFallback: [urduFont])),
+                  pw.Text('Rs. ${netRefund.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, fontFallback: [urduFont])),
+                ],
+              ),
+              pw.Text('Refund Method: $refundMethod', style: pw.TextStyle(fontSize: 9, fontFallback: [urduFont])),
+              pw.SizedBox(height: 10),
+              pw.Center(
+                child: pw.Text('Stock Restocked & Refund Invoice Recorded', style: pw.TextStyle(fontSize: 7.5, fontFallback: [urduFont])),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    return pdf.save();
   }
 }

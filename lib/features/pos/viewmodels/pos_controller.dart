@@ -15,16 +15,21 @@ import '../../products/viewmodels/inventory_controller.dart';
 class CartItem {
   final ProductModel product;
   double quantity;
-  double discount;
+  double unitPrice;
+  double discount; // Flat discount in Rs. for this item
+  double discountPercentage; // Percentage discount for this item
 
   CartItem({
     required this.product,
     required this.quantity,
+    double? unitPrice,
     this.discount = 0.0,
-  });
+    this.discountPercentage = 0.0,
+  }) : unitPrice = unitPrice ?? product.retailPrice;
 
-  double get subtotal => product.retailPrice * quantity;
-  double get total => subtotal - discount;
+  double get subtotal => unitPrice * quantity;
+  double get itemDiscountAmount => discount + ((subtotal * discountPercentage) / 100);
+  double get total => subtotal - itemDiscountAmount;
 }
 
 class POSState {
@@ -54,7 +59,7 @@ class POSState {
 
   // Total discounts combined (item-level discounts + flat overall discount + percentage discount)
   double get totalDiscount =>
-      cart.fold(0.0, (sum, item) => sum + item.discount) +
+      cart.fold(0.0, (sum, item) => sum + item.itemDiscountAmount) +
       discount +
       ((subtotal * discountPercentage) / 100);
 
@@ -104,24 +109,79 @@ class POSController extends StateNotifier<POSState> {
   Future<void> refreshCustomers() async {
     try {
       final list = await _salesRepo.getCustomers();
+      final db = _ref.read(localDbServiceProvider);
+
+      // Auto-sync active system Users (Salesmen / Staff) to Khata Accounts list
+      final users = db.usersBox.values.where((u) => u.isActive).toList();
+      for (final u in users) {
+        final exists = list.any(
+          (c) =>
+              c.customerId == u.userId ||
+              c.name.trim().toLowerCase() == u.fullName.trim().toLowerCase() ||
+              c.name.trim().toLowerCase() == '[salesman] ${u.fullName.trim()}'.toLowerCase(),
+        );
+        if (!exists) {
+          final salesmanAsCust = CustomerModel()
+            ..customerId = u.userId
+            ..name = '[Salesman] ${u.fullName}'
+            ..phone = ''
+            ..address = 'Salesman Account (${u.role})'
+            ..balance = 0.0
+            ..isDeleted = false
+            ..isDirty = true
+            ..lastUpdated = DateTime.now();
+
+          await db.customersBox.put(salesmanAsCust.customerId, salesmanAsCust);
+          list.add(salesmanAsCust);
+        }
+      }
+
       state = state.copyWith(customers: list);
     } catch (e) {
       state = state.copyWith(errorMessage: e.toString());
     }
   }
 
-  void addToCart(ProductModel product, [double quantity = 1.0]) {
+  void clearError() {
+    state = state.copyWith(errorMessage: null);
+  }
+
+  bool addToCart(ProductModel product, [double quantity = 1.0, double? unitPrice]) {
     final existingIndex = state.cart.indexWhere(
       (item) => item.product.productId == product.productId,
     );
+    final currentQty = existingIndex >= 0 ? state.cart[existingIndex].quantity : 0.0;
+    final totalQty = currentQty + quantity;
+
+    if (totalQty > product.stock) {
+      final formattedStock = product.stock.truncateToDouble() == product.stock
+          ? product.stock.toStringAsFixed(0)
+          : product.stock.toStringAsFixed(2);
+      state = state.copyWith(
+        errorMessage:
+            'Stock limit exceeded! Max available stock for "${product.name}" is $formattedStock ${product.unit}.',
+      );
+      return false;
+    }
+
     final updatedCart = List<CartItem>.from(state.cart);
 
     if (existingIndex >= 0) {
-      updatedCart[existingIndex].quantity += quantity;
+      updatedCart[existingIndex].quantity = totalQty;
+      if (unitPrice != null) {
+        updatedCart[existingIndex].unitPrice = unitPrice;
+      }
     } else {
-      updatedCart.add(CartItem(product: product, quantity: quantity));
+      updatedCart.add(
+        CartItem(
+          product: product,
+          quantity: quantity,
+          unitPrice: unitPrice,
+        ),
+      );
     }
-    state = state.copyWith(cart: updatedCart);
+    state = state.copyWith(cart: updatedCart, errorMessage: null);
+    return true;
   }
 
   void addManualItem({
@@ -146,16 +206,59 @@ class POSController extends StateNotifier<POSState> {
       ..minimumStock = 0
       ..isDeleted = false;
 
-    addToCart(manualProduct, quantity);
+    addToCart(manualProduct, quantity, price);
   }
 
-  void updateQuantity(String productId, double quantity) {
+  bool updateQuantity(String productId, double quantity) {
     final index = state.cart.indexWhere(
       (item) => item.product.productId == productId,
     );
-    if (index >= 0 && quantity > 0) {
+    if (index >= 0) {
+      final item = state.cart[index];
+      if (quantity > item.product.stock) {
+        final formattedStock =
+            item.product.stock.truncateToDouble() == item.product.stock
+                ? item.product.stock.toStringAsFixed(0)
+                : item.product.stock.toStringAsFixed(2);
+        state = state.copyWith(
+          errorMessage:
+              'Stock limit exceeded! Max available stock for "${item.product.name}" is $formattedStock ${item.product.unit}.',
+        );
+        return false;
+      }
+      if (quantity > 0) {
+        final updatedCart = List<CartItem>.from(state.cart);
+        updatedCart[index].quantity = quantity;
+        state = state.copyWith(cart: updatedCart, errorMessage: null);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void updateUnitPrice(String productId, double unitPrice) {
+    final index = state.cart.indexWhere(
+      (item) => item.product.productId == productId,
+    );
+    if (index >= 0 && unitPrice >= 0) {
       final updatedCart = List<CartItem>.from(state.cart);
-      updatedCart[index].quantity = quantity;
+      updatedCart[index].unitPrice = unitPrice;
+      state = state.copyWith(cart: updatedCart);
+    }
+  }
+
+  void updateItemDiscount(String productId, {double? discountRs, double? discountPercentage}) {
+    final index = state.cart.indexWhere(
+      (item) => item.product.productId == productId,
+    );
+    if (index >= 0) {
+      final updatedCart = List<CartItem>.from(state.cart);
+      if (discountRs != null && discountRs >= 0) {
+        updatedCart[index].discount = discountRs;
+      }
+      if (discountPercentage != null && discountPercentage >= 0) {
+        updatedCart[index].discountPercentage = discountPercentage;
+      }
       state = state.copyWith(cart: updatedCart);
     }
   }
@@ -273,7 +376,7 @@ class POSController extends StateNotifier<POSState> {
           'brand': brandName,
           'category': categoryName,
           'quantity': item.quantity,
-          'unitPrice': item.product.retailPrice,
+          'unitPrice': item.unitPrice,
           'purchasePrice': item.product.purchasePrice,
           'discount': item.discount,
           'total': item.total,

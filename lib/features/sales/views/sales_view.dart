@@ -113,6 +113,24 @@ class _SalesViewState extends ConsumerState<SalesView> {
         }
       }
 
+      if (sale.invoiceNumber.startsWith('RET-')) {
+        final pdfBytes = await PrintHelper.generateReturnSlipPdf(
+          storeProfile: storeProfile,
+          returnInvoiceNumber: sale.invoiceNumber,
+          originalInvoiceNumber: 'Return Invoice',
+          customerName: cName ?? 'Walk-in Customer',
+          returnedItems: items.map((i) => Map<String, dynamic>.from(i)).toList(),
+          grossTotal: sale.subtotal.abs(),
+          deductionPercentage: 0.0,
+          deductionAmount: sale.discount,
+          netRefund: sale.total.abs(),
+          refundMethod: sale.paymentMethod,
+          reason: 'Return Invoice',
+        );
+        await Printing.layoutPdf(onLayout: (format) => pdfBytes);
+        return;
+      }
+
       if (isThermal) {
         final pdfBytes = await PrintHelper.generateThermalReceipt(
           sale: sale,

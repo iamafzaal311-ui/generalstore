@@ -10,6 +10,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
 import '../datasources/local_db_service.dart';
 import '../models/user_model.dart';
+import '../models/customer_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final LocalDbService _db;
@@ -276,6 +277,19 @@ class AuthRepositoryImpl implements AuthRepository {
       ..lastUpdated = DateTime.now();
 
     await _db.usersBox.put(user.userId, user);
+
+    // Auto-create Khata Customer entry for Salesmen / Users so they immediately show up in POS dropdown
+    final salesmanAsCust = CustomerModel()
+      ..customerId = user.userId
+      ..name = '[Salesman] ${user.fullName}'
+      ..phone = ''
+      ..address = 'Salesman Account (${user.role})'
+      ..balance = 0.0
+      ..isDeleted = false
+      ..isDirty = true
+      ..lastUpdated = DateTime.now();
+
+    await _db.customersBox.put(salesmanAsCust.customerId, salesmanAsCust);
     unawaited(_sync.syncDirtyRecords());
   }
 

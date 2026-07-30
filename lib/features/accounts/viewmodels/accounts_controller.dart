@@ -80,6 +80,30 @@ class AccountsController extends StateNotifier<AccountsState> {
     try {
       final db = _ref.read(localDbServiceProvider);
 
+      // Auto-sync active system Users (Salesmen / Staff) to Khata Accounts list
+      final users = db.usersBox.values.where((u) => u.isActive).toList();
+      for (final u in users) {
+        final exists = db.customersBox.values.any(
+          (c) =>
+              c.customerId == u.userId ||
+              c.name.trim().toLowerCase() == u.fullName.trim().toLowerCase() ||
+              c.name.trim().toLowerCase() == '[salesman] ${u.fullName.trim()}'.toLowerCase(),
+        );
+        if (!exists) {
+          final salesmanAsCust = CustomerModel()
+            ..customerId = u.userId
+            ..name = '[Salesman] ${u.fullName}'
+            ..phone = ''
+            ..address = 'Salesman Account (${u.role})'
+            ..balance = 0.0
+            ..isDeleted = false
+            ..isDirty = true
+            ..lastUpdated = DateTime.now();
+
+          await db.customersBox.put(salesmanAsCust.customerId, salesmanAsCust);
+        }
+      }
+
       final customers = db.customersBox.values
           .where((e) => !e.isDeleted)
           .toList();
@@ -245,13 +269,14 @@ class AccountsController extends StateNotifier<AccountsState> {
     await refreshAccounts();
   }
 
-  Future<void> editCustomer(String id, String name, String phone, String address) async {
+  Future<void> editCustomer(String id, String name, String phone, String address, [double? newBalance]) async {
     final db = _ref.read(localDbServiceProvider);
     final customer = db.customersBox.get(id);
     if (customer != null) {
       customer.name = name;
       customer.phone = phone;
       customer.address = address;
+      if (newBalance != null) customer.balance = newBalance;
       customer.isDirty = true;
       customer.lastUpdated = DateTime.now();
       await db.customersBox.put(id, customer);
@@ -259,7 +284,7 @@ class AccountsController extends StateNotifier<AccountsState> {
     }
   }
 
-  Future<void> editSupplier(String id, String name, String contactName, String phone, String address) async {
+  Future<void> editSupplier(String id, String name, String contactName, String phone, String address, [double? newBalance]) async {
     final db = _ref.read(localDbServiceProvider);
     final supplier = db.suppliersBox.get(id);
     if (supplier != null) {
@@ -267,6 +292,7 @@ class AccountsController extends StateNotifier<AccountsState> {
       supplier.contactName = contactName;
       supplier.phone = phone;
       supplier.address = address;
+      if (newBalance != null) supplier.balance = newBalance;
       supplier.isDirty = true;
       supplier.lastUpdated = DateTime.now();
       await db.suppliersBox.put(id, supplier);

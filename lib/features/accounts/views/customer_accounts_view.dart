@@ -183,7 +183,7 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
                       addressCtrl.text.trim(),
                       bal,
                     );
-                if (mounted) Navigator.pop(ctx);
+                if (ctx.mounted) Navigator.pop(ctx);
               }
             },
             child: const Text('Add Salesman'),
@@ -265,17 +265,28 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton.icon(
-                      onPressed: () =>
-                          _showRecordPaymentDialog(cust.customerId, cust.name),
-                      icon: const Icon(Icons.payments_outlined, size: 18),
-                      label: const Text('Receive Payment'),
-                      style: ElevatedButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _showEditCustomerDialog(cust),
+                        icon: const Icon(Icons.edit_rounded, size: 16),
+                        label: const Text('Edit / Adjust Balance'),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: () =>
+                            _showRecordPaymentDialog(cust.customerId, cust.name),
+                        icon: const Icon(Icons.payments_outlined, size: 18),
+                        label: const Text('Receive Payment'),
+                        style: ElevatedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -283,6 +294,68 @@ class _CustomerAccountsViewState extends ConsumerState<CustomerAccountsView> {
           ),
         );
       },
+    );
+  }
+
+  void _showEditCustomerDialog(CustomerModel cust) {
+    final nameCtrl = TextEditingController(text: cust.name);
+    final phoneCtrl = TextEditingController(text: cust.phone ?? '');
+    final addressCtrl = TextEditingController(text: cust.address ?? '');
+    final balCtrl = TextEditingController(text: cust.balance.toStringAsFixed(0));
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Edit ${cust.name}'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Name*'),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                ),
+                TextFormField(
+                  controller: phoneCtrl,
+                  decoration: const InputDecoration(labelText: 'Phone'),
+                ),
+                TextFormField(
+                  controller: addressCtrl,
+                  decoration: const InputDecoration(labelText: 'Address'),
+                ),
+                TextFormField(
+                  controller: balCtrl,
+                  decoration: const InputDecoration(labelText: 'Khata / Opening Balance (Rs.)'),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                final newBal = double.tryParse(balCtrl.text) ?? cust.balance;
+                await ref.read(accountsControllerProvider.notifier).editCustomer(
+                      cust.customerId,
+                      nameCtrl.text.trim(),
+                      phoneCtrl.text.trim(),
+                      addressCtrl.text.trim(),
+                      newBal,
+                    );
+                if (ctx.mounted) Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Save Changes'),
+          ),
+        ],
+      ),
     );
   }
 }
