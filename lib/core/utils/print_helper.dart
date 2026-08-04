@@ -1,11 +1,79 @@
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../../data/models/sale_model.dart';
 import '../../data/models/store_profile_model.dart';
+import '../../data/datasources/local_db_service.dart';
+
+enum AppPaperSize {
+  thermal80(
+    name: 'Thermal 80mm',
+    description: 'Standard Thermal Receipt (80mm width)',
+    icon: Icons.receipt_long,
+    format: PdfPageFormat.roll80,
+    isThermal: true,
+  ),
+  thermal58(
+    name: 'Thermal 58mm',
+    description: 'Mini Thermal Receipt (58mm width)',
+    icon: Icons.receipt,
+    format: PdfPageFormat.roll57,
+    isThermal: true,
+  ),
+  a4(
+    name: 'A4',
+    description: 'Standard Document (210 x 297 mm)',
+    icon: Icons.description,
+    format: PdfPageFormat.a4,
+    isThermal: false,
+  ),
+  a3(
+    name: 'A3',
+    description: 'Large Sheet (297 x 420 mm)',
+    icon: Icons.note,
+    format: PdfPageFormat.a3,
+    isThermal: false,
+  ),
+  a5(
+    name: 'A5',
+    description: 'Half Sheet (148 x 210 mm)',
+    icon: Icons.notes,
+    format: PdfPageFormat.a5,
+    isThermal: false,
+  ),
+  letter(
+    name: 'Letter',
+    description: 'US Letter (8.5 x 11 in)',
+    icon: Icons.article,
+    format: PdfPageFormat.letter,
+    isThermal: false,
+  ),
+  legal(
+    name: 'Legal',
+    description: 'US Legal (8.5 x 14 in)',
+    icon: Icons.assignment,
+    format: PdfPageFormat.legal,
+    isThermal: false,
+  );
+
+  final String name;
+  final String description;
+  final IconData icon;
+  final PdfPageFormat format;
+  final bool isThermal;
+
+  const AppPaperSize({
+    required this.name,
+    required this.description,
+    required this.icon,
+    required this.format,
+    required this.isThermal,
+  });
+}
 
 class PrintHelper {
   static pw.Font? _cachedUrduFont;
@@ -233,6 +301,283 @@ class PrintHelper {
     );
   }
 
+  static AppPaperSize getDefaultPaperSize() {
+    try {
+      final name = LocalDbService().settingsBox.get('default_paper_size');
+      if (name != null) {
+        return AppPaperSize.values.firstWhere(
+          (e) => e.name == name || e.name.toLowerCase() == name.toLowerCase(),
+          orElse: () => AppPaperSize.thermal80,
+        );
+      }
+    } catch (_) {}
+    return AppPaperSize.thermal80;
+  }
+
+  static Future<void> setDefaultPaperSize(AppPaperSize size) async {
+    try {
+      await LocalDbService().settingsBox.put('default_paper_size', size.name);
+    } catch (_) {}
+  }
+
+  static bool isRememberChoiceEnabled() {
+    try {
+      final val = LocalDbService().settingsBox.get('remember_paper_choice');
+      return val == 'true';
+    } catch (_) {}
+    return false;
+  }
+
+  static Future<void> setRememberChoice(bool remember) async {
+    try {
+      await LocalDbService().settingsBox.put('remember_paper_choice', remember ? 'true' : 'false');
+    } catch (_) {}
+  }
+
+  static Future<AppPaperSize?> getEffectivePaperSize(
+    BuildContext context, {
+    bool forcePicker = false,
+  }) async {
+    if (!forcePicker && isRememberChoiceEnabled()) {
+      return getDefaultPaperSize();
+    }
+    return showPaperSizeDialog(context);
+  }
+
+  static Future<AppPaperSize?> showPaperSizeMenu(
+    BuildContext context, {
+    RelativeRect? position,
+  }) {
+    return showPaperSizeDialog(context);
+  }
+
+  static Future<AppPaperSize?> showPaperSizeDialog(
+    BuildContext context, {
+    AppPaperSize? initialSize,
+  }) async {
+    AppPaperSize selected = initialSize ?? getDefaultPaperSize();
+    bool setAsDefault = isRememberChoiceEnabled();
+
+    return showDialog<AppPaperSize>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.indigo.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.print_rounded,
+                      color: Colors.indigo.shade700,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Select Paper Size',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 380,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Choose paper size for printing receipt / document:',
+                      style: TextStyle(fontSize: 12.5, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 12),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 280),
+                      child: Scrollbar(
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: AppPaperSize.values.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 6),
+                          itemBuilder: (context, index) {
+                            final paper = AppPaperSize.values[index];
+                            final isSelected = paper == selected;
+                            return InkWell(
+                              onTap: () => setState(() => selected = paper),
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? (paper.isThermal
+                                          ? Colors.orange.shade50
+                                          : Colors.blue.shade50)
+                                      : Colors.grey.shade50,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? (paper.isThermal
+                                            ? Colors.orange.shade600
+                                            : Colors.blue.shade600)
+                                        : Colors.grey.shade300,
+                                    width: isSelected ? 1.8 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      paper.icon,
+                                      size: 22,
+                                      color: paper.isThermal
+                                          ? Colors.orange.shade800
+                                          : Colors.blue.shade800,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            paper.name,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.bold
+                                                  : FontWeight.w600,
+                                              color: isSelected
+                                                  ? Colors.black87
+                                                  : Colors.black54,
+                                            ),
+                                          ),
+                                          Text(
+                                            paper.description,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Radio<AppPaperSize>(
+                                      value: paper,
+                                      groupValue: selected,
+                                      onChanged: (val) {
+                                        if (val != null) {
+                                          setState(() => selected = val);
+                                        }
+                                      },
+                                      activeColor: paper.isThermal
+                                          ? Colors.orange.shade800
+                                          : Colors.blue.shade800,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Divider(),
+                    // Default Checkbox
+                    CheckboxListTile(
+                      value: setAsDefault,
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      activeColor: Colors.indigo.shade700,
+                      title: const Text(
+                        'Set print size as default',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Save selected paper size as default for future prints',
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                      onChanged: (val) {
+                        setState(() {
+                          setAsDefault = val ?? false;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(ctx, null),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.print_rounded, size: 18),
+                  label: const Text(
+                    'Print',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo.shade700,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () async {
+                    if (setAsDefault) {
+                      await setDefaultPaperSize(selected);
+                      await setRememberChoice(true);
+                    } else {
+                      await setRememberChoice(false);
+                    }
+                    if (ctx.mounted) {
+                      Navigator.pop(ctx, selected);
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   static Future<Uint8List> generateThermalReceipt({
     required SaleModel sale,
     required List<dynamic> items,
@@ -241,7 +586,9 @@ class PrintHelper {
     String? customerName,
     String? customerPhone,
     double? previousDues,
+    PdfPageFormat? pageFormat,
   }) async {
+    final targetFormat = pageFormat ?? PdfPageFormat.roll80;
     final theme = await getUrduPdfTheme();
     final pdf = pw.Document(theme: theme);
 
@@ -250,7 +597,7 @@ class PrintHelper {
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.roll80.copyWith(
+        pageFormat: targetFormat.copyWith(
           marginLeft: 2 * PdfPageFormat.mm,
           marginRight: 2 * PdfPageFormat.mm,
           marginTop: 2 * PdfPageFormat.mm,
@@ -522,7 +869,9 @@ class PrintHelper {
     String? customerName,
     String? customerPhone,
     double? previousDues,
+    PdfPageFormat? pageFormat,
   }) async {
+    final targetFormat = pageFormat ?? PdfPageFormat.a4;
     final theme = await getUrduPdfTheme();
     final pdf = pw.Document(theme: theme);
     final urduFont = await getUrduFont();
@@ -530,7 +879,7 @@ class PrintHelper {
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.a4,
+        pageFormat: targetFormat,
         margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
           return pw.Column(
@@ -834,6 +1183,41 @@ class PrintHelper {
     );
   }
 
+  static Future<Uint8List> generateInvoiceForPaperSize({
+    required AppPaperSize paperSize,
+    required SaleModel sale,
+    required List<dynamic> items,
+    required String cashierName,
+    StoreProfileModel? storeProfile,
+    String? customerName,
+    String? customerPhone,
+    double? previousDues,
+  }) {
+    if (paperSize.isThermal) {
+      return generateThermalReceipt(
+        sale: sale,
+        items: items,
+        cashierName: cashierName,
+        storeProfile: storeProfile,
+        customerName: customerName,
+        customerPhone: customerPhone,
+        previousDues: previousDues,
+        pageFormat: paperSize.format,
+      );
+    } else {
+      return generateA4Invoice(
+        sale: sale,
+        items: items,
+        cashierName: cashierName,
+        storeProfile: storeProfile,
+        customerName: customerName,
+        customerPhone: customerPhone,
+        previousDues: previousDues,
+        pageFormat: paperSize.format,
+      );
+    }
+  }
+
   static Future<Uint8List> generateReturnSlipPdf({
     StoreProfileModel? storeProfile,
     required String returnInvoiceNumber,
@@ -846,14 +1230,16 @@ class PrintHelper {
     required double netRefund,
     required String refundMethod,
     required String reason,
+    PdfPageFormat? pageFormat,
   }) async {
     final pdf = pw.Document();
     final urduFont = await getUrduFont();
     final dateStr = DateFormat('yyyy-MM-dd hh:mm a').format(DateTime.now());
+    final targetFormat = pageFormat ?? PdfPageFormat.roll80;
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.roll80,
+        pageFormat: targetFormat,
         margin: const pw.EdgeInsets.all(10),
         build: (pw.Context context) {
           return pw.Column(
@@ -944,5 +1330,86 @@ class PrintHelper {
       ),
     );
     return pdf.save();
+  }
+}
+
+class PrintButtonWithMenu extends StatelessWidget {
+  final String label;
+  final Function(AppPaperSize paperSize) onSelectSize;
+
+  const PrintButtonWithMenu({
+    super.key,
+    this.label = 'Print Receipt',
+    required this.onSelectSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<AppPaperSize>(
+      tooltip: 'Select Paper Size',
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      offset: const Offset(0, 42),
+      onSelected: (paperSize) => onSelectSize(paperSize),
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: Colors.indigo.shade700,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.print_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_drop_down, color: Colors.white, size: 20),
+          ],
+        ),
+      ),
+      itemBuilder: (ctx) {
+        return AppPaperSize.values.map((paper) {
+          return PopupMenuItem<AppPaperSize>(
+            value: paper,
+            height: 44,
+            child: Row(
+              children: [
+                Icon(
+                  paper.icon,
+                  size: 20,
+                  color: paper.isThermal
+                      ? Colors.orange.shade800
+                      : Colors.blue.shade800,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  paper.name,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList();
+      },
+    );
   }
 }

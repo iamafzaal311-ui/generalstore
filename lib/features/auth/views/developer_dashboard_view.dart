@@ -577,7 +577,7 @@ class _DeveloperDashboardViewState
               const SizedBox(height: 16),
               const Text('Developer Panel Locked', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const Text('Please enter PIN vivid123 to access.'),
+              const Text('Please enter PIN  to access.'),
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _checkPinAccess,

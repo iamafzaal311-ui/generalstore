@@ -244,7 +244,7 @@ class _UserManagementViewState extends ConsumerState<UserManagementView> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: selectedRole,
+                        initialValue: selectedRole,
                         decoration: const InputDecoration(labelText: 'Role'),
                         items: ['Staff', 'Cashier', 'Stock Manager', 'Admin']
                             .map(

@@ -75,7 +75,7 @@ class _AppBootstrapperState extends State<AppBootstrapper> {
       }
 
       // Background cloud sync
-      if (firebaseReady && syncService != null) {
+      if (firebaseReady) {
         final activeSyncService = syncService;
         Future.microtask(() async {
           try {

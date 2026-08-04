@@ -522,6 +522,9 @@ class _ReturnsViewState extends ConsumerState<ReturnsView> {
     String returnInvNo,
     List<Map<String, dynamic>> returnedItems,
   ) async {
+    final selectedPaper = await PrintHelper.getEffectivePaperSize(context);
+    if (selectedPaper == null) return;
+
     final storeProfile = ref.read(storeProfileProvider);
     final pdfBytes = await PrintHelper.generateReturnSlipPdf(
       storeProfile: storeProfile,
@@ -536,6 +539,7 @@ class _ReturnsViewState extends ConsumerState<ReturnsView> {
       netRefund: _netRefundAmount,
       refundMethod: _refundMethod,
       reason: _reasonCtrl.text.trim(),
+      pageFormat: selectedPaper.format,
     );
     await Printing.layoutPdf(
       onLayout: (format) async => pdfBytes,

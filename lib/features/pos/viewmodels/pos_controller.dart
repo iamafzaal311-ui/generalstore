@@ -324,6 +324,7 @@ class POSController extends StateNotifier<POSState> {
     bool printReceipt = true,
     String? customerName,
     String? customerPhone,
+    AppPaperSize? paperSize,
   }) async {
     if (state.cart.isEmpty) {
       state = state.copyWith(errorMessage: 'Cart is empty');
@@ -412,22 +413,26 @@ class POSController extends StateNotifier<POSState> {
       await _ref.read(inventoryControllerProvider.notifier).refreshAll();
 
       // 3. Print receipt asynchronously
-      if (printReceipt) {
+      if (printReceipt && context.mounted) {
         final finalCustomerName = customerName ?? state.selectedCustomer?.name;
         final finalCustomerPhone =
             customerPhone ?? state.selectedCustomer?.phone;
         final storeProfile = _ref.read(storeProfileProvider);
 
-        final pdfBytes = await PrintHelper.generateThermalReceipt(
-          sale: sale,
-          items: itemsListJson,
-          cashierName: currentUser?.fullName ?? 'Cashier',
-          storeProfile: storeProfile,
-          customerName: finalCustomerName,
-          customerPhone: finalCustomerPhone,
-          previousDues: oldBalance > 0 ? oldBalance : null,
-        );
-        await Printing.layoutPdf(onLayout: (format) => pdfBytes);
+        final selectedPaper = paperSize ?? await PrintHelper.getEffectivePaperSize(context);
+        if (selectedPaper != null) {
+          final pdfBytes = await PrintHelper.generateInvoiceForPaperSize(
+            paperSize: selectedPaper,
+            sale: sale,
+            items: itemsListJson,
+            cashierName: currentUser?.fullName ?? 'Cashier',
+            storeProfile: storeProfile,
+            customerName: finalCustomerName,
+            customerPhone: finalCustomerPhone,
+            previousDues: oldBalance > 0 ? oldBalance : null,
+          );
+          await Printing.layoutPdf(onLayout: (format) => pdfBytes);
+        }
       }
 
       // Reset POS cart state after successful save

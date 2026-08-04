@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/utils/excel_pdf_export_helper.dart';
 import '../../../core/utils/excel_helper.dart';
+import '../../../core/utils/print_helper.dart';
 import '../../pos/viewmodels/pos_controller.dart';
 import '../../products/viewmodels/inventory_controller.dart';
 import '../../../core/providers/global_providers.dart';
@@ -88,6 +89,8 @@ class ReportsView extends ConsumerWidget {
                     icon: Icons.calendar_month_rounded,
                     color: theme.colorScheme.primary,
                     onPdfPressed: () async {
+                      final paper = await PrintHelper.showPaperSizeMenu(context);
+                      if (paper == null) return;
                       final allSales = await ref
                           .read(salesRepositoryProvider)
                           .getSales();
@@ -104,6 +107,7 @@ class ReportsView extends ConsumerWidget {
                             monthlySales,
                             reportTitle: 'MONTHLY SALES REPORT',
                             storeProfile: ref.read(storeProfileProvider),
+                            pageFormat: paper.format,
                           );
                       await Printing.layoutPdf(onLayout: (format) => pdfBytes);
                     },
@@ -143,6 +147,8 @@ class ReportsView extends ConsumerWidget {
                     icon: Icons.analytics_rounded,
                     color: Colors.blueAccent,
                     onPdfPressed: () async {
+                      final paper = await PrintHelper.showPaperSizeMenu(context);
+                      if (paper == null) return;
                       final sales = await ref
                           .read(salesRepositoryProvider)
                           .getSales();
@@ -151,6 +157,7 @@ class ReportsView extends ConsumerWidget {
                             sales,
                             reportTitle: 'ALL SALES REPORT',
                             storeProfile: ref.read(storeProfileProvider),
+                            pageFormat: paper.format,
                           );
                       await Printing.layoutPdf(onLayout: (format) => pdfBytes);
                     },
@@ -180,6 +187,8 @@ class ReportsView extends ConsumerWidget {
                     icon: Icons.inventory_2_rounded,
                     color: theme.colorScheme.secondary,
                     onPdfPressed: () async {
+                      final paper = await PrintHelper.showPaperSizeMenu(context);
+                      if (paper == null) return;
                       final products = ref
                           .read(inventoryControllerProvider)
                           .products;
@@ -187,6 +196,7 @@ class ReportsView extends ConsumerWidget {
                           await ExcelPdfExportHelper.exportInventoryToPdf(
                             products,
                             storeProfile: ref.read(storeProfileProvider),
+                            pageFormat: paper.format,
                           );
                       await Printing.layoutPdf(onLayout: (format) => pdfBytes);
                     },
@@ -226,6 +236,10 @@ class ReportsView extends ConsumerWidget {
                       );
 
                       if (selectedDate != null) {
+                        if (!context.mounted) return;
+                        final paper = await PrintHelper.showPaperSizeMenu(context);
+                        if (paper == null) return;
+
                         final allSales = await ref
                             .read(salesRepositoryProvider)
                             .getSales();
@@ -248,6 +262,7 @@ class ReportsView extends ConsumerWidget {
                               currentProducts: currentProducts,
                               monthYearTitle: title,
                               storeProfile: ref.read(storeProfileProvider),
+                              pageFormat: paper.format,
                             );
                         await Printing.layoutPdf(
                           onLayout: (format) => pdfBytes,
@@ -275,6 +290,8 @@ class ReportsView extends ConsumerWidget {
                     icon: Icons.assignment_return_rounded,
                     color: Colors.orange.shade800,
                     onPdfPressed: () async {
+                      final paper = await PrintHelper.showPaperSizeMenu(context);
+                      if (paper == null) return;
                       final allSales = await ref
                           .read(salesRepositoryProvider)
                           .getSales();
@@ -286,6 +303,7 @@ class ReportsView extends ConsumerWidget {
                             returnSales,
                             reportTitle: 'SALES RETURNS & REFUNDS REPORT',
                             storeProfile: ref.read(storeProfileProvider),
+                            pageFormat: paper.format,
                           );
                       await Printing.layoutPdf(onLayout: (format) => pdfBytes);
                     },

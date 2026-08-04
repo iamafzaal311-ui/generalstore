@@ -85,8 +85,11 @@ class _SalesViewState extends ConsumerState<SalesView> {
     }
   }
 
-  void _reprintReceipt(SaleModel sale, bool isThermal) async {
+  void _reprintReceipt(SaleModel sale, [AppPaperSize? paperSize]) async {
     try {
+      final selectedPaper = paperSize ?? await PrintHelper.showPaperSizeMenu(context);
+      if (selectedPaper == null) return;
+
       final items = jsonDecode(sale.itemsJson) as List;
       final currentUser = ref.read(currentUserProvider);
       final cashierName = currentUser?.fullName ?? 'Admin';
@@ -126,34 +129,23 @@ class _SalesViewState extends ConsumerState<SalesView> {
           netRefund: sale.total.abs(),
           refundMethod: sale.paymentMethod,
           reason: 'Return Invoice',
+          pageFormat: selectedPaper.format,
         );
         await Printing.layoutPdf(onLayout: (format) => pdfBytes);
         return;
       }
 
-      if (isThermal) {
-        final pdfBytes = await PrintHelper.generateThermalReceipt(
-          sale: sale,
-          items: items,
-          cashierName: cashierName,
-          storeProfile: storeProfile,
-          customerName: cName,
-          customerPhone: cPhone,
-          previousDues: cDues,
-        );
-        await Printing.layoutPdf(onLayout: (format) => pdfBytes);
-      } else {
-        final pdfBytes = await PrintHelper.generateA4Invoice(
-          sale: sale,
-          items: items,
-          cashierName: cashierName,
-          storeProfile: storeProfile,
-          customerName: cName,
-          customerPhone: cPhone,
-          previousDues: cDues,
-        );
-        await Printing.layoutPdf(onLayout: (format) => pdfBytes);
-      }
+      final pdfBytes = await PrintHelper.generateInvoiceForPaperSize(
+        paperSize: selectedPaper,
+        sale: sale,
+        items: items,
+        cashierName: cashierName,
+        storeProfile: storeProfile,
+        customerName: cName,
+        customerPhone: cPhone,
+        previousDues: cDues,
+      );
+      await Printing.layoutPdf(onLayout: (format) => pdfBytes);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -762,21 +754,9 @@ class _SalesViewState extends ConsumerState<SalesView> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  TextButton.icon(
-                                    icon: const Icon(Icons.print, size: 18),
-                                    label: const Text('Thermal Print'),
-                                    onPressed: () =>
-                                        _reprintReceipt(sale, true),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  TextButton.icon(
-                                    icon: const Icon(
-                                      Icons.picture_as_pdf,
-                                      size: 18,
-                                    ),
-                                    label: const Text('A4 Print'),
-                                    onPressed: () =>
-                                        _reprintReceipt(sale, false),
+                                  PrintButtonWithMenu(
+                                    label: 'Print Receipt',
+                                    onSelectSize: (paper) => _reprintReceipt(sale, paper),
                                   ),
 
                                   if (isAdmin) ...[

@@ -12,6 +12,7 @@ import '../../../data/models/supplier_model.dart';
 import '../../../data/models/sale_model.dart';
 import '../../../data/models/purchase_model.dart';
 import '../../../data/models/product_model.dart';
+import '../../../core/utils/print_helper.dart';
 import '../../products/viewmodels/inventory_controller.dart';
 import '../viewmodels/accounts_controller.dart';
 import '../../transactions/views/edit_sale_dialog.dart';
@@ -949,6 +950,9 @@ class LedgerDetailView extends ConsumerWidget {
 
   Future<void> _printSalesmanStockList(BuildContext context, WidgetRef ref, String salesmanName, List<SalesmanDeliveredItem> items, double totalWorth) async {
     try {
+      final selectedPaper = await PrintHelper.showPaperSizeMenu(context);
+      if (selectedPaper == null) return;
+
       final doc = pw.Document();
       final storeProfile = ref.read(storeProfileProvider);
       final storeName = storeProfile?.storeName ?? 'General Store';
@@ -958,7 +962,7 @@ class LedgerDetailView extends ConsumerWidget {
 
       doc.addPage(
         pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
+          pageFormat: selectedPaper.format,
           header: (pw.Context ctx) {
             return pw.Container(
               width: double.infinity,
@@ -1059,6 +1063,9 @@ class LedgerDetailView extends ConsumerWidget {
 
   Future<void> _printStockList(BuildContext context, WidgetRef ref, String companyName, List<ProductModel> products) async {
     try {
+      final selectedPaper = await PrintHelper.showPaperSizeMenu(context);
+      if (selectedPaper == null) return;
+
       final doc = pw.Document();
       final storeProfile = ref.read(storeProfileProvider);
       final storeName = storeProfile?.storeName ?? 'General Store';
@@ -1068,7 +1075,7 @@ class LedgerDetailView extends ConsumerWidget {
 
       doc.addPage(
         pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
+          pageFormat: selectedPaper.format,
           header: (pw.Context ctx) {
             return pw.Container(
               width: double.infinity,
@@ -1169,6 +1176,9 @@ class LedgerDetailView extends ConsumerWidget {
 
   Future<void> _printLedger(BuildContext context, WidgetRef ref, AccountsState state, String personId, String personName, double finalBalance, List<Map<String, dynamic>> rowData, bool isCustomer) async {
     try {
+      final selectedPaper = await PrintHelper.showPaperSizeMenu(context);
+      if (selectedPaper == null) return;
+
       final doc = pw.Document();
       final products = _getRelevantProducts(ref, state, personId, isCustomer);
       double totalWorth = 0;
@@ -1184,7 +1194,7 @@ class LedgerDetailView extends ConsumerWidget {
 
       doc.addPage(
         pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
+          pageFormat: selectedPaper.format,
           header: (pw.Context ctx) {
             return pw.Container(
               width: double.infinity,

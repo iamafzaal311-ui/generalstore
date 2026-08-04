@@ -43,7 +43,9 @@ class ExcelPdfExportHelper {
     List<SaleModel> sales, {
     String reportTitle = 'SALES REPORT',
     StoreProfileModel? storeProfile,
+    PdfPageFormat? pageFormat,
   }) async {
+    final targetFormat = pageFormat ?? PdfPageFormat.a4;
     final theme = await PrintHelper.getUrduPdfTheme();
     final pdf = pw.Document(theme: theme);
     final urduFont = await PrintHelper.getUrduFont();
@@ -51,7 +53,7 @@ class ExcelPdfExportHelper {
 
     pdf.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
+        pageFormat: targetFormat,
         margin: const pw.EdgeInsets.all(32),
         footer: (context) => PrintHelper.buildPdfFooter(urduFont, vdnLogo, isThermal: false),
         build: (pw.Context context) {
@@ -173,7 +175,9 @@ class ExcelPdfExportHelper {
   static Future<Uint8List> exportInventoryToPdf(
     List<ProductModel> products, {
     StoreProfileModel? storeProfile,
+    PdfPageFormat? pageFormat,
   }) async {
+    final targetFormat = pageFormat ?? PdfPageFormat.a4;
     final theme = await PrintHelper.getUrduPdfTheme();
     final pdf = pw.Document(theme: theme);
     final urduFont = await PrintHelper.getUrduFont();
@@ -181,7 +185,7 @@ class ExcelPdfExportHelper {
 
     pdf.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
+        pageFormat: targetFormat,
         margin: const pw.EdgeInsets.all(32),
         footer: (context) => PrintHelper.buildPdfFooter(urduFont, vdnLogo, isThermal: false),
         build: (pw.Context context) {
@@ -310,7 +314,9 @@ class ExcelPdfExportHelper {
     required List<ProductModel> currentProducts,
     required String monthYearTitle,
     StoreProfileModel? storeProfile,
+    PdfPageFormat? pageFormat,
   }) async {
+    final targetFormat = pageFormat ?? PdfPageFormat.a4;
     final theme = await PrintHelper.getUrduPdfTheme();
     final pdf = pw.Document(theme: theme);
     final urduFont = await PrintHelper.getUrduFont();
@@ -364,7 +370,7 @@ class ExcelPdfExportHelper {
 
     pdf.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
+        pageFormat: targetFormat,
         margin: const pw.EdgeInsets.all(32),
         footer: (context) => PrintHelper.buildPdfFooter(urduFont, vdnLogo, isThermal: false),
         build: (pw.Context context) {
