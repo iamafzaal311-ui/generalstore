@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/supplier_model.dart';
 import '../../../data/models/purchase_model.dart';
+import '../../../data/models/category_model.dart';
+import '../../../core/widgets/searchable_autocomplete_field.dart';
 import '../viewmodels/transactions_controller.dart';
 import '../../products/viewmodels/inventory_controller.dart';
 
@@ -43,6 +45,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
     final invState = ref.read(inventoryControllerProvider);
 
     ProductModel? selectedProduct;
+    CategoryModel? selectedCategory;
     final quantityCtrl = TextEditingController(text: '1');
     final purchasePriceCtrl = TextEditingController(text: '0');
     final minStockCtrl = TextEditingController(text: '0');
@@ -50,9 +53,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
 
     final paidCtrl = TextEditingController(text: '0');
     final invoiceCtrl = TextEditingController();
-    final productSearchCtrl = TextEditingController();
     final addFormKey = GlobalKey<FormState>();
-    String productSearchQuery = '';
 
     showDialog(
       context: context,
@@ -70,43 +71,29 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<SupplierModel>(
-                              initialValue: txState.selectedSupplier,
-                              decoration: const InputDecoration(
-                                labelText: 'Select Company',
-                              ),
-                              items: invState.suppliers.map((s) {
-                                return DropdownMenuItem(
-                                  value: s,
-                                  child: Text(s.name),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                ref
-                                    .read(
-                                      transactionsControllerProvider.notifier,
-                                    )
-                                    .selectSupplier(val);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle_outline),
-                            tooltip: 'Add New Company',
-                            onPressed: () {
-                              Navigator.pop(
-                                context,
-                              ); // Close purchase dialog temporarily
-                              // TODO: Trigger a quick add supplier dialog and re-open this.
-                              // Since we don't have a global method for it here, we'll prompt the user to use Accounts for full setup, or we can just push a quick dialog.
-                              _showQuickAddSupplierDialog();
-                            },
-                          ),
-                        ],
+                      // ── 1. Company / Supplier Search Dropdown ────────────
+                      SearchableAutocompleteField<SupplierModel>(
+                        labelText: 'Search Company / Supplier',
+                        hintText: 'Type company name or phone...',
+                        initialValue: txState.selectedSupplier,
+                        items: invState.suppliers,
+                        itemAsString: (s) => s.name,
+                        itemSubtitle: (s) => (s.phone != null && s.phone!.isNotEmpty)
+                            ? 'Phone: ${s.phone}'
+                            : 'Supplier ID: ${s.supplierId}',
+                        onSelected: (val) {
+                          ref
+                              .read(transactionsControllerProvider.notifier)
+                              .selectSupplier(val);
+                        },
+                        suffixAction: IconButton(
+                          icon: const Icon(Icons.add_circle_outline, color: Colors.teal),
+                          tooltip: 'Add New Company',
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showQuickAddSupplierDialog();
+                          },
+                        ),
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -122,85 +109,71 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                         key: addFormKey,
                         child: Column(
                           children: [
-                            // ── Product Search + Dropdown ──────────────────
-                            TextField(
-                              controller: productSearchCtrl,
-                              decoration: InputDecoration(
-                                hintText: 'Search product by name or SKU...',
-                                prefixIcon: const Icon(
-                                  Icons.search_rounded,
-                                  size: 20,
-                                ),
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                suffixIcon: productSearchQuery.isNotEmpty
-                                    ? IconButton(
-                                        icon: const Icon(Icons.clear, size: 18),
-                                        onPressed: () {
-                                          productSearchCtrl.clear();
-                                          setStateDialog(() {
-                                            productSearchQuery = '';
-                                          });
-                                        },
-                                      )
-                                    : null,
-                              ),
-                              onChanged: (val) => setStateDialog(() {
-                                productSearchQuery = val.toLowerCase();
-                              }),
-                            ),
-                            const SizedBox(height: 8),
-                            DropdownButtonFormField<ProductModel>(
-                              isExpanded: true,
-                              initialValue: selectedProduct,
-                              decoration: const InputDecoration(
-                                labelText: 'Select Product',
-                                isDense: true,
-                              ),
-                              items: invState.products
-                                  .where(
-                                    (p) =>
-                                        productSearchQuery.isEmpty ||
-                                        p.name.toLowerCase().contains(
-                                          productSearchQuery,
-                                        ) ||
-                                        (p.sku ?? '').toLowerCase().contains(
-                                          productSearchQuery,
-                                        ) ||
-                                        (p.barcode ?? '')
-                                            .toLowerCase()
-                                            .contains(productSearchQuery),
-                                  )
-                                  .map((p) {
-                                    return DropdownMenuItem(
-                                      value: p,
-                                      child: Text(
-                                        p.name,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    );
-                                  })
-                                  .toList(),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setStateDialog(() {
-                                    selectedProduct = val;
-                                    purchasePriceCtrl.text = val.purchasePrice
-                                        .toString();
-                                    // Clear search after selection
-                                    productSearchCtrl.clear();
-                                    productSearchQuery = '';
-                                  });
-                                }
+                            // ── 2. Category Search Filter ──────────────────────
+                            SearchableAutocompleteField<CategoryModel>(
+                              labelText: 'Filter Category (Optional)',
+                              hintText: 'Type category name to filter products...',
+                              initialValue: selectedCategory,
+                              items: invState.categories,
+                              itemAsString: (c) => c.name,
+                              itemSubtitle: (c) => c.description ?? 'Category',
+                              prefixIcon: const Icon(Icons.category_outlined, size: 20),
+                              onSelected: (val) {
+                                setStateDialog(() {
+                                  selectedCategory = val;
+                                  selectedProduct = null;
+                                });
                               },
                             ),
                             const SizedBox(height: 12),
+                            // ── 3. Product Search Dropdown ────────────────────
+                            SearchableAutocompleteField<ProductModel>(
+                              labelText: 'Search Product (Name / SKU / Barcode)',
+                              hintText: 'Type product name, SKU, or barcode...',
+                              initialValue: selectedProduct,
+                              items: invState.products.where((p) {
+                                if (selectedCategory == null) return true;
+                                return p.categoryId == selectedCategory!.categoryId;
+                              }).toList(),
+                              itemAsString: (p) => p.name,
+                              itemSubtitle: (p) {
+                                final cat = invState.categories
+                                    .where((c) => c.categoryId == p.categoryId)
+                                    .firstOrNull
+                                    ?.name;
+                                return '${cat != null ? "$cat | " : ""}SKU: ${p.sku ?? "-"} | Stock: ${p.stock}';
+                              },
+                              itemTrailing: (p) => Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'Rs.${p.purchasePrice.toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              filterFn: (p, query) {
+                                final nameMatch = p.name.toLowerCase().contains(query);
+                                final skuMatch = (p.sku ?? '').toLowerCase().contains(query);
+                                final barcodeMatch = (p.barcode ?? '').toLowerCase().contains(query);
+                                return nameMatch || skuMatch || barcodeMatch;
+                              },
+                              onSelected: (val) {
+                                setStateDialog(() {
+                                  selectedProduct = val;
+                                  if (val != null) {
+                                    purchasePriceCtrl.text = val.purchasePrice.toString();
+                                    minStockCtrl.text = val.minimumStock.toString();
+                                  }
+                                });
+                              },
+                            ),
                             const SizedBox(height: 12),
                             Row(
                               children: [
@@ -463,7 +436,6 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
         .where((s) => s.supplierId == purchase.supplierId)
         .firstOrNull;
 
-    final productSearchCtrl = TextEditingController();
     final quantityCtrl = TextEditingController(text: '1');
     final purchasePriceCtrl = TextEditingController(text: '0');
     final invoiceCtrl = TextEditingController(text: purchase.invoiceNumber);
@@ -478,8 +450,6 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
         cart.add(Map<String, dynamic>.from(item));
       }
     } catch (_) {}
-
-    String productSearchQuery = '';
 
     showDialog(
       context: context,
@@ -499,28 +469,21 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<SupplierModel>(
-                              initialValue: selectedSupplier,
-                              decoration: const InputDecoration(
-                                labelText: 'Select Company',
-                              ),
-                              items: invState.suppliers.map((s) {
-                                return DropdownMenuItem(
-                                  value: s,
-                                  child: Text(s.name),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                setStateDialog(() {
-                                  selectedSupplier = val;
-                                });
-                              },
-                            ),
-                          ),
-                        ],
+                      // ── 1. Company / Supplier Search Dropdown ────────────
+                      SearchableAutocompleteField<SupplierModel>(
+                        labelText: 'Search Company / Supplier',
+                        hintText: 'Type company name or phone...',
+                        initialValue: selectedSupplier,
+                        items: invState.suppliers,
+                        itemAsString: (s) => s.name,
+                        itemSubtitle: (s) => (s.phone != null && s.phone!.isNotEmpty)
+                            ? 'Phone: ${s.phone}'
+                            : 'Supplier ID: ${s.supplierId}',
+                        onSelected: (val) {
+                          setStateDialog(() {
+                            selectedSupplier = val;
+                          });
+                        },
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
@@ -536,68 +499,48 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                         key: addFormKey,
                         child: Column(
                           children: [
-                            TextFormField(
-                              controller: productSearchCtrl,
-                              decoration: InputDecoration(
-                                labelText: 'Search Product',
-                                prefixIcon: const Icon(Icons.search),
-                                isDense: true,
-                                suffixIcon: productSearchQuery.isNotEmpty
-                                    ? IconButton(
-                                        icon: const Icon(Icons.clear),
-                                        onPressed: () => setStateDialog(() {
-                                          productSearchCtrl.clear();
-                                          productSearchQuery = '';
-                                        }),
-                                      )
-                                    : null,
-                              ),
-                              onChanged: (val) => setStateDialog(() {
-                                productSearchQuery = val.toLowerCase();
-                                selectedProduct = null;
-                              }),
-                            ),
-                            const SizedBox(height: 8),
-                            DropdownButtonFormField<ProductModel>(
-                              isExpanded: true,
+                            // ── 2. Product Search Dropdown ────────────────────
+                            SearchableAutocompleteField<ProductModel>(
+                              labelText: 'Search Product (Name / SKU / Barcode)',
+                              hintText: 'Type product name, SKU, or barcode...',
                               initialValue: selectedProduct,
-                              decoration: const InputDecoration(
-                                labelText: 'Select Product',
-                                isDense: true,
-                              ),
-                              items: invState.products
-                                  .where(
-                                    (p) =>
-                                        productSearchQuery.isEmpty ||
-                                        p.name.toLowerCase().contains(
-                                          productSearchQuery,
-                                        ) ||
-                                        (p.sku ?? '').toLowerCase().contains(
-                                          productSearchQuery,
-                                        ) ||
-                                        (p.barcode ?? '')
-                                            .toLowerCase()
-                                            .contains(productSearchQuery),
-                                  )
-                                  .map((p) {
-                                return DropdownMenuItem(
-                                  value: p,
-                                  child: Text(
-                                    p.name,
-                                    overflow: TextOverflow.ellipsis,
+                              items: invState.products,
+                              itemAsString: (p) => p.name,
+                              itemSubtitle: (p) {
+                                final cat = invState.categories
+                                    .where((c) => c.categoryId == p.categoryId)
+                                    .firstOrNull
+                                    ?.name;
+                                return '${cat != null ? "$cat | " : ""}SKU: ${p.sku ?? "-"} | Stock: ${p.stock}';
+                              },
+                              itemTrailing: (p) => Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'Rs.${p.purchasePrice.toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                    fontSize: 12,
                                   ),
-                                );
-                              }).toList(),
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setStateDialog(() {
-                                    selectedProduct = val;
-                                    purchasePriceCtrl.text =
-                                        val.purchasePrice.toString();
-                                    productSearchCtrl.clear();
-                                    productSearchQuery = '';
-                                  });
-                                }
+                                ),
+                              ),
+                              filterFn: (p, query) {
+                                final nameMatch = p.name.toLowerCase().contains(query);
+                                final skuMatch = (p.sku ?? '').toLowerCase().contains(query);
+                                final barcodeMatch = (p.barcode ?? '').toLowerCase().contains(query);
+                                return nameMatch || skuMatch || barcodeMatch;
+                              },
+                              onSelected: (val) {
+                                setStateDialog(() {
+                                  selectedProduct = val;
+                                  if (val != null) {
+                                    purchasePriceCtrl.text = val.purchasePrice.toString();
+                                  }
+                                });
                               },
                             ),
                             const SizedBox(height: 12),

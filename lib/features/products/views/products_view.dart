@@ -8,6 +8,7 @@ import '../../../data/models/brand_model.dart';
 import '../../../data/models/category_model.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/supplier_model.dart';
+import '../../../core/widgets/searchable_autocomplete_field.dart';
 
 import '../../../core/providers/global_providers.dart';
 import '../viewmodels/inventory_controller.dart';
@@ -979,101 +980,55 @@ class _ProductsViewState extends ConsumerState<ProductsView>
                             selectedSupplier = null;
                           }
 
+                          final currentBrand = invState.brands.where((b) => b.brandId == selectedBrand).firstOrNull;
+                          final currentCat = invState.categories.where((c) => c.categoryId == selectedCategory).firstOrNull;
+                          final currentSupp = invState.suppliers.where((s) => s.supplierId == selectedSupplier).firstOrNull;
+
                           return Column(
                             children: [
                               Row(
                                 children: [
                                   Expanded(
-                                    child: DropdownButtonFormField<String>(
-                                      isExpanded: true,
-                                      initialValue: selectedBrand,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Brand',
+                                    child: SearchableAutocompleteField<BrandModel>(
+                                      labelText: 'Search Brand',
+                                      initialValue: currentBrand,
+                                      items: invState.brands,
+                                      itemAsString: (b) => b.name,
+                                      onSelected: (b) => selectedBrand = b?.brandId,
+                                      suffixAction: IconButton(
+                                        icon: const Icon(Icons.add_circle, color: Colors.teal),
+                                        onPressed: _showBrandFormDialog,
                                       ),
-                                      items: invState.brands
-                                          .map(
-                                            (b) => DropdownMenuItem(
-                                              value: b.brandId,
-                                              child: Text(
-                                                b.name,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                                      onChanged: (v) => selectedBrand = v,
                                     ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.add_circle,
-                                      color: Colors.teal,
-                                    ),
-                                    onPressed: _showBrandFormDialog,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
-                                    child: DropdownButtonFormField<String>(
-                                      isExpanded: true,
-                                      initialValue: selectedCategory,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Category',
+                                    child: SearchableAutocompleteField<CategoryModel>(
+                                      labelText: 'Search Category',
+                                      initialValue: currentCat,
+                                      items: invState.categories,
+                                      itemAsString: (c) => c.name,
+                                      onSelected: (c) => selectedCategory = c?.categoryId,
+                                      suffixAction: IconButton(
+                                        icon: const Icon(Icons.add_circle, color: Colors.teal),
+                                        onPressed: _showCategoryFormDialog,
                                       ),
-                                      items: invState.categories
-                                          .map(
-                                            (c) => DropdownMenuItem(
-                                              value: c.categoryId,
-                                              child: Text(
-                                                c.name,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                                      onChanged: (v) => selectedCategory = v,
                                     ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.add_circle,
-                                      color: Colors.teal,
-                                    ),
-                                    onPressed: _showCategoryFormDialog,
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: DropdownButtonFormField<String>(
-                                      isExpanded: true,
-                                      initialValue: selectedSupplier,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Company / Supplier',
-                                      ),
-                                      items: invState.suppliers
-                                          .map(
-                                            (s) => DropdownMenuItem(
-                                              value: s.supplierId,
-                                              child: Text(
-                                                s.name,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                                      onChanged: (v) => selectedSupplier = v,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.add_circle,
-                                      color: Colors.teal,
-                                    ),
-                                    onPressed: _showSupplierFormDialog,
-                                  ),
-                                ],
+                              SearchableAutocompleteField<SupplierModel>(
+                                labelText: 'Search Company / Supplier',
+                                initialValue: currentSupp,
+                                items: invState.suppliers,
+                                itemAsString: (s) => s.name,
+                                itemSubtitle: (s) => (s.phone != null && s.phone!.isNotEmpty) ? 'Phone: ${s.phone}' : null,
+                                onSelected: (s) => selectedSupplier = s?.supplierId,
+                                suffixAction: IconButton(
+                                  icon: const Icon(Icons.add_circle, color: Colors.teal),
+                                  onPressed: _showSupplierFormDialog,
+                                ),
                               ),
                             ],
                           );

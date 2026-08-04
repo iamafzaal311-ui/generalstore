@@ -1156,7 +1156,7 @@ class _POSViewState extends ConsumerState<POSView> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: DropdownButtonFormField<AppPaperSize>(
-                                      value: selectedPaper,
+                                      initialValue: selectedPaper,
                                       isDense: true,
                                       decoration: const InputDecoration(
                                         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),

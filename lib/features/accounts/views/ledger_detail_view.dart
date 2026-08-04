@@ -625,7 +625,7 @@ class LedgerDetailView extends ConsumerWidget {
                                           if (isCustomer) {
                                             final rawPrice = item['unitPrice'] ?? item['price'] ?? item['retailPrice'] ?? item['salePrice'];
                                             if (rawPrice != null && (rawPrice as num).toDouble() > 0) {
-                                              priceNum = (rawPrice as num).toDouble();
+                                              priceNum = (rawPrice).toDouble();
                                             } else if (qtyNum > 0 && totalNum > 0) {
                                               priceNum = totalNum / qtyNum;
                                             } else if (item['purchasePrice'] != null) {
@@ -634,7 +634,7 @@ class LedgerDetailView extends ConsumerWidget {
                                           } else {
                                             final rawPrice = item['purchasePrice'] ?? item['costPrice'] ?? item['buyPrice'] ?? item['unitCost'] ?? item['unitPrice'] ?? item['price'];
                                             if (rawPrice != null && (rawPrice as num).toDouble() > 0) {
-                                              priceNum = (rawPrice as num).toDouble();
+                                              priceNum = (rawPrice).toDouble();
                                             } else if (qtyNum > 0 && totalNum > 0) {
                                               priceNum = totalNum / qtyNum;
                                             }
@@ -1265,21 +1265,21 @@ class LedgerDetailView extends ConsumerWidget {
                   children: [
                     pw.Column(
                       children: [
-                        pw.Text(isCustomer ? 'Total Stock/Invoices' : 'Stock Net Worth', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                        pw.Text(isCustomer ? 'Total Stock/Invoices' : 'Stock Net Worth', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                         pw.SizedBox(height: 2),
                         pw.Text('Rs. ${(isCustomer ? pdfTotalInvoiced : totalWorth).toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
                       ],
                     ),
                     pw.Column(
                       children: [
-                        pw.Text('Total Payments Received', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                        pw.Text('Total Payments Received', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                         pw.SizedBox(height: 2),
                         pw.Text('Rs. ${pdfTotalPaid.toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.green800)),
                       ],
                     ),
                     pw.Column(
                       children: [
-                        pw.Text('Net Pending Dues', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                        pw.Text('Net Pending Dues', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
                         pw.SizedBox(height: 2),
                         pw.Text('Rs. ${finalBalance.abs().toStringAsFixed(0)}', style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: finalBalance > 0 ? PdfColors.red800 : PdfColors.green800)),
                       ],

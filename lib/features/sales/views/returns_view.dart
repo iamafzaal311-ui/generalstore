@@ -747,7 +747,7 @@ class _ReturnsViewState extends ConsumerState<ReturnsView> {
                               SizedBox(
                                 width: 220,
                                 child: DropdownButtonFormField<CustomerModel?>(
-                                  value: _selectedCustomer,
+                                  initialValue: _selectedCustomer,
                                   decoration: const InputDecoration(
                                     labelText: 'Customer (Optional)',
                                     isDense: true,
@@ -1061,7 +1061,7 @@ class _ReturnsViewState extends ConsumerState<ReturnsView> {
                                   SizedBox(
                                     width: 180,
                                     child: DropdownButtonFormField<String>(
-                                      value: _refundMethod,
+                                      initialValue: _refundMethod,
                                       decoration: const InputDecoration(
                                         labelText: 'Refund Method',
                                         isDense: true,

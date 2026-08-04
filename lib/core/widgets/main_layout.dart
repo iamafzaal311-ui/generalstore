@@ -6,7 +6,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../providers/global_providers.dart';
 import '../../data/models/user_model.dart';
 import '../../features/auth/viewmodels/auth_controller.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class MainLayout extends ConsumerWidget {
   final Widget child;
