@@ -78,6 +78,11 @@ enum AppPaperSize {
 class PrintHelper {
   static pw.Font? _cachedUrduFont;
 
+  static bool hasUrdu(String text) {
+    final RegExp urduRegExp = RegExp(r'[\u0600-\u06FF]');
+    return urduRegExp.hasMatch(text);
+  }
+
   static Future<pw.Font> getUrduFont() async {
     if (_cachedUrduFont != null) return _cachedUrduFont!;
     final urduFontData = await rootBundle.load(

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -320,7 +321,7 @@ class AuthController extends StateNotifier<AuthState> {
 
       return results;
     } catch (e) {
-      print('DEBUG fetchAllStores Error: $e');
+      debugPrint('DEBUG fetchAllStores Error: $e');
       
       final List<Map<String, dynamic>> localResults = [];
       try {
@@ -409,7 +410,7 @@ class AuthController extends StateNotifier<AuthState> {
         } catch (_) {}
       }
     } catch (e) {
-      print('DEBUG fetchAllStoreUsers Error: $e');
+      debugPrint('DEBUG fetchAllStoreUsers Error: $e');
     }
 
     // Always fetch local users as fallback/addition
@@ -491,7 +492,7 @@ class AuthController extends StateNotifier<AuthState> {
       
       return true;
     } catch (e) {
-      print('DEBUG deleteStore Error: $e');
+      debugPrint('DEBUG deleteStore Error: $e');
       return false;
     }
   }
@@ -504,7 +505,7 @@ class AuthController extends StateNotifier<AuthState> {
       await FirebaseFirestore.instance.collection('stores').doc(uid).collection('profile').doc('info').set(data, SetOptions(merge: true));
       return true;
     } catch (e) {
-      print('DEBUG updateStore Error: $e');
+      debugPrint('DEBUG updateStore Error: $e');
       return false;
     }
   }
@@ -546,7 +547,7 @@ class AuthController extends StateNotifier<AuthState> {
       await loadUsers();
       return true;
     } catch (e) {
-      print('DEBUG deleteStoreUser Error: $e');
+      debugPrint('DEBUG deleteStoreUser Error: $e');
       return false;
     }
   }
@@ -572,7 +573,7 @@ class AuthController extends StateNotifier<AuthState> {
       await loadUsers();
       return true;
     } catch (e) {
-      print('DEBUG updateStoreUser Error: $e');
+      debugPrint('DEBUG updateStoreUser Error: $e');
       return false;
     }
   }

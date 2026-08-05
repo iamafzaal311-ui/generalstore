@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -34,7 +35,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
     try {
       unawaited(_sync.syncDirtyRecords());
     } catch (e) {
-      print('Sync error: $e');
+      debugPrint('Sync error: $e');
     }
   }
 
@@ -49,7 +50,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       try {
         unawaited(_sync.syncDirtyRecords());
       } catch (e) {
-        print('Sync error: $e');
+        debugPrint('Sync error: $e');
       }
     }
   }
@@ -72,7 +73,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
     try {
       unawaited(_sync.syncDirtyRecords());
     } catch (e) {
-      print('Sync error: $e');
+      debugPrint('Sync error: $e');
     }
   }
 
@@ -87,7 +88,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       try {
         unawaited(_sync.syncDirtyRecords());
       } catch (e) {
-        print('Sync error: $e');
+        debugPrint('Sync error: $e');
       }
     }
   }
@@ -110,7 +111,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
     try {
       unawaited(_sync.syncDirtyRecords());
     } catch (e) {
-      print('Sync error: $e');
+      debugPrint('Sync error: $e');
     }
   }
 
@@ -125,7 +126,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
       try {
         unawaited(_sync.syncDirtyRecords());
       } catch (e) {
-        print('Sync error: $e');
+        debugPrint('Sync error: $e');
       }
     }
   }
@@ -148,7 +149,7 @@ class InventoryRepositoryImpl implements InventoryRepository {
     try {
       unawaited(_sync.syncDirtyRecords());
     } catch (e) {
-      print('Sync error: $e');
+      debugPrint('Sync error: $e');
     }
   }
 
@@ -171,13 +172,13 @@ class InventoryRepositoryImpl implements InventoryRepository {
         }
       }
     } catch (e) {
-      print('Firebase hard delete error: $e');
+      debugPrint('Firebase hard delete error: $e');
     }
     
     try {
       unawaited(_sync.syncDirtyRecords());
     } catch (e) {
-      print('Sync error: $e');
+      debugPrint('Sync error: $e');
     }
   }
 

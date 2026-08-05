@@ -233,6 +233,7 @@ class _SalesViewState extends ConsumerState<SalesView> {
     ProductModel? selectedProduct;
 
     final qtyCtrl = TextEditingController(text: '1');
+    final purchasePriceCtrl = TextEditingController(text: '0');
     final priceCtrl = TextEditingController(text: '0');
     final paidCtrl = TextEditingController(text: '0');
     final invoiceCtrl = TextEditingController();
@@ -321,6 +322,7 @@ class _SalesViewState extends ConsumerState<SalesView> {
                                 if (val != null) {
                                   setStateDialog(() {
                                     selectedProduct = val;
+                                    purchasePriceCtrl.text = val.purchasePrice.toString();
                                     priceCtrl.text = val.retailPrice.toString();
                                     qtyCtrl.text = '1';
                                   });
@@ -347,9 +349,24 @@ class _SalesViewState extends ConsumerState<SalesView> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: TextFormField(
+                                    controller: purchasePriceCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Purchase Price (Khareed)',
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (val) =>
+                                        val == null ||
+                                            double.tryParse(val) == null
+                                        ? 'Invalid'
+                                        : null,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextFormField(
                                     controller: priceCtrl,
                                     decoration: const InputDecoration(
-                                      labelText: 'Unit Price',
+                                      labelText: 'Sale Price (Frokht)',
                                     ),
                                     keyboardType: TextInputType.number,
                                     validator: (val) =>
@@ -399,7 +416,7 @@ class _SalesViewState extends ConsumerState<SalesView> {
                                             'quantity': qty,
                                             'unitPrice': price,
                                             'purchasePrice':
-                                                selectedProduct!.purchasePrice,
+                                                double.tryParse(purchasePriceCtrl.text) ?? selectedProduct!.purchasePrice,
                                             'discount': 0.0,
                                             'total': qty * price,
                                           });
@@ -407,6 +424,7 @@ class _SalesViewState extends ConsumerState<SalesView> {
                                         setStateDialog(() {
                                           selectedProduct = null;
                                           qtyCtrl.text = '1';
+                                          purchasePriceCtrl.text = '0';
                                           priceCtrl.text = '0';
                                         });
                                       }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/customer_model.dart';
+import '../../../data/models/supplier_model.dart';
 import '../../../core/utils/print_helper.dart';
 import '../viewmodels/pos_controller.dart';
 import '../../products/viewmodels/inventory_controller.dart';
@@ -190,91 +191,218 @@ class _POSViewState extends ConsumerState<POSView> {
 
   void _showManualItemDialog() {
     final nameCtrl = TextEditingController();
+    final purchasePriceCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
     final qtyCtrl = TextEditingController(text: '1');
     final unitCtrl = TextEditingController(text: 'Pcs');
     final formKey = GlobalKey<FormState>();
+    bool saveToRecord = true;
+    SupplierModel? selectedSupplier;
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Manual Item'),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Item Name*'),
-                  validator: (val) =>
-                      val == null || val.trim().isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: priceCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Price per Unit*',
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final invState = ref.watch(inventoryControllerProvider);
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: [
+                  const Icon(Icons.edit_note_rounded, color: Color(0xFF9333EA)),
+                  const SizedBox(width: 8),
+                  const Text('Add Manual Entry (Purchase & Sale)'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: SizedBox(
+                  width: 500,
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextFormField(
+                          controller: nameCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Item Name / Detail*',
+                            hintText: 'e.g. Special Item',
+                            prefixIcon: Icon(Icons.inventory_2_outlined),
+                          ),
+                          validator: (val) =>
+                              val == null || val.trim().isEmpty ? 'Required' : null,
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: purchasePriceCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Purchase Price (Khareed)*',
+                                  prefixText: 'Rs. ',
+                                  prefixIcon: Icon(Icons.arrow_downward, color: Colors.red),
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) return 'Required';
+                                  if (double.tryParse(val.trim()) == null) return 'Invalid';
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller: priceCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Sale Price (Frokht)*',
+                                  prefixText: 'Rs. ',
+                                  prefixIcon: Icon(Icons.arrow_upward, color: Colors.green),
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) return 'Required';
+                                  if (double.tryParse(val.trim()) == null) return 'Invalid';
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: qtyCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Quantity*',
+                                  prefixIcon: Icon(Icons.format_list_numbered),
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) return 'Required';
+                                  if (double.tryParse(val.trim()) == null) return 'Invalid';
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller: unitCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Unit (e.g. Kg, Pcs)',
+                                  prefixIcon: Icon(Icons.straighten),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.purple.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SwitchListTile(
+                                contentPadding: EdgeInsets.zero,
+                                dense: true,
+                                title: const Text(
+                                  'Record Purchase & Save to Inventory',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                                subtitle: const Text(
+                                  'Add product to stock & store purchase entry in purchasing history.',
+                                  style: TextStyle(fontSize: 11),
+                                ),
+                                value: saveToRecord,
+                                activeThumbColor: const Color(0xFF9333EA),
+                                onChanged: (val) {
+                                  setStateDialog(() {
+                                    saveToRecord = val;
+                                  });
+                                },
+                              ),
+                              if (saveToRecord && invState.suppliers.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                DropdownButtonFormField<SupplierModel>(
+                                  initialValue: selectedSupplier,
+                                  isExpanded: true,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Supplier / Company (Optional)',
+                                    isDense: true,
+                                  ),
+                                  items: invState.suppliers.map((s) {
+                                    return DropdownMenuItem(
+                                      value: s,
+                                      child: Text(s.name, style: const TextStyle(fontSize: 12)),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    setStateDialog(() {
+                                      selectedSupplier = val;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  keyboardType: TextInputType.number,
-                  validator: (val) =>
-                      val == null || val.trim().isEmpty ? 'Required' : null,
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: qtyCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Quantity*',
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (val) => val == null || val.trim().isEmpty
-                            ? 'Required'
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: unitCtrl,
-                        decoration: const InputDecoration(
-                          labelText: 'Unit (e.g. Kg, Pcs)',
-                        ),
-                      ),
-                    ),
-                  ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9333EA),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      final name = nameCtrl.text.trim();
+                      final purchasePrice = double.tryParse(purchasePriceCtrl.text.trim()) ?? 0;
+                      final price = double.tryParse(priceCtrl.text.trim()) ?? 0;
+                      final quantity = double.tryParse(qtyCtrl.text.trim()) ?? 1;
+                      final unit = unitCtrl.text.trim().isNotEmpty
+                          ? unitCtrl.text.trim()
+                          : 'Pcs';
+                      final saveRecord = saveToRecord;
+                      final supp = selectedSupplier;
+
+                      Navigator.pop(context);
+
+                      await ref.read(posControllerProvider.notifier).addManualItem(
+                            name: name,
+                            purchasePrice: purchasePrice,
+                            price: price,
+                            quantity: quantity,
+                            unit: unit,
+                            saveToInventoryAndPurchases: saveRecord,
+                            supplier: supp,
+                          );
+                      _barcodeFocusNode.requestFocus();
+                    }
+                  },
+                  child: const Text('Add to Cart & Save Record'),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  ref
-                      .read(posControllerProvider.notifier)
-                      .addManualItem(
-                        name: nameCtrl.text.trim(),
-                        price: double.tryParse(priceCtrl.text.trim()) ?? 0,
-                        quantity: double.tryParse(qtyCtrl.text.trim()) ?? 1,
-                        unit: unitCtrl.text.trim().isNotEmpty
-                            ? unitCtrl.text.trim()
-                            : 'Pcs',
-                      );
-                  Navigator.pop(context);
-                  _barcodeFocusNode.requestFocus();
-                }
-              },
-              child: const Text('Add to Cart'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -642,9 +770,10 @@ class _POSViewState extends ConsumerState<POSView> {
                         ),
                         const SizedBox(height: 10),
 
-                        // Scrollable Items List Container (Only items scroll if cart is large)
+                        // Scrollable Items List Container (Spacious view for stock items)
                         Expanded(
                           child: Container(
+                            constraints: const BoxConstraints(minHeight: 180, maxHeight: 320),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.surfaceContainerHighest
                                   .withValues(alpha: 0.3),
@@ -715,17 +844,32 @@ class _POSViewState extends ConsumerState<POSView> {
                                               ),
                                             ],
                                             Expanded(
-                                              child: Text(
-                                                item.product.name,
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12.5,
-                                                  color: isManual
-                                                      ? const Color(0xFF581C87)
-                                                      : null,
-                                                ),
-                                              ),
-                                            ),
+                                               child: Column(
+                                                 crossAxisAlignment: CrossAxisAlignment.start,
+                                                 mainAxisSize: MainAxisSize.min,
+                                                 children: [
+                                                   Text(
+                                                     item.product.name,
+                                                     style: TextStyle(
+                                                       fontWeight: FontWeight.bold,
+                                                       fontSize: 12.5,
+                                                       color: isManual
+                                                           ? const Color(0xFF581C87)
+                                                           : null,
+                                                     ),
+                                                   ),
+                                                   if (isManual)
+                                                     Text(
+                                                       'Buy: Rs. ${item.product.purchasePrice.truncateToDouble() == item.product.purchasePrice ? item.product.purchasePrice.toStringAsFixed(0) : item.product.purchasePrice.toStringAsFixed(2)} | Sell: Rs. ${item.unitPrice.truncateToDouble() == item.unitPrice ? item.unitPrice.toStringAsFixed(0) : item.unitPrice.toStringAsFixed(2)}',
+                                                       style: const TextStyle(
+                                                         fontSize: 10,
+                                                         color: Color(0xFF7E22CE),
+                                                         fontWeight: FontWeight.w600,
+                                                       ),
+                                                     ),
+                                                 ],
+                                               ),
+                                             ),
                                           ],
                                         ),
                                       ),
@@ -1132,65 +1276,62 @@ class _POSViewState extends ConsumerState<POSView> {
                         ),
                         const SizedBox(height: 10),
 
-                        // Print Paper Size & Default Checkbox Card
+                        // Print Paper Size & Default Checkbox Card (Inline Row)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.grey.shade50,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.grey.shade300),
                           ),
-                          child: Column(
+                          child: Row(
                             children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.print_rounded, size: 18, color: Colors.indigo.shade700),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    'Print Size:',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: DropdownButtonFormField<AppPaperSize>(
-                                      initialValue: selectedPaper,
-                                      isDense: true,
-                                      decoration: const InputDecoration(
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w600),
-                                      items: AppPaperSize.values.map((paper) {
-                                        return DropdownMenuItem<AppPaperSize>(
-                                          value: paper,
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                paper.icon,
-                                                size: 16,
-                                                color: paper.isThermal ? Colors.orange.shade800 : Colors.blue.shade800,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(paper.name),
-                                            ],
-                                          ),
-                                        );
-                                      }).toList(),
-                                      onChanged: (val) {
-                                        if (val != null) {
-                                          setState(() => selectedPaper = val);
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ],
+                              Icon(Icons.print_rounded, size: 18, color: Colors.indigo.shade700),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Print Size:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: DropdownButtonFormField<AppPaperSize>(
+                                  initialValue: selectedPaper,
+                                  isDense: true,
+                                  decoration: const InputDecoration(
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w600),
+                                  items: AppPaperSize.values.map((paper) {
+                                    return DropdownMenuItem<AppPaperSize>(
+                                      value: paper,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            paper.icon,
+                                            size: 16,
+                                            color: paper.isThermal ? Colors.orange.shade800 : Colors.blue.shade800,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(paper.name),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() => selectedPaper = val);
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
                               Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Checkbox(
                                     value: setAsDefaultPaperSize,
@@ -1205,7 +1346,7 @@ class _POSViewState extends ConsumerState<POSView> {
                                       setState(() => setAsDefaultPaperSize = !setAsDefaultPaperSize);
                                     },
                                     child: const Text(
-                                      'Set print size as default',
+                                      'Set as default',
                                       style: TextStyle(
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w600,

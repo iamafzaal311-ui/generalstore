@@ -58,7 +58,11 @@ class _SearchableAutocompleteFieldState<T>
       if (_focusNode.hasFocus) {
         _showOverlay();
       } else {
-        _hideOverlay();
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted && !_focusNode.hasFocus) {
+            _hideOverlay();
+          }
+        });
       }
     });
   }

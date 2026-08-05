@@ -8,6 +8,8 @@ import '../../../core/utils/print_helper.dart';
 import '../../../data/models/customer_model.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/sale_model.dart';
+import '../../../data/models/supplier_model.dart';
+import '../../../data/models/purchase_model.dart';
 import '../../../data/repositories/sales_repository_impl.dart';
 import '../../../domain/repositories/sales_repository.dart';
 import '../../products/viewmodels/inventory_controller.dart';
@@ -153,7 +155,9 @@ class POSController extends StateNotifier<POSState> {
     final currentQty = existingIndex >= 0 ? state.cart[existingIndex].quantity : 0.0;
     final totalQty = currentQty + quantity;
 
-    if (totalQty > product.stock) {
+    final isManual = product.productId.startsWith('MANUAL-');
+
+    if (!isManual && totalQty > product.stock) {
       final formattedStock = product.stock.truncateToDouble() == product.stock
           ? product.stock.toStringAsFixed(0)
           : product.stock.toStringAsFixed(2);
@@ -184,29 +188,97 @@ class POSController extends StateNotifier<POSState> {
     return true;
   }
 
-  void addManualItem({
+  Future<void> addManualItem({
     required String name,
+    required double purchasePrice,
     required double price,
     required double quantity,
     required String unit,
-  }) {
-    final manualProduct = ProductModel()
-      ..productId = 'MANUAL-${const Uuid().v4()}'
-      ..name = name
-      ..barcode = null
-      ..sku = null
-      ..categoryId = null
-      ..brandId = null
-      ..purchasePrice =
-          price // For manual items, we can set purchase price to same or 0
-      ..retailPrice = price
-      ..stock =
-          999999 // Unlimited stock
-      ..unit = unit
-      ..minimumStock = 0
-      ..isDeleted = false;
+    bool saveToInventoryAndPurchases = true,
+    SupplierModel? supplier,
+  }) async {
+    try {
+      final productId = 'MANUAL-${const Uuid().v4()}';
+      final manualProduct = ProductModel()
+        ..productId = productId
+        ..name = name
+        ..barcode = null
+        ..sku = null
+        ..categoryId = null
+        ..brandId = null
+        ..purchasePrice = purchasePrice
+        ..retailPrice = price
+        ..stock = 999999
+        ..unit = unit
+        ..minimumStock = 0
+        ..isDeleted = false;
 
-    addToCart(manualProduct, quantity, price);
+      if (saveToInventoryAndPurchases) {
+        final db = _ref.read(localDbServiceProvider);
+        manualProduct.isDirty = true;
+        manualProduct.lastUpdated = DateTime.now();
+
+        // Save to Products Hive DB
+        final dbProduct = ProductModel()
+          ..productId = manualProduct.productId
+          ..name = name
+          ..purchasePrice = purchasePrice
+          ..retailPrice = price
+          ..stock = quantity
+          ..unit = unit
+          ..minimumStock = 0
+          ..isDeleted = false
+          ..isDirty = true
+          ..lastUpdated = DateTime.now();
+
+        await db.productsBox.put(dbProduct.productId, dbProduct);
+
+        final timestamp = DateTime.now();
+        final purchaseInvoice =
+            'PUR-MAN-${timestamp.millisecondsSinceEpoch.toString().substring(6)}';
+
+        final purchaseItem = {
+          'productId': dbProduct.productId,
+          'name': name,
+          'quantity': quantity,
+          'purchasePrice': purchasePrice,
+          'total': quantity * purchasePrice,
+        };
+
+        final purchase = PurchaseModel()
+          ..purchaseId = const Uuid().v4()
+          ..invoiceNumber = purchaseInvoice
+          ..supplierId = supplier?.supplierId ?? ''
+          ..totalAmount = quantity * purchasePrice
+          ..paidAmount = quantity * purchasePrice
+          ..timestamp = timestamp
+          ..itemsJson = jsonEncode([purchaseItem])
+          ..isDeleted = false
+          ..isDirty = true
+          ..lastUpdated = timestamp;
+
+        await db.purchasesBox.put(purchase.purchaseId, purchase);
+
+        // Fire and forget refresh
+        _ref.read(inventoryControllerProvider.notifier).refreshAll();
+      }
+
+      // Add directly to cart
+      addToCart(manualProduct, quantity, price);
+    } catch (e) {
+      // Even if saving to DB encounters an issue, add to cart
+      final productId = 'MANUAL-${const Uuid().v4()}';
+      final manualProduct = ProductModel()
+        ..productId = productId
+        ..name = name
+        ..purchasePrice = purchasePrice
+        ..retailPrice = price
+        ..stock = 999999
+        ..unit = unit
+        ..isDeleted = false;
+
+      addToCart(manualProduct, quantity, price);
+    }
   }
 
   bool updateQuantity(String productId, double quantity) {
