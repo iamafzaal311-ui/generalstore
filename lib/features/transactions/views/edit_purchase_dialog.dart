@@ -269,6 +269,7 @@ class _EditPurchaseDialogState extends ConsumerState<EditPurchaseDialog> {
                             ..stock = qty
                             ..unit = unitCtrl.text.trim().isNotEmpty ? unitCtrl.text.trim() : 'Pcs'
                             ..minimumStock = 0
+                            ..maximumStock = 999999
                             ..openingStock = qty
                             ..isDeleted = false
                             ..isDirty = true

@@ -202,6 +202,8 @@ class POSController extends StateNotifier<POSState> {
     try {
       final resolvedBrandId = (brand?.brandId == 'LOCAL') ? null : brand?.brandId;
       final productId = 'MANUAL-${const Uuid().v4()}';
+      final now = DateTime.now();
+
       final manualProduct = ProductModel()
         ..productId = productId
         ..name = name
@@ -211,15 +213,19 @@ class POSController extends StateNotifier<POSState> {
         ..brandId = resolvedBrandId
         ..purchasePrice = purchasePrice
         ..retailPrice = price
+        ..wholesalePrice = price
+        ..minimumPrice = purchasePrice
         ..stock = 999999
         ..unit = unit
+        ..openingStock = quantity
         ..minimumStock = 0
-        ..isDeleted = false;
+        ..maximumStock = 999999
+        ..isDeleted = false
+        ..isDirty = true
+        ..lastUpdated = now;
 
       if (saveToInventoryAndPurchases) {
         final db = _ref.read(localDbServiceProvider);
-        manualProduct.isDirty = true;
-        manualProduct.lastUpdated = DateTime.now();
 
         // Save to Products Hive DB
         final dbProduct = ProductModel()
@@ -228,12 +234,16 @@ class POSController extends StateNotifier<POSState> {
           ..brandId = resolvedBrandId
           ..purchasePrice = purchasePrice
           ..retailPrice = price
+          ..wholesalePrice = price
+          ..minimumPrice = purchasePrice
           ..stock = quantity
           ..unit = unit
+          ..openingStock = quantity
           ..minimumStock = 0
+          ..maximumStock = 999999
           ..isDeleted = false
           ..isDirty = true
-          ..lastUpdated = DateTime.now();
+          ..lastUpdated = now;
 
         await db.productsBox.put(dbProduct.productId, dbProduct);
 
@@ -272,14 +282,22 @@ class POSController extends StateNotifier<POSState> {
     } catch (e) {
       // Even if saving to DB encounters an issue, add to cart
       final productId = 'MANUAL-${const Uuid().v4()}';
+      final now = DateTime.now();
       final manualProduct = ProductModel()
         ..productId = productId
         ..name = name
         ..purchasePrice = purchasePrice
         ..retailPrice = price
+        ..wholesalePrice = price
+        ..minimumPrice = purchasePrice
         ..stock = 999999
         ..unit = unit
-        ..isDeleted = false;
+        ..openingStock = quantity
+        ..minimumStock = 0
+        ..maximumStock = 999999
+        ..isDeleted = false
+        ..isDirty = true
+        ..lastUpdated = now;
 
       addToCart(manualProduct, quantity, price);
     }

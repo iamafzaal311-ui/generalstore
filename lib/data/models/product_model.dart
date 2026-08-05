@@ -79,4 +79,14 @@ class ProductModel extends HiveObject {
 
   @HiveField(24)
   double? cartonPrice;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProductModel &&
+          runtimeType == other.runtimeType &&
+          productId == other.productId;
+
+  @override
+  int get hashCode => productId.hashCode;
 }

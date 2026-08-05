@@ -33,4 +33,14 @@ class SupplierModel extends HiveObject {
 
   @HiveField(9)
   late bool isDeleted;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SupplierModel &&
+          runtimeType == other.runtimeType &&
+          supplierId == other.supplierId;
+
+  @override
+  int get hashCode => supplierId.hashCode;
 }

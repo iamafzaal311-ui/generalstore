@@ -1390,6 +1390,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                         ..stock = qty
                         ..unit = unit
                         ..minimumStock = 0
+                        ..maximumStock = 999999
                         ..openingStock = qty
                         ..isDeleted = false
                         ..isDirty = true

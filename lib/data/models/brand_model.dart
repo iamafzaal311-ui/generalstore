@@ -36,4 +36,14 @@ class BrandModel extends HiveObject {
       ...brands.where((b) => b.brandId != 'LOCAL'),
     ];
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BrandModel &&
+          runtimeType == other.runtimeType &&
+          brandId == other.brandId;
+
+  @override
+  int get hashCode => brandId.hashCode;
 }
