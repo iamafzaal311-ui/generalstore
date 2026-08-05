@@ -1,6 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+import '../../../core/providers/global_providers.dart';
+import '../../../core/widgets/searchable_autocomplete_field.dart';
+import '../../../data/models/brand_model.dart';
 import '../../../data/models/purchase_model.dart';
 import '../../../data/models/product_model.dart';
 import '../../products/viewmodels/inventory_controller.dart';
@@ -101,6 +105,204 @@ class _EditPurchaseDialogState extends ConsumerState<EditPurchaseDialog> {
     );
   }
 
+  void _showManualEntryDialog() {
+    final nameCtrl = TextEditingController();
+    final purchasePriceCtrl = TextEditingController();
+    final salePriceCtrl = TextEditingController();
+    final qtyCtrl = TextEditingController(text: '1');
+    final unitCtrl = TextEditingController(text: 'Pcs');
+    final formKey = GlobalKey<FormState>();
+    BrandModel? selectedBrand;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final invState = ref.watch(inventoryControllerProvider);
+            return StatefulBuilder(
+              builder: (context, setStateDialog) {
+                return AlertDialog(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: const Row(
+                    children: [
+                      Icon(Icons.edit_note_rounded, color: Color(0xFF9333EA)),
+                      SizedBox(width: 8),
+                      Text('Add Manual Item to Purchase Bill'),
+                    ],
+                  ),
+                  content: SingleChildScrollView(
+                    child: SizedBox(
+                      width: 480,
+                      child: Form(
+                        key: formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextFormField(
+                              controller: nameCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Item Name / Detail*',
+                                hintText: 'e.g. Special Item',
+                                prefixIcon: Icon(Icons.inventory_2_outlined),
+                              ),
+                              validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: purchasePriceCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Purchase Price (Khareed)*',
+                                      prefixText: 'Rs. ',
+                                      prefixIcon: Icon(Icons.arrow_downward, color: Colors.red),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty) return 'Required';
+                                      if (double.tryParse(val.trim()) == null) return 'Invalid';
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: salePriceCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Sale Price (Frokht)*',
+                                      prefixText: 'Rs. ',
+                                      prefixIcon: Icon(Icons.arrow_upward, color: Colors.green),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty) return 'Required';
+                                      if (double.tryParse(val.trim()) == null) return 'Invalid';
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: qtyCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Quantity*',
+                                      prefixIcon: Icon(Icons.format_list_numbered),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty) return 'Required';
+                                      if (double.tryParse(val.trim()) == null) return 'Invalid';
+                                      return null;
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: unitCtrl,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Unit (e.g. Kg, Pcs, Pack)',
+                                      prefixIcon: Icon(Icons.straighten),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            SearchableAutocompleteField<BrandModel>(
+                              labelText: 'Company / Brand (Optional)',
+                              hintText: 'Search or select company/brand...',
+                              initialValue: selectedBrand,
+                              items: BrandModel.withLocal(invState.brands),
+                              itemAsString: (b) => b.name,
+                              prefixIcon: const Icon(Icons.business_outlined, size: 20),
+                              onSelected: (val) {
+                                setStateDialog(() {
+                                  selectedBrand = val;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add to Bill'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9333EA),
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () async {
+                        if (formKey.currentState!.validate()) {
+                          final name = nameCtrl.text.trim();
+                          final purchasePrice = double.tryParse(purchasePriceCtrl.text.trim()) ?? 0.0;
+                          final salePrice = double.tryParse(salePriceCtrl.text.trim()) ?? 0.0;
+                          final qty = double.tryParse(qtyCtrl.text.trim()) ?? 1.0;
+                          final brandName = (selectedBrand?.brandId == 'LOCAL') ? '' : (selectedBrand?.name ?? '');
+
+                          final resolvedBrandId = (selectedBrand?.brandId == 'LOCAL') ? null : selectedBrand?.brandId;
+                          final manualProductId = 'MANUAL-${const Uuid().v4()}';
+                          final dbProduct = ProductModel()
+                            ..productId = manualProductId
+                            ..name = name
+                            ..brandId = resolvedBrandId
+                            ..purchasePrice = purchasePrice
+                            ..retailPrice = salePrice
+                            ..wholesalePrice = salePrice
+                            ..minimumPrice = purchasePrice
+                            ..stock = qty
+                            ..unit = unitCtrl.text.trim().isNotEmpty ? unitCtrl.text.trim() : 'Pcs'
+                            ..minimumStock = 0
+                            ..openingStock = qty
+                            ..isDeleted = false
+                            ..isDirty = true
+                            ..lastUpdated = DateTime.now();
+
+                          final db = ref.read(localDbServiceProvider);
+                          await db.productsBox.put(dbProduct.productId, dbProduct);
+
+                          setState(() {
+                            _items.add({
+                              'productId': manualProductId,
+                              'name': name,
+                              'brand': brandName,
+                              'category': '',
+                              'quantity': qty,
+                              'purchasePrice': purchasePrice,
+                              'total': qty * purchasePrice,
+                            });
+                          });
+
+                          if (mounted) Navigator.pop(context);
+                        }
+                      },
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _saveChanges() async {
     if (_items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bill cannot be empty')));
@@ -157,10 +359,20 @@ class _EditPurchaseDialogState extends ConsumerState<EditPurchaseDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ElevatedButton.icon(
-                          onPressed: _showAddProductSearch,
-                          icon: const Icon(Icons.add_shopping_cart),
-                          label: const Text('Add Product to Bill'),
+                        Row(
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: _showAddProductSearch,
+                              icon: const Icon(Icons.add_shopping_cart),
+                              label: const Text('Add Product to Bill'),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton.icon(
+                              onPressed: _showManualEntryDialog,
+                              icon: const Icon(Icons.edit_note_rounded, color: Color(0xFF9333EA)),
+                              label: const Text('Add Manual Item', style: TextStyle(color: Color(0xFF9333EA))),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 12),
                         Expanded(
