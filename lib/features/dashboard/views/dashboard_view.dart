@@ -24,6 +24,8 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardControllerProvider);
+    final currentUser = ref.watch(currentUserProvider);
+    final isStaff = currentUser?.role == 'Staff';
     final theme = Theme.of(context);
     final isWide = MediaQuery.of(context).size.width >= 800;
 
@@ -34,26 +36,28 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
           style: isWide ? null : const TextStyle(fontSize: 18),
         ),
         actions: [
-          if (isWide)
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.colorScheme.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          if (!isStaff) ...[
+            if (isWide)
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
+                icon: const Icon(Icons.add_circle_outline),
+                label: const Text('Add Expense'),
+                onPressed: () => _showAddExpenseDialog(context, ref),
+              )
+            else
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                tooltip: 'Add Expense',
+                onPressed: () => _showAddExpenseDialog(context, ref),
               ),
-              icon: const Icon(Icons.add_circle_outline),
-              label: const Text('Add Expense'),
-              onPressed: () => _showAddExpenseDialog(context, ref),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              tooltip: 'Add Expense',
-              onPressed: () => _showAddExpenseDialog(context, ref),
-            ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 8),
+          ],
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref
@@ -75,110 +79,186 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                   // Stat Cards
                   isWide
                       ? Row(
-                          children: [
-                            Expanded(
-                              child: _buildGradientStatCard(
-                                title: 'TOTAL SALES',
-                                value:
-                                    'Rs. ${state.totalSales.toStringAsFixed(0)}',
-                                icon: Icons.monetization_on_rounded,
-                                colors: [
-                                  const Color(0xFF0F9D58),
-                                  const Color(0xFF0D9488),
+                          children: isStaff
+                              ? [
+                                  Expanded(
+                                    child: _buildGradientStatCard(
+                                      title: 'POS CASHIER',
+                                      value: 'Open Terminal',
+                                      icon: Icons.point_of_sale_rounded,
+                                      colors: [
+                                        const Color(0xFF0F9D58),
+                                        const Color(0xFF0D9488),
+                                      ],
+                                      onTap: () => context.go('/pos'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildGradientStatCard(
+                                      title: 'TOTAL INVOICES',
+                                      value: '${state.totalInvoices}',
+                                      icon: Icons.receipt_long_rounded,
+                                      colors: [
+                                        const Color(0xFF3B82F6),
+                                        const Color(0xFF1E3A8A),
+                                      ],
+                                      onTap: () => context.go('/sales'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildGradientStatCard(
+                                      title: 'SALES RETURNS',
+                                      value: 'Process Return',
+                                      icon: Icons.assignment_return_rounded,
+                                      colors: [
+                                        const Color(0xFFF59E0B),
+                                        const Color(0xFFD97706),
+                                      ],
+                                      onTap: () => context.go('/returns'),
+                                    ),
+                                  ),
+                                ]
+                              : [
+                                  Expanded(
+                                    child: _buildGradientStatCard(
+                                      title: 'TOTAL SALES',
+                                      value:
+                                          'Rs. ${state.totalSales.toStringAsFixed(0)}',
+                                      icon: Icons.monetization_on_rounded,
+                                      colors: [
+                                        const Color(0xFF0F9D58),
+                                        const Color(0xFF0D9488),
+                                      ],
+                                      onTap: () => context.go('/sales'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildGradientStatCard(
+                                      title: 'TOTAL INVOICES',
+                                      value: '${state.totalInvoices}',
+                                      icon: Icons.receipt_long_rounded,
+                                      colors: [
+                                        const Color(0xFF3B82F6),
+                                        const Color(0xFF1E3A8A),
+                                      ],
+                                      onTap: () => context.go('/sales'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildGradientStatCard(
+                                      title: 'SALES RETURNS',
+                                      value: 'Process Return',
+                                      icon: Icons.assignment_return_rounded,
+                                      colors: [
+                                        const Color(0xFFF59E0B),
+                                        const Color(0xFFD97706),
+                                      ],
+                                      onTap: () => context.go('/returns'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildGradientStatCard(
+                                      title: 'TOTAL EXPENSES',
+                                      value:
+                                          'Rs. ${state.totalExpenses.toStringAsFixed(0)}',
+                                      icon: Icons.account_balance_wallet_rounded,
+                                      colors: [
+                                        const Color(0xFFEF4444),
+                                        const Color(0xFFB91C1C),
+                                      ],
+                                      onTap: () => context.go('/expenses'),
+                                    ),
+                                  ),
                                 ],
-                                onTap: () => context.go('/sales'),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildGradientStatCard(
-                                title: 'TOTAL INVOICES',
-                                value: '${state.totalInvoices}',
-                                icon: Icons.receipt_long_rounded,
-                                colors: [
-                                  const Color(0xFF3B82F6),
-                                  const Color(0xFF1E3A8A),
-                                ],
-                                onTap: () => context.go('/sales'),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildGradientStatCard(
-                                title: 'SALES RETURNS',
-                                value: 'Process Return',
-                                icon: Icons.assignment_return_rounded,
-                                colors: [
-                                  const Color(0xFFF59E0B),
-                                  const Color(0xFFD97706),
-                                ],
-                                onTap: () => context.go('/returns'),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildGradientStatCard(
-                                title: 'TOTAL EXPENSES',
-                                value:
-                                    'Rs. ${state.totalExpenses.toStringAsFixed(0)}',
-                                icon: Icons.account_balance_wallet_rounded,
-                                colors: [
-                                  const Color(0xFFEF4444),
-                                  const Color(0xFFB91C1C),
-                                ],
-                                onTap: () => context.go('/expenses'),
-                              ),
-                            ),
-                          ],
                         )
                       : Column(
-                          children: [
-                            _buildGradientStatCard(
-                              title: 'TOTAL SALES (TODAY)',
-                              value:
-                                  'Rs. ${state.totalSales.toStringAsFixed(0)}',
-                              icon: Icons.monetization_on_rounded,
-                              colors: [
-                                const Color(0xFF10B981),
-                                const Color(0xFF047857),
-                              ],
-                              onTap: () => context.go('/sales'),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildGradientStatCard(
-                              title: 'TOTAL INVOICES',
-                              value: '${state.totalInvoices}',
-                              icon: Icons.receipt_long_rounded,
-                              colors: [
-                                const Color(0xFF3B82F6),
-                                const Color(0xFF1E3A8A),
-                              ],
-                              onTap: () => context.go('/sales'),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildGradientStatCard(
-                              title: 'SALES RETURNS & RESTOCK',
-                              value: 'Process Return',
-                              icon: Icons.assignment_return_rounded,
-                              colors: [
-                                const Color(0xFFF59E0B),
-                                const Color(0xFFD97706),
-                              ],
-                              onTap: () => context.go('/returns'),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildGradientStatCard(
-                              title: 'TOTAL EXPENSES',
-                              value:
-                                  'Rs. ${state.totalExpenses.toStringAsFixed(0)}',
-                              icon: Icons.account_balance_wallet_rounded,
-                              colors: [
-                                const Color(0xFFEF4444),
-                                const Color(0xFFB91C1C),
-                              ],
-                              onTap: () => context.go('/expenses'),
-                            ),
-                          ],
+                          children: isStaff
+                              ? [
+                                  _buildGradientStatCard(
+                                    title: 'POS CASHIER',
+                                    value: 'Open Terminal',
+                                    icon: Icons.point_of_sale_rounded,
+                                    colors: [
+                                      const Color(0xFF10B981),
+                                      const Color(0xFF047857),
+                                    ],
+                                    onTap: () => context.go('/pos'),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildGradientStatCard(
+                                    title: 'TOTAL INVOICES',
+                                    value: '${state.totalInvoices}',
+                                    icon: Icons.receipt_long_rounded,
+                                    colors: [
+                                      const Color(0xFF3B82F6),
+                                      const Color(0xFF1E3A8A),
+                                    ],
+                                    onTap: () => context.go('/sales'),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildGradientStatCard(
+                                    title: 'SALES RETURNS & RESTOCK',
+                                    value: 'Process Return',
+                                    icon: Icons.assignment_return_rounded,
+                                    colors: [
+                                      const Color(0xFFF59E0B),
+                                      const Color(0xFFD97706),
+                                    ],
+                                    onTap: () => context.go('/returns'),
+                                  ),
+                                ]
+                              : [
+                                  _buildGradientStatCard(
+                                    title: 'TOTAL SALES (TODAY)',
+                                    value:
+                                        'Rs. ${state.totalSales.toStringAsFixed(0)}',
+                                    icon: Icons.monetization_on_rounded,
+                                    colors: [
+                                      const Color(0xFF10B981),
+                                      const Color(0xFF047857),
+                                    ],
+                                    onTap: () => context.go('/sales'),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildGradientStatCard(
+                                    title: 'TOTAL INVOICES',
+                                    value: '${state.totalInvoices}',
+                                    icon: Icons.receipt_long_rounded,
+                                    colors: [
+                                      const Color(0xFF3B82F6),
+                                      const Color(0xFF1E3A8A),
+                                    ],
+                                    onTap: () => context.go('/sales'),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildGradientStatCard(
+                                    title: 'SALES RETURNS & RESTOCK',
+                                    value: 'Process Return',
+                                    icon: Icons.assignment_return_rounded,
+                                    colors: [
+                                      const Color(0xFFF59E0B),
+                                      const Color(0xFFD97706),
+                                    ],
+                                    onTap: () => context.go('/returns'),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildGradientStatCard(
+                                    title: 'TOTAL EXPENSES',
+                                    value:
+                                        'Rs. ${state.totalExpenses.toStringAsFixed(0)}',
+                                    icon: Icons.account_balance_wallet_rounded,
+                                    colors: [
+                                      const Color(0xFFEF4444),
+                                      const Color(0xFFB91C1C),
+                                    ],
+                                    onTap: () => context.go('/expenses'),
+                                  ),
+                                ],
                         ),
                   const SizedBox(height: 32),
                   // Responsive Split Panels
@@ -186,19 +266,23 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                       ? Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(flex: 3, child: _buildAlertsColumn(state)),
-                            const SizedBox(width: 24),
+                            if (!isStaff) ...[
+                              Expanded(flex: 3, child: _buildAlertsColumn(state)),
+                              const SizedBox(width: 24),
+                            ],
                             Expanded(
                               flex: 4,
-                              child: _buildSalesCard(state, context),
+                              child: _buildSalesCard(state, context, isStaff: isStaff),
                             ),
                           ],
                         )
                       : Column(
                           children: [
-                            _buildAlertsColumn(state),
-                            const SizedBox(height: 24),
-                            _buildSalesCard(state, context),
+                            if (!isStaff) ...[
+                              _buildAlertsColumn(state),
+                              const SizedBox(height: 24),
+                            ],
+                            _buildSalesCard(state, context, isStaff: isStaff),
                           ],
                         ),
                 ],
@@ -227,7 +311,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     );
   }
 
-  Widget _buildSalesCard(dynamic state, BuildContext context) {
+  Widget _buildSalesCard(dynamic state, BuildContext context, {bool isStaff = false}) {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -260,10 +344,12 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                       subtitle: Text(
                         sale.timestamp.toLocal().toString().split(' ')[0],
                       ),
-                      trailing: Text(
-                        'Rs. ${sale.total.toStringAsFixed(0)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                      trailing: isStaff
+                          ? const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20)
+                          : Text(
+                              'Rs. ${sale.total.toStringAsFixed(0)}',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
                     );
                   },
                 ),

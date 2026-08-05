@@ -56,6 +56,35 @@ class _ProductsViewState extends ConsumerState<ProductsView>
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(currentUserProvider);
+    if (currentUser?.role == 'Staff') {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Access Restricted', style: TextStyle(color: Colors.white)),
+          backgroundColor: const Color(0xFF1E3A8A),
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.block_rounded, size: 64, color: Colors.redAccent),
+              SizedBox(height: 16),
+              Text(
+                'Access Restricted',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Staff users are not allowed to view or manage Products & Stock.',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final state = ref.watch(inventoryControllerProvider);
     final theme = Theme.of(context);
 

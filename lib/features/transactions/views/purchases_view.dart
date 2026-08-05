@@ -5,7 +5,7 @@ import '../../../data/models/product_model.dart';
 import '../../../data/models/supplier_model.dart';
 import '../../../data/models/purchase_model.dart';
 import '../../../data/models/category_model.dart';
-import '../../../core/widgets/searchable_autocomplete_field.dart';
+import '../../../core/providers/global_providers.dart';
 import '../viewmodels/transactions_controller.dart';
 import '../../products/viewmodels/inventory_controller.dart';
 
@@ -770,6 +770,33 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(currentUserProvider);
+    if (currentUser?.role == 'Staff') {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Access Restricted'),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.block_rounded, size: 64, color: Colors.redAccent),
+              SizedBox(height: 16),
+              Text(
+                'Access Restricted',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Staff users are not allowed to view or manage Purchases.',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final txState = ref.watch(transactionsControllerProvider);
     final invState = ref.watch(inventoryControllerProvider);
     final theme = Theme.of(context);

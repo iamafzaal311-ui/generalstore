@@ -468,20 +468,6 @@ class _SidebarContent extends ConsumerWidget {
                   isSelected: currentRoute == '/sales',
                   isExpanded: isExpanded,
                 ),
-                _SidebarMenuItem(
-                  icon: Icons.inventory_2_rounded,
-                  label: 'Products & Stock',
-                  route: '/products',
-                  isSelected: currentRoute == '/products',
-                  isExpanded: isExpanded,
-                ),
-                _SidebarMenuItem(
-                  icon: Icons.shopping_cart_rounded,
-                  label: 'Purchases',
-                  route: '/purchases',
-                  isSelected: currentRoute == '/purchases',
-                  isExpanded: isExpanded,
-                ),
               ] else ...[
                 _SidebarMenuItem(
                   icon: Icons.point_of_sale_rounded,
