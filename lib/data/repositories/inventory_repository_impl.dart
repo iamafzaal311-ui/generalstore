@@ -58,7 +58,46 @@ class InventoryRepositoryImpl implements InventoryRepository {
   // BRANDS
   @override
   Future<List<BrandModel>> getBrands() async {
-    return _db.brandsBox.values.where((e) => !e.isDeleted).toList();
+    final list = _db.brandsBox.values.where((e) => !e.isDeleted).toList();
+    final existingIds = list.map((b) => b.brandId).toSet();
+    final existingNames = list.map((b) => b.name.trim().toLowerCase()).toSet();
+
+    // Collect any unique brand names from products
+    for (final p in _db.productsBox.values) {
+      if (p.isDeleted) continue;
+      if (p.brandId != null &&
+          p.brandId!.trim().isNotEmpty &&
+          !existingIds.contains(p.brandId) &&
+          !existingNames.contains(p.brandId!.trim().toLowerCase())) {
+        final b = BrandModel()
+          ..brandId = p.brandId!
+          ..name = p.brandId!
+          ..isDirty = false
+          ..lastUpdated = DateTime.now()
+          ..isDeleted = false;
+        list.add(b);
+        existingIds.add(p.brandId!);
+        existingNames.add(p.brandId!.trim().toLowerCase());
+      }
+    }
+
+    // Collect any suppliers as companies
+    for (final s in _db.suppliersBox.values) {
+      if (s.isDeleted) continue;
+      if (s.name.trim().isNotEmpty &&
+          !existingNames.contains(s.name.trim().toLowerCase())) {
+        final b = BrandModel()
+          ..brandId = 'SUPP-${s.supplierId}'
+          ..name = s.name
+          ..isDirty = false
+          ..lastUpdated = DateTime.now()
+          ..isDeleted = false;
+        list.add(b);
+        existingNames.add(s.name.trim().toLowerCase());
+      }
+    }
+
+    return list;
   }
 
   @override

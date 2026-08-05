@@ -114,6 +114,62 @@ class _EditSaleDialogState extends ConsumerState<EditSaleDialog> {
     );
   }
 
+  void _showQuickAddBrandDialog(BuildContext context, Function(BrandModel) onCreated) {
+    final nameCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (c) {
+        return AlertDialog(
+          title: const Text('Add New Company / Brand'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Company / Brand Name*',
+                    hintText: 'e.g. Unilever, Nestle, Shan, Medora',
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final name = nameCtrl.text.trim();
+                  final newBrand = BrandModel()
+                    ..brandId = const Uuid().v4()
+                    ..name = name
+                    ..isDirty = true
+                    ..lastUpdated = DateTime.now()
+                    ..isDeleted = false;
+
+                  await ref.read(inventoryControllerProvider.notifier).saveBrand(newBrand);
+                  if (mounted) {
+                    Navigator.pop(c);
+                    onCreated(newBrand);
+                  }
+                }
+              },
+              child: const Text('Save & Select'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showManualEntryDialog() {
     final nameCtrl = TextEditingController();
     final purchasePriceCtrl = TextEditingController();
@@ -234,6 +290,19 @@ class _EditSaleDialogState extends ConsumerState<EditSaleDialog> {
                               items: BrandModel.withLocal(invState.brands),
                               itemAsString: (b) => b.name,
                               prefixIcon: const Icon(Icons.business_outlined, size: 20),
+                              suffixAction: Tooltip(
+                                message: 'Add New Company / Brand',
+                                child: IconButton(
+                                  icon: const Icon(Icons.add_circle, color: Color(0xFF9333EA)),
+                                  onPressed: () {
+                                    _showQuickAddBrandDialog(context, (newBrand) {
+                                      setStateDialog(() {
+                                        selectedBrand = newBrand;
+                                      });
+                                    });
+                                  },
+                                ),
+                              ),
                               onSelected: (val) {
                                 setStateDialog(() {
                                   selectedBrand = val;
