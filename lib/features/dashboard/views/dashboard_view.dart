@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/widgets/custom_urdu_header.dart';
+import '../../../core/providers/global_providers.dart';
 import '../viewmodels/dashboard_controller.dart';
 import '../../accounts/viewmodels/accounts_controller.dart';
 

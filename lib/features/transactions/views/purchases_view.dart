@@ -5,6 +5,7 @@ import '../../../data/models/product_model.dart';
 import '../../../data/models/supplier_model.dart';
 import '../../../data/models/purchase_model.dart';
 import '../../../data/models/category_model.dart';
+import '../../../core/widgets/searchable_autocomplete_field.dart';
 import '../../../core/providers/global_providers.dart';
 import '../viewmodels/transactions_controller.dart';
 import '../../products/viewmodels/inventory_controller.dart';
