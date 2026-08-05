@@ -21,4 +21,19 @@ class BrandModel extends HiveObject {
 
   @HiveField(5)
   late bool isDeleted;
+
+  static final BrandModel local = BrandModel()
+    ..brandId = 'LOCAL'
+    ..name = 'Local / No Company'
+    ..description = 'Default for unbranded or local items'
+    ..isDirty = false
+    ..lastUpdated = DateTime.fromMillisecondsSinceEpoch(0)
+    ..isDeleted = false;
+
+  static List<BrandModel> withLocal(List<BrandModel> brands) {
+    return [
+      local,
+      ...brands.where((b) => b.brandId != 'LOCAL'),
+    ];
+  }
 }

@@ -23,6 +23,8 @@ class PurchaseCartItem {
   double get total => quantity * purchasePrice;
 }
 
+const _txSentinel = Object();
+
 class TransactionsState {
   final List<PurchaseModel> purchases;
   final List<PurchaseCartItem> cart;
@@ -45,18 +47,22 @@ class TransactionsState {
   TransactionsState copyWith({
     List<PurchaseModel>? purchases,
     List<PurchaseCartItem>? cart,
-    SupplierModel? selectedSupplier,
+    Object? selectedSupplier = _txSentinel,
     double? paidAmount,
     bool? isLoading,
-    String? errorMessage,
+    Object? errorMessage = _txSentinel,
   }) {
     return TransactionsState(
       purchases: purchases ?? this.purchases,
       cart: cart ?? this.cart,
-      selectedSupplier: selectedSupplier ?? this.selectedSupplier,
+      selectedSupplier: selectedSupplier == _txSentinel
+          ? this.selectedSupplier
+          : (selectedSupplier as SupplierModel?),
       paidAmount: paidAmount ?? this.paidAmount,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: errorMessage == _txSentinel
+          ? this.errorMessage
+          : (errorMessage as String?),
     );
   }
 }

@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/supplier_model.dart';
 import '../../../data/models/purchase_model.dart';
 import '../../../data/models/category_model.dart';
+import '../../../data/models/brand_model.dart';
 import '../../../core/widgets/searchable_autocomplete_field.dart';
 import '../../../core/providers/global_providers.dart';
 import '../viewmodels/transactions_controller.dart';
@@ -86,6 +88,7 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                           ref
                               .read(transactionsControllerProvider.notifier)
                               .selectSupplier(val);
+                          setStateDialog(() {});
                         },
                         suffixAction: IconButton(
                           icon: const Icon(Icons.add_circle_outline, color: Colors.teal),
@@ -174,6 +177,17 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                                   }
                                 });
                               },
+                              suffixAction: Tooltip(
+                                message: 'Add Manual Item (Purchase & Sale)',
+                                child: IconButton(
+                                  icon: const Icon(Icons.edit_note_rounded, color: Color(0xFF9333EA)),
+                                  onPressed: () {
+                                    _showManualEntryDialogForPurchase(context, () {
+                                      setStateDialog(() {});
+                                    });
+                                  },
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 12),
                             Row(
@@ -1144,6 +1158,257 @@ class _PurchasesViewState extends ConsumerState<PurchasesView> {
                 ),
               ],
             ),
+    );
+  }
+
+  void _showQuickAddBrandDialog(BuildContext context, Function(BrandModel) onCreated) {
+    final nameCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (c) {
+        return AlertDialog(
+          title: const Text('Add New Company / Brand'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Company / Brand Name*',
+                    hintText: 'e.g. Unilever, Nestle, Shan',
+                  ),
+                  validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final name = nameCtrl.text.trim();
+                  final newBrand = BrandModel()
+                    ..brandId = const Uuid().v4()
+                    ..name = name
+                    ..isDirty = true
+                    ..lastUpdated = DateTime.now()
+                    ..isDeleted = false;
+
+                  await ref.read(inventoryControllerProvider.notifier).saveBrand(newBrand);
+                  if (mounted) {
+                    Navigator.pop(c);
+                    onCreated(newBrand);
+                  }
+                }
+              },
+              child: const Text('Save & Select'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showManualEntryDialogForPurchase(BuildContext context, VoidCallback onAdded) {
+    final nameCtrl = TextEditingController();
+    final purchasePriceCtrl = TextEditingController();
+    final salePriceCtrl = TextEditingController();
+    final qtyCtrl = TextEditingController(text: '1');
+    final unitCtrl = TextEditingController(text: 'Pcs');
+    final formKey = GlobalKey<FormState>();
+    BrandModel? selectedBrand;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final invState = ref.watch(inventoryControllerProvider);
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Row(
+                children: [
+                  Icon(Icons.edit_note_rounded, color: Color(0xFF9333EA)),
+                  SizedBox(width: 8),
+                  Text('Add Manual Item (Purchase & Sale Price)'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: SizedBox(
+                  width: 480,
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: nameCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Item Name / Detail*',
+                            hintText: 'e.g. Special Item',
+                            prefixIcon: Icon(Icons.inventory_2_outlined),
+                          ),
+                          validator: (val) =>
+                              val == null || val.trim().isEmpty ? 'Required' : null,
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: purchasePriceCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Purchase Price (Khareed)*',
+                                  prefixText: 'Rs. ',
+                                  prefixIcon: Icon(Icons.arrow_downward, color: Colors.red),
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) return 'Required';
+                                  if (double.tryParse(val.trim()) == null) return 'Invalid';
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller: salePriceCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Sale Price (Frokht)*',
+                                  prefixText: 'Rs. ',
+                                  prefixIcon: Icon(Icons.arrow_upward, color: Colors.green),
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) return 'Required';
+                                  if (double.tryParse(val.trim()) == null) return 'Invalid';
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: qtyCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Quantity*',
+                                  prefixIcon: Icon(Icons.format_list_numbered),
+                                ),
+                                keyboardType: TextInputType.number,
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) return 'Required';
+                                  if (double.tryParse(val.trim()) == null) return 'Invalid';
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller: unitCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Unit (e.g. Kg, Pcs, Pack)',
+                                  prefixIcon: Icon(Icons.straighten),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SearchableAutocompleteField<BrandModel>(
+                          labelText: 'Company / Brand (Optional)',
+                          hintText: 'Search company/brand...',
+                          initialValue: selectedBrand,
+                          items: BrandModel.withLocal(invState.brands),
+                          itemAsString: (b) => b.name,
+                          prefixIcon: const Icon(Icons.business_outlined, size: 20),
+                          suffixAction: Tooltip(
+                            message: 'Add New Company / Brand',
+                            child: IconButton(
+                              icon: const Icon(Icons.add_circle, color: Color(0xFF9333EA)),
+                              onPressed: () {
+                                _showQuickAddBrandDialog(context, (newBrand) {
+                                  setStateDialog(() {
+                                    selectedBrand = newBrand;
+                                  });
+                                });
+                              },
+                            ),
+                          ),
+                          onSelected: (val) {
+                            setStateDialog(() {
+                              selectedBrand = val;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9333EA),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      final name = nameCtrl.text.trim();
+                      final purchasePrice = double.tryParse(purchasePriceCtrl.text.trim()) ?? 0.0;
+                      final salePrice = double.tryParse(salePriceCtrl.text.trim()) ?? 0.0;
+                      final qty = double.tryParse(qtyCtrl.text.trim()) ?? 1.0;
+                      final unit = unitCtrl.text.trim().isNotEmpty ? unitCtrl.text.trim() : 'Pcs';
+
+                      final resolvedBrandId = (selectedBrand?.brandId == 'LOCAL') ? null : selectedBrand?.brandId;
+                      final manualProduct = ProductModel()
+                        ..productId = 'MANUAL-${const Uuid().v4()}'
+                        ..name = name
+                        ..brandId = resolvedBrandId
+                        ..purchasePrice = purchasePrice
+                        ..retailPrice = salePrice
+                        ..wholesalePrice = salePrice
+                        ..minimumPrice = purchasePrice
+                        ..stock = qty
+                        ..unit = unit
+                        ..minimumStock = 0
+                        ..openingStock = qty
+                        ..isDeleted = false
+                        ..isDirty = true
+                        ..lastUpdated = DateTime.now();
+
+                      final db = ref.read(localDbServiceProvider);
+                      await db.productsBox.put(manualProduct.productId, manualProduct);
+                      await ref.read(inventoryControllerProvider.notifier).refreshAll();
+                      onAdded();
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Save Record'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

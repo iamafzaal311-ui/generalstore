@@ -9,6 +9,7 @@ import '../../../data/models/customer_model.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/sale_model.dart';
 import '../../../data/models/supplier_model.dart';
+import '../../../data/models/brand_model.dart';
 import '../../../data/models/purchase_model.dart';
 import '../../../data/repositories/sales_repository_impl.dart';
 import '../../../domain/repositories/sales_repository.dart';
@@ -196,8 +197,10 @@ class POSController extends StateNotifier<POSState> {
     required String unit,
     bool saveToInventoryAndPurchases = true,
     SupplierModel? supplier,
+    BrandModel? brand,
   }) async {
     try {
+      final resolvedBrandId = (brand?.brandId == 'LOCAL') ? null : brand?.brandId;
       final productId = 'MANUAL-${const Uuid().v4()}';
       final manualProduct = ProductModel()
         ..productId = productId
@@ -205,7 +208,7 @@ class POSController extends StateNotifier<POSState> {
         ..barcode = null
         ..sku = null
         ..categoryId = null
-        ..brandId = null
+        ..brandId = resolvedBrandId
         ..purchasePrice = purchasePrice
         ..retailPrice = price
         ..stock = 999999
@@ -222,6 +225,7 @@ class POSController extends StateNotifier<POSState> {
         final dbProduct = ProductModel()
           ..productId = manualProduct.productId
           ..name = name
+          ..brandId = resolvedBrandId
           ..purchasePrice = purchasePrice
           ..retailPrice = price
           ..stock = quantity
